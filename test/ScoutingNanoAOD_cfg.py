@@ -232,6 +232,8 @@ L1Info = [
 runSig = False
 if "SUEP" in readFiles[0]:
   runSig = True
+if params.signal:
+  runSig = True
 
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     doL1              = cms.bool(False),
@@ -278,8 +280,8 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     pileupinfo_sig    = cms.InputTag("slimmedAddPileupInfo"),
     geneventinfo     = cms.InputTag("generator"),
     gens              = cms.InputTag("genParticles"),
-    gens_sig          = cms.InputTag("genParticles"),
-    #gens_sig          = cms.InputTag("prunedGenParticles"),
+    #gens_sig          = cms.InputTag("genParticles"),
+    gens_sig          = cms.InputTag("prunedGenParticles"),
     #rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
     rho2              = cms.InputTag("hltScoutingPFPacker","rho"),
 #    genLumi            = cms.InputTag("generator"),

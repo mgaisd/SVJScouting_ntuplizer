@@ -549,7 +549,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("Electron_detain"                ,&Electron_detain 	        );
   tree->Branch("Electron_mHits"                 ,&Electron_mHits 	        );
   tree->Branch("Electron_ooEMOop"               ,&Electron_ooEMOop              );
-  tree->Branch("Electron_trkiso"               ,&Electron_trkiso         );
+//  tree->Branch("Electron_trkiso"               ,&Electron_trkiso         );
   tree->Branch("Electron_ecaliso"               ,&Electron_ecaliso              );
   tree->Branch("Electron_hcaliso"               ,&Electron_hcaliso              );
   tree->Branch("Electron_combinediso"               ,&Electron_combinediso   );

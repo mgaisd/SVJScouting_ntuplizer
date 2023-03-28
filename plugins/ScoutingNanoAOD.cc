@@ -2010,6 +2010,12 @@ if(runOffline){
   if(doSignal or (isMC and not era_16)){
   //if(doSignal){
     PSweights = genEvtInfo->weights();
+    //printf("%lu\n",sizeof(PSweights));
+    //int testcout = 0;
+    //for(auto ps: PSweights){
+    //printf("%d: %f\n",testcout,ps);
+    //testcout++;
+    //}
     Handle<double> prefirewgt;
     iEvent.getByToken(prefireToken, prefirewgt);
     prefire = *prefirewgt;

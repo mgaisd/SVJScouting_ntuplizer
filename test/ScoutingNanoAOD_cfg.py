@@ -229,7 +229,7 @@ L1Info = [
     'L1_DoubleJet30er2p5_Mass_Min330_dEta_Max1p5',
     'L1_DoubleJet30er2p5_Mass_Min360_dEta_Max1p5',
     'L1_ETT2000']
-runSig = False
+runSig = True#False
 if "SUEP" in readFiles[0]:
   runSig = True
 if params.signal:

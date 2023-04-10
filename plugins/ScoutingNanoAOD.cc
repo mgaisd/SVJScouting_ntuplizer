@@ -483,7 +483,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),
   doL1                     (iConfig.existsAs<bool>("doL1")              ?    iConfig.getParameter<bool>  ("doL1")            : false),
   doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")            : false),
-  doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")            : true),
+  doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")            : false),
   isMC                     (iConfig.existsAs<bool>("isMC")              ?    iConfig.getParameter<bool>  ("isMC")            : true),
   //monitor                  (iConfig.existsAs<bool>("monitor")           ?    iConfig.getParameter<bool>  ("monitor")           : false),
   era_16                   (iConfig.existsAs<bool>("era_16")            ?    iConfig.getParameter<bool>  ("era_16")            : false),
@@ -1108,6 +1108,53 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   }
 
 
+if(runScouting and isMC){  //do not run for data
+  Handle<vector<reco::GenParticle> > genP;
+  iEvent.getByToken(gensToken2, genP);
+
+  truth_pts.clear();
+  truth_etas.clear();
+  truth_phis.clear();
+  truth_mass.clear();
+  truth_dR.clear();
+  truth_fromSuep.clear();
+  truth_PV.clear();
+  truth_PVdZ.clear();
+
+  for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
+    //if(abs(genp_iter->pdgId()) ==25){ // want to take the last particle with id = 25 
+    //printf("scalar: %f %f %f %f\n",genp_iter->pt(),genp_iter->eta(),genp_iter->phi(),genp_iter->mass());
+    //  scalar_pt = genp_iter->pt();
+    //  scalar_eta = genp_iter->eta();
+    //  scalar_phi = genp_iter->phi();
+    //  scalar_m = genp_iter->mass();
+    //}
+    if (genp_iter->status()!=1){continue;}
+    if (genp_iter->charge()==0){continue;}
+      truth_pts.push_back(genp_iter->pt());
+      truth_etas.push_back(genp_iter->eta());
+      truth_phis.push_back(genp_iter->phi());
+      truth_mass.push_back(genp_iter->mass());
+
+      // gen mothers until you find suep
+      bool fromsuep = false;
+      reco::GenParticle* mother = (reco::GenParticle*)genp_iter->mother();
+      while(mother->numberOfMothers()>0 && abs(mother->pdgId())!=25){
+        mother = (reco::GenParticle*)mother->mother();
+        if (abs(mother->pdgId())==25){
+        doSignal = true;
+      scalar_pt  = mother->pt();
+      scalar_eta = mother->eta();
+      scalar_phi = mother->phi();
+      scalar_m   = mother->mass();
+      //printf("scalarx: %f %f %f %f\n", mother->pt(), mother->eta(), mother->phi(),mother->mass());
+          fromsuep = true;
+          break;
+        }
+      }
+      truth_fromSuep.push_back(fromsuep);
+  }
+}
   // * 
   // Particle Flow candidates 
   // *
@@ -1219,52 +1266,6 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_pfcand++;
   }
 
-if(doSignal){  //do not run for data
-  Handle<vector<reco::GenParticle> > genP;
-  iEvent.getByToken(gensToken2, genP);
-
-  truth_pts.clear();
-  truth_etas.clear();
-  truth_phis.clear();
-  truth_mass.clear();
-  truth_dR.clear();
-  truth_fromSuep.clear();
-  truth_PV.clear();
-  truth_PVdZ.clear();
-
-  for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
-    //if(abs(genp_iter->pdgId()) ==25){ // want to take the last particle with id = 25 
-    //printf("scalar: %f %f %f %f\n",genp_iter->pt(),genp_iter->eta(),genp_iter->phi(),genp_iter->mass());
-    //  scalar_pt = genp_iter->pt();
-    //  scalar_eta = genp_iter->eta();
-    //  scalar_phi = genp_iter->phi();
-    //  scalar_m = genp_iter->mass();
-    //}
-    if (genp_iter->status()!=1){continue;}
-    if (genp_iter->charge()==0){continue;}
-      truth_pts.push_back(genp_iter->pt());
-      truth_etas.push_back(genp_iter->eta());
-      truth_phis.push_back(genp_iter->phi());
-      truth_mass.push_back(genp_iter->mass());
-
-      // gen mothers until you find suep
-      bool fromsuep = false;
-      reco::GenParticle* mother = (reco::GenParticle*)genp_iter->mother();
-      while(mother->numberOfMothers()>0 && abs(mother->pdgId())!=25){
-        mother = (reco::GenParticle*)mother->mother();
-        if (abs(mother->pdgId())==25){
-      scalar_pt  = mother->pt();
-      scalar_eta = mother->eta();
-      scalar_phi = mother->phi();
-      scalar_m   = mother->mass();
-      //printf("scalarx: %f %f %f %f\n", mother->pt(), mother->eta(), mother->phi(),mother->mass());
-          fromsuep = true;
-          break;
-        }
-      }
-      truth_fromSuep.push_back(fromsuep);
-  }
-}
 if(doSignal){  //do not run for other samples to save time
   // 1 to 1 gen matching
   std::vector<int> used_pf;

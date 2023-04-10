@@ -229,11 +229,11 @@ L1Info = [
     'L1_DoubleJet30er2p5_Mass_Min330_dEta_Max1p5',
     'L1_DoubleJet30er2p5_Mass_Min360_dEta_Max1p5',
     'L1_ETT2000']
-runSig = True#False
-if "SUEP" in readFiles[0]:
-  runSig = True
-if params.signal:
-  runSig = True
+runSig = False
+#if "SUEP" in readFiles[0]:
+#  runSig = True
+#if params.signal:
+#  runSig = True
 
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     doL1              = cms.bool(False),
@@ -299,7 +299,8 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
 #if(runRho):
 #  process.myTask = cms.Task(process.fixedGridRhoFastjetAllScouting)
 
-if(runSig or (params.isMC and not params.era=="2016")):
+if(params.isMC):
+#if(runSig or (params.isMC and not params.era=="2016")):
 #if(runSig):
 #if(params.signal):
   #print("test1",runSig,params.isMC,params.era,(params.isMC and not params.era=="2016"))

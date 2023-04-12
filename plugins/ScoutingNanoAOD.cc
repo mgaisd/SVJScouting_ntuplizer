@@ -515,6 +515,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
 //
 
  // Access the TFileService
+  std::cout << "HIIIII!!!!!" << std::endl;
   edm::Service<TFileService> fs;
 
   // Create the TTree
@@ -868,7 +869,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         iEvent.getByToken(verticesToken, verticesH);
     }
   }
-  if(runOffline){
+  /*if(runOffline){
   //if(isMC or monitor){
     if(auto handle = iEvent.getHandle(offlineTracksToken)){
       iEvent.getByToken(offlineTracksToken, tracksH1);
@@ -877,7 +878,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       iEvent.getByToken(offlineTracksToken2, tracksH2);
       mini_track = true;
       }
-  }
+  }*/
   //if(mini_track){
   //  auto tracksH = tracksH2;
   //}else{
@@ -1359,7 +1360,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
 
 
 //if(isMC or monitor){
-if(runOffline){
+/*if(runOffline){
   offlineTrack_pt.clear();
   //offlineTrack_dxy.clear();
   offlineTrack_dzError.clear();
@@ -1624,8 +1625,8 @@ if(runOffline){
         float dR = odr_matched.at(it-used_online.begin());// get dR associated with this PF cand
         int minrow = used_offline.at(it-used_online.begin());// get dR associated with this PF cand
   
-        onlineTrack_dR.push_back(dR); //push back dR at that match positon into proper position.
-        if (minrow < 0){
+	  onlineTrack_dR.push_back(dR); //push back dR at that match positon into proper position.
+	   if (minrow < 0){
           onlineTrack_offlineID.push_back( -1);
           //onlineTrack_offlinept.push_back( -1);
           //onlineTrack_offlineeta.push_back(999);
@@ -1650,7 +1651,7 @@ if(runOffline){
     }
   }
 ///////////////////////////////////////
-}
+ }*/
 
 
 
@@ -1907,7 +1908,7 @@ if(runOffline){
   FatJet_mtrim.clear();
   FatJet_nconst.clear();
 
-  JetDefinition ak15_def = JetDefinition(antikt_algorithm, 1.5);
+  JetDefinition ak08_def = JetDefinition(antikt_algorithm, 0.8);
   double sd_z_cut = 0.10;
   double sd_beta = 0;
   SoftDrop sd_groomer = SoftDrop(sd_z_cut, sd_beta, 1.0);
@@ -1926,14 +1927,14 @@ if(runOffline){
   fastjet::GhostedAreaSpec area_spec(5.0,1,0.01);
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
-  ClusterSequenceArea ak15_cs(fj_part, ak15_def, area_def);
-  vector<PseudoJet> ak15_jets = sorted_by_pt(ak15_cs.inclusive_jets(30.0)); //pt min
+  ClusterSequenceArea ak08_cs(fj_part, ak08_def, area_def);
+  vector<PseudoJet> ak08_jets = sorted_by_pt(ak08_cs.inclusive_jets(30.0)); //pt min
 
   unsigned int maxNconstit=0;
   PseudoJet suepJet = PseudoJet(0, 0, 0, 0);
 
   n_fatjet = 0;
-  for(auto &j: ak15_jets) {
+  for(auto &j: ak08_jets) {
     FatJet_area.push_back(j.area());
     FatJet_eta .push_back(j.pseudorapidity());
     FatJet_phi .push_back(j.phi_std());
@@ -1979,19 +1980,19 @@ if(runOffline){
     if (pfcands_iter.pt() < 1.) continue;
     if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
     int tmpidx = -1;
-    int ak15count = 0;
-    for (auto &j: ak15_jets) {
+    int ak08count = 0;
+    for (auto &j: ak08_jets) {
       for (auto &k: j.constituents()){
         if ((UInt_t)k.user_index() == n_pfcand_tot){
-          tmpidx = ak15count;
-          ak15count++;
+          tmpidx = ak08count;
+          ak08count++;
           break;
         }
       }
       if (tmpidx>-1)
         break;
       else
-        ak15count++;
+        ak08count++;
     }
     PFcand_fjidx.push_back(tmpidx);
     n_pfcand_tot++;

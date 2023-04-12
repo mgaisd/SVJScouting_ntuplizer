@@ -321,7 +321,7 @@ private:
 //  vector<Float16_t>  	     OffJet_nConstituents;
   vector<bool>             OffJet_passId;
   
-  vector<Float16_t> offlineTrack_pt;
+  /*vector<Float16_t> offlineTrack_pt;
   vector<Float16_t> offlineTrack_m;
   //vector<Float16_t> offlineTrack_dxy;
   vector<Float16_t> offlineTrack_dzError;
@@ -355,7 +355,7 @@ private:
   //float offline_fracHi;
   //float offline_countLo;
   //float offlinematched_countLo;
-  //float offline_fracLo;
+  //float offline_fracLo;*/
 
   //PFCand
   UInt_t                       n_pfcand;
@@ -466,8 +466,8 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
   verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
   verticesToken2           (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices_2016"))),
-  offlineTracksToken       (consumes<std::vector<reco::PFCandidate>>         (iConfig.getParameter<edm::InputTag>("offlineTracks"))), 
-  offlineTracksToken2       (consumes<std::vector<pat::PackedCandidate>>  (iConfig.getParameter<edm::InputTag>("offlineTracks2"))), 
+/*offlineTracksToken       (consumes<std::vector<reco::PFCandidate>>         (iConfig.getParameter<edm::InputTag>("offlineTracks"))), 
+  offlineTracksToken2       (consumes<std::vector<pat::PackedCandidate>>  (iConfig.getParameter<edm::InputTag>("offlineTracks2"))), */
   //offlineTracksToken       (consumes<std::vector<reco::Track>>              (iConfig.getParameter<edm::InputTag>("offlineTracks"))), 
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
@@ -573,7 +573,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("Photon_HoE"            	        ,&Photon_HoE                    );
   tree->Branch("Photon_sigmaietaieta"           ,&Photon_sigmaietaieta	        );
 
-  //tree->Branch("offline_frac"                ,&offline_frac    );
+  /* //tree->Branch("offline_frac"                ,&offline_frac    );
   //tree->Branch("offline_count"                 ,&offline_count     );
   //tree->Branch("offlinematched_count"                ,&offlinematched_count    );
   //tree->Branch("offline_fracHi"                ,&offline_fracHi    );
@@ -607,7 +607,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("onlineTrack_offlineID"                 ,&onlineTrack_offlineID     );
   //tree->Branch("onlineTrack_offlinept"                 ,&onlineTrack_offlinept     );
   //tree->Branch("onlineTrack_offlineeta"                ,&onlineTrack_offlineeta    );
-  //tree->Branch("onlineTrack_offlinephi"                ,&onlineTrack_offlinephi    );
+  //tree->Branch("onlineTrack_offlinephi"                ,&onlineTrack_offlinephi    );*/
 
   tree->Branch("n_pfcand"            	        ,&n_pfcand 		        ,"n_pfcand/i");	
   tree->Branch("n_pfMu"            	        ,&n_pfMu 		        ,"n_pfMu/i");	
@@ -842,12 +842,12 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   if(auto handle = iEvent.getHandle(pfcandsToken)){
     runScouting = true;
   }
-  if(auto handle = iEvent.getHandle(offlineTracksToken)){
+  /*if(auto handle = iEvent.getHandle(offlineTracksToken)){
     runOffline = true;
   }
   if(auto handle = iEvent.getHandle(offlineTracksToken2)){
     runOffline = true;
-  }
+    }*/
   //printf("RUNNNING TEST| isMC %d| signal %d| data %d| scouting %d| offline %d\n",isMC,doSignal,doData,runScouting,runOffline);
   if(runScouting){
   //if(not (isMC and era_16)){

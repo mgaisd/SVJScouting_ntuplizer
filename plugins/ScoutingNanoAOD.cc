@@ -135,8 +135,8 @@ private:
   const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
   const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	verticesToken;
   const edm::EDGetTokenT<std::vector<ScoutingVertex> >          verticesToken2;
-  const edm::EDGetTokenT<std::vector<reco::PFCandidate >>  	offlineTracksToken;
-  const edm::EDGetTokenT<std::vector<pat::PackedCandidate >>  	offlineTracksToken2;
+  const edm::EDGetTokenT<std::vector<reco::PFCandidate >>  	offlineTracksToken;//could maybe be removed
+  const edm::EDGetTokenT<std::vector<pat::PackedCandidate >>  	offlineTracksToken2;//could maybe be removed
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
@@ -285,27 +285,6 @@ private:
   vector<Float16_t>  	       Jet_nConstituents;
   vector<bool>                 Jet_passId;
 
-  vector<Float16_t> 	     OffJet_pt;
-  vector<Float16_t>        OffJet_eta;
-  vector<Float16_t>        OffJet_phi;
-  vector<Float16_t>	       OffJet_m;
-  vector<Float16_t>	       OffJet_area;
-  vector<Float16_t>	       OffJet_chargedHadronEnergy;
-  vector<Float16_t>        OffJet_neutralHadronEnergy;
-  vector<Float16_t>	       OffJet_photonEnergy;
-  vector<Float16_t>	       OffJet_electronEnergy;
-  vector<Float16_t>	       OffJet_muonEnergy;
-  vector<Float16_t>	       OffJet_HFHadronEnergy;
-  vector<Float16_t>	       OffJet_HFEMEnergy;
-  vector<Float16_t>	       OffJet_HOEnergy;
-  vector<Float16_t>	       OffJet_chargedHadronMultiplicity;
-  vector<Float16_t>        OffJet_neutralHadronMultiplicity;
-  vector<Float16_t>	       OffJet_photonMultiplicity;
-  vector<Float16_t>	       OffJet_electronMultiplicity;
-  vector<Float16_t>	       OffJet_muonMultiplicity;
-  vector<Float16_t>	       OffJet_HFHadronMultiplicity;
-  vector<Float16_t>	       OffJet_HFEMMultiplicity;
-  vector<bool>             OffJet_passId;
   
  
   //PFCand
@@ -444,8 +423,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
  // now do whatever initialization is needed
   usesResource("TFileService");
 
- // Access the TFileService
-  std::cout << "HIIIII!!!!!" << std::endl;
+ // Access the TFileService  
   edm::Service<TFileService> fs;
 
   // Create the TTree
@@ -612,27 +590,6 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("Jet_nConstituents"              ,&Jet_nConstituents             );
   tree->Branch("Jet_passId"                     ,&Jet_passId                    );
   
-  tree->Branch("OffJet_pt"            	           ,&OffJet_pt                        );
-  tree->Branch("OffJet_eta"            	           ,&OffJet_eta                       );
-  tree->Branch("OffJet_phi"            	           ,&OffJet_phi                       );
-  tree->Branch("OffJet_m"            	             ,&OffJet_m                         );
-  tree->Branch("OffJet_area"            	         ,&OffJet_area                      );
-  tree->Branch("OffJet_chargedHadronEnergy"        ,&OffJet_chargedHadronEnergy       );
-  tree->Branch("OffJet_neutralHadronEnergy"        ,&OffJet_neutralHadronEnergy       );
-  tree->Branch("OffJet_photonEnergy"               ,&OffJet_photonEnergy 	        );
-  tree->Branch("OffJet_electronEnergy"             ,&OffJet_electronEnergy            );
-  tree->Branch("OffJet_muonEnergy"    	           ,&OffJet_muonEnergy                );
-  tree->Branch("OffJet_HFHadronEnergy"             ,&OffJet_HFHadronEnergy            );
-  tree->Branch("OffJet_HFEMEnergy"                 ,&OffJet_HFEMEnergy                );
-  tree->Branch("OffJet_HOEnergy"                   ,&OffJet_HOEnergy                  );
-  tree->Branch("OffJet_chargedHadronMultiplicity"  ,&OffJet_chargedHadronMultiplicity );
-  tree->Branch("OffJet_neutralHadronMultiplicity"  ,&OffJet_neutralHadronMultiplicity );
-  tree->Branch("OffJet_photonMultiplicity"         ,&OffJet_photonMultiplicity        );
-  tree->Branch("OffJet_electronMultiplicity"       ,&OffJet_electronMultiplicity      );
-  tree->Branch("OffJet_muonMultiplicity"           ,&OffJet_muonMultiplicity          );
-  tree->Branch("OffJet_HFHadronMultiplicity"       ,&OffJet_HFHadronMultiplicity      );
-  tree->Branch("OffJet_HFEMMultiplicity"           ,&OffJet_HFEMMultiplicity          );
-  tree->Branch("OffJet_passId"                     ,&OffJet_passId                    );
   
   tree->Branch("n_fatjet"                       ,&n_fatjet                      ,"n_fatjet/i");
   tree->Branch("FatJet_area"                    ,&FatJet_area                   );
@@ -693,8 +650,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<vector<ScoutingVertex> > verticesH;
   Handle<vector<reco::PFCandidate> > tracksH1;
   Handle<vector<pat::PackedCandidate> > tracksH2;
-  bool mini_track = false;
- 
+   
   if(auto handle = iEvent.getHandle(pfcandsToken)){
     runScouting = true;
   }
@@ -1261,31 +1217,10 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
   Jet_mvaDiscriminator.clear();
   Jet_nConstituents.clear();
   Jet_passId.clear();
-  OffJet_pt.clear();
-  OffJet_eta.clear();
-  OffJet_phi.clear();
-  OffJet_m.clear();
-  OffJet_area.clear();
-  OffJet_chargedHadronEnergy.clear();
-  OffJet_neutralHadronEnergy.clear();
-  OffJet_photonEnergy.clear();
-  OffJet_electronEnergy.clear();
-  OffJet_muonEnergy.clear();
-  OffJet_HFHadronEnergy.clear();
-  OffJet_HFEMEnergy.clear();
-  OffJet_HOEnergy.clear();
-  OffJet_chargedHadronMultiplicity.clear();
-  OffJet_neutralHadronMultiplicity.clear();
-  OffJet_photonMultiplicity.clear();
-  OffJet_electronMultiplicity.clear();
-  OffJet_muonMultiplicity.clear();
-  OffJet_HFHadronMultiplicity.clear();
-  OffJet_HFEMMultiplicity.clear();
-  OffJet_passId.clear();
+  
   n_jet = 0;
   n_jetId = 0;
   ht = 0;
-  htoff = 0;
   passJetId = false;
 
   if(runScouting){
@@ -1332,44 +1267,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
 
   }
   }
-  if(runOffline and not mini_track){
-  for (auto pfjet = pfjetsoffH->begin(); pfjet != pfjetsoffH->end(); ++pfjet) {
-
-    OffJet_pt .push_back( pfjet->pt() );
-    OffJet_eta.push_back( pfjet->eta());
-    OffJet_phi.push_back( pfjet->phi());
-    OffJet_m  .push_back( pfjet->mass()  );
-
-    OffJet_area.push_back( pfjet->jetArea());
-
-    OffJet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
-    OffJet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
-    OffJet_photonEnergy       .push_back( pfjet->photonEnergy()       );
-    OffJet_electronEnergy     .push_back( pfjet->electronEnergy()     );
-    OffJet_muonEnergy         .push_back( pfjet->muonEnergy()     );
-    OffJet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
-    OffJet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
-    OffJet_HOEnergy           .push_back( pfjet->hoEnergy()       );
-    
-    OffJet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
-    OffJet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
-    OffJet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
-    OffJet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
-    OffJet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
-    OffJet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
-    OffJet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
-
-   
-    passJetId = jetIDoff(*pfjet);
-    OffJet_passId.push_back( passJetId );
-
-    //// apply jet ID 
-    if ( passJetId == false ) continue; 
-    if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
-    htoff += pfjet->pt() ; 
-    
-  }  
-  }
+ 
   // loop through constituents & save
 
   // * 

@@ -133,8 +133,8 @@ private:
   const edm::EDGetTokenT<std::vector<ScoutingParticle> >  	pfcandsToken;
   const edm::EDGetTokenT<std::vector<ScoutingPFJet> >  		pfjetsToken;
   const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
-  const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	verticesToken;
-  const edm::EDGetTokenT<std::vector<ScoutingVertex> >          verticesToken2;
+  //const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	verticesToken;
+  //const edm::EDGetTokenT<std::vector<ScoutingVertex> >          verticesToken2;
   //const edm::EDGetTokenT<std::vector<reco::PFCandidate >>  	offlineTracksToken;//could maybe be removed
   //const edm::EDGetTokenT<std::vector<pat::PackedCandidate >>  	offlineTracksToken2;//could maybe be removed
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
@@ -304,12 +304,12 @@ private:
   //vector<bool>	               PFcand_fromsuep;
 
   //bPFCand
-  UInt_t                       n_bpfcand;
+  /* UInt_t                       n_bpfcand;
   vector<Float16_t>            bPFcand_pt;
   vector<Float16_t>            bPFcand_eta;
   vector<Float16_t>            bPFcand_phi;
   vector<Float16_t>	       bPFcand_m;
-  vector<Float16_t>	       bPFcand_pdgid;
+  vector<Float16_t>	       bPFcand_pdgid;*/
 
   // SUEP decay products
   float                        scalar_pt;
@@ -364,14 +364,14 @@ private:
   vector<Float16_t>            FatJet_nconst_CA;
 
   // Primary vertices
-  UInt_t n_pvs;
+  /* UInt_t n_pvs;
   vector<Float16_t>            Vertex_x;
   vector<Float16_t>            Vertex_y;
   vector<Float16_t>            Vertex_z;
   vector<Float16_t>            Vertex_tracksSize;
   vector<Float16_t>            Vertex_chi2;
   vector<Float16_t>            Vertex_ndof;
-  vector<Float16_t>            Vertex_isValidVtx;
+  vector<Float16_t>            Vertex_isValidVtx;*/
 
 //  float                        rho;
   float                        rho2;
@@ -390,10 +390,10 @@ private:
   float                        suepJet_sphericity;
   float                        suepJet_thrust;*/
 
-  float                        eventBoosted_isotropy;
+  /*float                        eventBoosted_isotropy;
   float                        eventBoosted_circularity;
   float                        eventBoosted_sphericity;
-  float                        eventBoosted_thrust;
+  float                        eventBoosted_thrust;*/
 
         
   // TTree carrying the event weight information
@@ -413,8 +413,8 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   pfcandsToken             (consumes<std::vector<ScoutingParticle> >         (iConfig.getParameter<edm::InputTag>("pfcands"))), 
   pfjetsToken              (consumes<std::vector<ScoutingPFJet> >            (iConfig.getParameter<edm::InputTag>("pfjets"))), 
   pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
-  verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
-  verticesToken2           (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices_2016"))),
+// verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
+// verticesToken2           (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices_2016"))),
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))),    
@@ -515,12 +515,12 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("PFcand_dR"        	        ,&PFcand_dR 	                );
   tree->Branch("PFcand_alldR"        	        ,&PFcand_alldR 	                );
 
-  tree->Branch("n_bpfcand"            	        ,&n_bpfcand 		        ,"n_bpfcand/i");	
+  /*tree->Branch("n_bpfcand"            	        ,&n_bpfcand 		        ,"n_bpfcand/i");	
   tree->Branch("bPFcand_pt"        	        ,&bPFcand_pt                    );
   tree->Branch("bPFcand_eta"                    ,&bPFcand_eta                   );
   tree->Branch("bPFcand_phi"                    ,&bPFcand_phi                   );
   tree->Branch("bPFcand_m"            	        ,&bPFcand_m                     );
-  tree->Branch("bPFcand_pdgid"                  ,&bPFcand_pdgid                 );
+  tree->Branch("bPFcand_pdgid"                  ,&bPFcand_pdgid                 );*/
 
   tree->Branch("scalar_pt"                      ,&scalar_pt                     );
   tree->Branch("scalar_eta"                     ,&scalar_eta                    );
@@ -535,14 +535,14 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("gen_PV"                         ,&truth_PV                      );
   tree->Branch("gen_PVdZ"                       ,&truth_PVdZ                    );
 
-  tree->Branch("n_pvs"            	        ,&n_pvs                         ,"n_pvs/i");	
+  /*tree->Branch("n_pvs"            	        ,&n_pvs                         ,"n_pvs/i");	
   tree->Branch("Vertex_x"        	        ,&Vertex_x  		        );
   tree->Branch("Vertex_y"                       ,&Vertex_y   	                );
   tree->Branch("Vertex_z"                       ,&Vertex_z  		        );
   tree->Branch("Vertex_tracksSize"              ,&Vertex_tracksSize 	        );
   tree->Branch("Vertex_chi2"                    ,&Vertex_chi2	                );
   tree->Branch("Vertex_ndof"                    ,&Vertex_ndof	                );
-  tree->Branch("Vertex_isValidVtx"              ,&Vertex_isValidVtx 	        );
+  tree->Branch("Vertex_isValidVtx"              ,&Vertex_isValidVtx 	        );*/
 
   tree->Branch("n_mu"            	        ,&n_mu 	                        ,"n_mu/i");
   tree->Branch("Muon_pt"                        ,&Muon_pt                       );
@@ -658,10 +658,10 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("suepJet_sphericity"             ,&suepJet_sphericity            );
   tree->Branch("suepJet_thrust"                 ,&suepJet_thrust                );*/
 
-  tree->Branch("eventBoosted_isotropy"          ,&eventBoosted_isotropy         );
+  /*tree->Branch("eventBoosted_isotropy"          ,&eventBoosted_isotropy         );
   tree->Branch("eventBoosted_circularity"       ,&eventBoosted_circularity      );
   tree->Branch("eventBoosted_sphericity"        ,&eventBoosted_sphericity       );
-  tree->Branch("eventBoosted_thrust"            ,&eventBoosted_thrust           );
+  tree->Branch("eventBoosted_thrust"            ,&eventBoosted_thrust           );*/
 
 }
 
@@ -684,7 +684,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<vector<ScoutingPhoton> > photonsH;
   Handle<vector<ScoutingPFJet> > pfjetsH;
   Handle<vector<ScoutingParticle> > pfcandsH;
-  Handle<vector<ScoutingVertex> > verticesH;
+  //Handle<vector<ScoutingVertex> > verticesH;
   Handle<vector<reco::PFCandidate> > tracksH1;
   Handle<vector<pat::PackedCandidate> > tracksH2;
    
@@ -704,12 +704,12 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     iEvent.getByToken(pfcandsToken, pfcandsH);
 
  
-    if(auto handle = iEvent.getHandle(verticesToken2)){
+    /* if(auto handle = iEvent.getHandle(verticesToken2)){
         iEvent.getByToken(verticesToken2, verticesH);
     }
     else {
         iEvent.getByToken(verticesToken, verticesH);
-    }
+    }*/
   }
   
   Handle<vector<PileupSummaryInfo> > puInfo;
@@ -892,7 +892,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   // *
   // Primary vertices
   // * 
-  n_pvs = 0;
+  /*n_pvs = 0;
   Vertex_x.clear();
   Vertex_y.clear();
   Vertex_z.clear();
@@ -902,7 +902,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Vertex_isValidVtx.clear();
   if(runScouting){
  
-  for (auto vertices_iter = verticesH->begin(); vertices_iter != verticesH->end(); ++vertices_iter) {
+   for (auto vertices_iter = verticesH->begin(); vertices_iter != verticesH->end(); ++vertices_iter) {
         Vertex_x.push_back( vertices_iter->x() );
         Vertex_y.push_back( vertices_iter->y() );
         Vertex_z.push_back( vertices_iter->z() );
@@ -911,8 +911,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         Vertex_ndof.push_back( vertices_iter->ndof() );
         Vertex_isValidVtx.push_back( vertices_iter->isValidVtx() );
         n_pvs++;
-    }
-  }
+   }
+   }*/
   
   if (!doData) {
     for(auto PVI = puInfo->begin(); PVI != puInfo->end(); ++PVI){
@@ -971,7 +971,7 @@ if(runScouting and isMC){  //do not run for data
   
   if(runScouting){
      for (auto pfcands_iter = pfcandsH->begin(); pfcands_iter != pfcandsH->end(); ++pfcands_iter) {
-      ScoutingParticle tmp(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())),pfcands_iter->m(),pfcands_iter->pdgId(),pfcands_iter->vertex());
+       ScoutingParticle tmp(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())),pfcands_iter->m(),pfcands_iter->pdgId(),pfcands_iter->vertex());  
     
       PFcands.push_back(tmp);
     }
@@ -1130,7 +1130,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
       int genPV = gen_pv.at(it-used_gen.begin());// get dR associated with this PF cand
       if(genPV ==0){
       truth_PV.push_back(0);
-      truth_PVdZ.push_back(Vertex_z.at(0)-Vertex_z.at(genPV));
+      //truth_PVdZ.push_back(Vertex_z.at(0)-Vertex_z.at(genPV));
       }
       else if(genPV ==-1){
       truth_PV.push_back(2);
@@ -1138,7 +1138,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
       }
       else{
       truth_PV.push_back(1);     
-      truth_PVdZ.push_back(Vertex_z.at(0)-Vertex_z.at(genPV));
+      // truth_PVdZ.push_back(Vertex_z.at(0)-Vertex_z.at(genPV));
       }     
     }
     else{ 
@@ -1671,7 +1671,7 @@ edm::Handle<GenLumiInfoHeader> genLumiInfoHead;
     
     if (genLumiInfoHead.isValid()) {
       label = genLumiInfoHead->configDescription();
-      boost::replace_all(label, "-", "_");
+      boost::replace_all(label, "-", "_");                                                                 //maybe removable
       boost::replace_all(label, "/", "_");
       label = std::string("GenModel_") + label;
     }

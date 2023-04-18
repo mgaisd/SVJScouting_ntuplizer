@@ -133,10 +133,6 @@ private:
   const edm::EDGetTokenT<std::vector<ScoutingParticle> >  	pfcandsToken;
   const edm::EDGetTokenT<std::vector<ScoutingPFJet> >  		pfjetsToken;
   const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
-  //const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	verticesToken;
-  //const edm::EDGetTokenT<std::vector<ScoutingVertex> >          verticesToken2;
-  //const edm::EDGetTokenT<std::vector<reco::PFCandidate >>  	offlineTracksToken;//could maybe be removed
-  //const edm::EDGetTokenT<std::vector<pat::PackedCandidate >>  	offlineTracksToken2;//could maybe be removed
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
@@ -301,16 +297,8 @@ private:
   vector<Float16_t>            PFcand_fjidx;
   vector<Float16_t>            PFcand_dR;
   vector<Float16_t>            PFcand_alldR;
-  //vector<bool>	               PFcand_fromsuep;
-
-  //bPFCand
-  /* UInt_t                       n_bpfcand;
-  vector<Float16_t>            bPFcand_pt;
-  vector<Float16_t>            bPFcand_eta;
-  vector<Float16_t>            bPFcand_phi;
-  vector<Float16_t>	       bPFcand_m;
-  vector<Float16_t>	       bPFcand_pdgid;*/
-
+  
+  
   // SUEP decay products
   float                        scalar_pt;
   float                        scalar_eta;
@@ -321,7 +309,6 @@ private:
   vector<Float16_t>	       truth_phis;
   vector<Float16_t>	       truth_dR;
   vector<Float16_t>	       truth_mass;
-  //vector<bool>	               truth_fromSuep;
   vector<UInt_t>	       truth_PV;
   vector<Float16_t>	       truth_PVdZ;
 
@@ -363,16 +350,7 @@ private:
   vector<Float16_t>            FatJet_mtrim_CA;
   vector<Float16_t>            FatJet_nconst_CA;
 
-  // Primary vertices
-  /* UInt_t n_pvs;
-  vector<Float16_t>            Vertex_x;
-  vector<Float16_t>            Vertex_y;
-  vector<Float16_t>            Vertex_z;
-  vector<Float16_t>            Vertex_tracksSize;
-  vector<Float16_t>            Vertex_chi2;
-  vector<Float16_t>            Vertex_ndof;
-  vector<Float16_t>            Vertex_isValidVtx;*/
-
+ 
 //  float                        rho;
   float                        rho2;
   float                        prefire;
@@ -385,16 +363,6 @@ private:
   float                        event_sphericity;
   float                        event_thrust; // need to save actual reco objects for thrust
   
-  /*float                        suepJet_isotropy;
-  float                        suepJet_circularity;
-  float                        suepJet_sphericity;
-  float                        suepJet_thrust;*/
-
-  /*float                        eventBoosted_isotropy;
-  float                        eventBoosted_circularity;
-  float                        eventBoosted_sphericity;
-  float                        eventBoosted_thrust;*/
-
         
   // TTree carrying the event weight information
   TTree* tree;
@@ -413,8 +381,6 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   pfcandsToken             (consumes<std::vector<ScoutingParticle> >         (iConfig.getParameter<edm::InputTag>("pfcands"))), 
   pfjetsToken              (consumes<std::vector<ScoutingPFJet> >            (iConfig.getParameter<edm::InputTag>("pfjets"))), 
   pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
-// verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
-// verticesToken2           (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices_2016"))),
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))),    
@@ -511,16 +477,8 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("PFcand_q"                       ,&PFcand_q                      );
   tree->Branch("PFcand_vertex"                  ,&PFcand_vertex                 );
   tree->Branch("PFcand_fjidx"                   ,&PFcand_fjidx 	                );
-  //tree->Branch("PFcand_fromsuep"                ,&PFcand_fromsuep               );
   tree->Branch("PFcand_dR"        	        ,&PFcand_dR 	                );
   tree->Branch("PFcand_alldR"        	        ,&PFcand_alldR 	                );
-
-  /*tree->Branch("n_bpfcand"            	        ,&n_bpfcand 		        ,"n_bpfcand/i");	
-  tree->Branch("bPFcand_pt"        	        ,&bPFcand_pt                    );
-  tree->Branch("bPFcand_eta"                    ,&bPFcand_eta                   );
-  tree->Branch("bPFcand_phi"                    ,&bPFcand_phi                   );
-  tree->Branch("bPFcand_m"            	        ,&bPFcand_m                     );
-  tree->Branch("bPFcand_pdgid"                  ,&bPFcand_pdgid                 );*/
 
   tree->Branch("scalar_pt"                      ,&scalar_pt                     );
   tree->Branch("scalar_eta"                     ,&scalar_eta                    );
@@ -531,18 +489,8 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("gen_phi"                        ,&truth_phis                    );
   tree->Branch("gen_mass"                       ,&truth_mass                    );
   tree->Branch("gen_dR"                         ,&truth_dR                      );
-  //tree->Branch("gen_fromSuep"                   ,&truth_fromSuep                );
   tree->Branch("gen_PV"                         ,&truth_PV                      );
   tree->Branch("gen_PVdZ"                       ,&truth_PVdZ                    );
-
-  /*tree->Branch("n_pvs"            	        ,&n_pvs                         ,"n_pvs/i");	
-  tree->Branch("Vertex_x"        	        ,&Vertex_x  		        );
-  tree->Branch("Vertex_y"                       ,&Vertex_y   	                );
-  tree->Branch("Vertex_z"                       ,&Vertex_z  		        );
-  tree->Branch("Vertex_tracksSize"              ,&Vertex_tracksSize 	        );
-  tree->Branch("Vertex_chi2"                    ,&Vertex_chi2	                );
-  tree->Branch("Vertex_ndof"                    ,&Vertex_ndof	                );
-  tree->Branch("Vertex_isValidVtx"              ,&Vertex_isValidVtx 	        );*/
 
   tree->Branch("n_mu"            	        ,&n_mu 	                        ,"n_mu/i");
   tree->Branch("Muon_pt"                        ,&Muon_pt                       );
@@ -653,16 +601,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("event_sphericity"               ,&event_sphericity              );
   tree->Branch("event_thrust"                   ,&event_thrust                  );
   
-  /*tree->Branch("suepJet_isotropy"               ,&suepJet_isotropy              );
-  tree->Branch("suepJet_circularity"            ,&suepJet_circularity           );
-  tree->Branch("suepJet_sphericity"             ,&suepJet_sphericity            );
-  tree->Branch("suepJet_thrust"                 ,&suepJet_thrust                );*/
-
-  /*tree->Branch("eventBoosted_isotropy"          ,&eventBoosted_isotropy         );
-  tree->Branch("eventBoosted_circularity"       ,&eventBoosted_circularity      );
-  tree->Branch("eventBoosted_sphericity"        ,&eventBoosted_sphericity       );
-  tree->Branch("eventBoosted_thrust"            ,&eventBoosted_thrust           );*/
-
+  
 }
 
 
@@ -684,7 +623,6 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<vector<ScoutingPhoton> > photonsH;
   Handle<vector<ScoutingPFJet> > pfjetsH;
   Handle<vector<ScoutingParticle> > pfcandsH;
-  //Handle<vector<ScoutingVertex> > verticesH;
   Handle<vector<reco::PFCandidate> > tracksH1;
   Handle<vector<pat::PackedCandidate> > tracksH2;
    
@@ -704,12 +642,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     iEvent.getByToken(pfcandsToken, pfcandsH);
 
  
-    /* if(auto handle = iEvent.getHandle(verticesToken2)){
-        iEvent.getByToken(verticesToken2, verticesH);
-    }
-    else {
-        iEvent.getByToken(verticesToken, verticesH);
-    }*/
+   
   }
   
   Handle<vector<PileupSummaryInfo> > puInfo;
@@ -889,30 +822,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_pho++;
   }}
 
-  // *
-  // Primary vertices
-  // * 
-  /*n_pvs = 0;
-  Vertex_x.clear();
-  Vertex_y.clear();
-  Vertex_z.clear();
-  Vertex_tracksSize.clear();
-  Vertex_chi2.clear();
-  Vertex_ndof.clear();
-  Vertex_isValidVtx.clear();
-  if(runScouting){
- 
-   for (auto vertices_iter = verticesH->begin(); vertices_iter != verticesH->end(); ++vertices_iter) {
-        Vertex_x.push_back( vertices_iter->x() );
-        Vertex_y.push_back( vertices_iter->y() );
-        Vertex_z.push_back( vertices_iter->z() );
-        Vertex_tracksSize.push_back( vertices_iter->tracksSize() );
-        Vertex_chi2.push_back( vertices_iter->chi2() );
-        Vertex_ndof.push_back( vertices_iter->ndof() );
-        Vertex_isValidVtx.push_back( vertices_iter->isValidVtx() );
-        n_pvs++;
-   }
-   }*/
+  
   
   if (!doData) {
     for(auto PVI = puInfo->begin(); PVI != puInfo->end(); ++PVI){
@@ -933,7 +843,6 @@ if(runScouting and isMC){  //do not run for data
   truth_phis.clear();
   truth_mass.clear();
   truth_dR.clear();
-  //truth_fromSuep.clear();
   truth_PV.clear();
   truth_PVdZ.clear();
 
@@ -946,22 +855,7 @@ if(runScouting and isMC){  //do not run for data
       truth_phis.push_back(genp_iter->phi());
       truth_mass.push_back(genp_iter->mass());
 
-      // gen mothers until you find suep
-      /* bool fromsuep = false;
-      reco::GenParticle* mother = (reco::GenParticle*)genp_iter->mother();
-      while(mother->numberOfMothers()>0 && abs(mother->pdgId())!=25){
-        mother = (reco::GenParticle*)mother->mother();
-        if (abs(mother->pdgId())==25){
-        doSignal = true;
-      scalar_pt  = mother->pt();
-      scalar_eta = mother->eta();
-      scalar_phi = mother->phi();
-      scalar_m   = mother->mass();
-          fromsuep = true;
-          break;
-        }
-      }
-      truth_fromSuep.push_back(fromsuep);*/
+      
   }
 }
   // * 
@@ -993,7 +887,6 @@ if(runScouting and isMC){  //do not run for data
     PFcand_q.clear();
     PFcand_vertex.clear();
     PFcand_fjidx.clear();
-    //PFcand_fromsuep.clear();
     PFcand_dR.clear();
     PFcand_alldR.clear();
 
@@ -1078,7 +971,6 @@ if(doSignal){  //do not run for other samples to save time
   std::vector<int> used_pf;
   std::vector<int> used_gen;
   std::vector<float> dr_matched;
-  //std::vector<float> gen_fromsuep;
   std::vector<int> gen_pv;
   float min;
   do{
@@ -1104,7 +996,6 @@ if(doSignal){  //do not run for other samples to save time
         used_pf.push_back(minrow);// index of Pf cand with match
         used_gen.push_back(mincol);// index of gen cand with match
         dr_matched.push_back(min);// dR between pF cand and gen
-        //gen_fromsuep.push_back(truth_fromSuep.at(mincol));
         gen_pv.push_back(PFcand_vertex.at(minrow));
     }
   }while(min < 0.3); //cut off value for min dR
@@ -1113,13 +1004,10 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
     auto it = find(used_pf.begin(), used_pf.end(), e); // see if PF cand has a match
     if(it != used_pf.end()){
       float dR = dr_matched.at(it-used_pf.begin());// get dR associated with this PF cand
-      //float genFromSuep = gen_fromsuep.at(it-used_pf.begin());// get dR associated with this PF cand
       PFcand_dR.push_back(dR); //push back dR at that match positon into proper position.
-      //PFcand_fromsuep.push_back(genFromSuep);
     }
     else{ 
       PFcand_dR.push_back(0.3);//no match found set as fake value
-      //PFcand_fromsuep.push_back(-1);
     }
   }
 for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands again to set dR values in proper positions
@@ -1130,7 +1018,6 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
       int genPV = gen_pv.at(it-used_gen.begin());// get dR associated with this PF cand
       if(genPV ==0){
       truth_PV.push_back(0);
-      //truth_PVdZ.push_back(Vertex_z.at(0)-Vertex_z.at(genPV));
       }
       else if(genPV ==-1){
       truth_PV.push_back(2);
@@ -1138,7 +1025,6 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
       }
       else{
       truth_PV.push_back(1);     
-      // truth_PVdZ.push_back(Vertex_z.at(0)-Vertex_z.at(genPV));
       }     
     }
     else{ 
@@ -1355,22 +1241,15 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
 
   JetDefinition CA08_def = JetDefinition(cambridge_algorithm, 0.8);  
 
-  //Cambridge Aachen
-  /*JetDefinition CA08_def = JetDefinition(cambridge_algorithm, 0.8);
-  double CA_sd_z_cut = 0.10;
-  double CA_sd_beta = 0;
-  SoftDrop CA_sd_groomer = SoftDrop(CA_sd_z_cut, CA_sd_beta, 1.0);
-  Filter CA_trimmer = Filter(JetDefinition(kt_algorithm, 0.2), SelectorPtFractionMin(0.03));*/
-
-
-  double beta = 1.0;                                                                                   //might need to copy for CA from here...
+ 
+  double beta = 1.0;                                                                                  
   Nsubjettiness nSub1 = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
   Nsubjettiness nSub2 = Nsubjettiness(2, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
   Nsubjettiness nSub3 = Nsubjettiness(3, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
   Nsubjettiness nSub4 = Nsubjettiness(4, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
   Nsubjettiness nSub5 = Nsubjettiness(5, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
 
-  Nsubjettiness nSub1_CA = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta)); //might have to change more inside brackets
+  Nsubjettiness nSub1_CA = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta)); 
   Nsubjettiness nSub2_CA = Nsubjettiness(2, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
   Nsubjettiness nSub3_CA = Nsubjettiness(3, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
   Nsubjettiness nSub4_CA = Nsubjettiness(4, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
@@ -1388,9 +1267,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
   ClusterSequenceArea CA08_cs(fj_part, CA08_def, area_def);//CA 
   vector<PseudoJet> CA08_jets = sorted_by_pt(CA08_cs.inclusive_jets(30.0)); //pt min
 
-  //unsigned int maxNconstit=0;                                                           //unused variable after removing suep
-  // PseudoJet suepJet = PseudoJet(0, 0, 0, 0);                                                         //...to here
-
+  
   n_fatjet = 0;
   for(auto &j: ak08_jets) {
     FatJet_area.push_back(j.area());
@@ -1419,14 +1296,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
     FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
     FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
 
-    // Jet momentum scaling, rho
- 
-    // SUEP select the highest track multiplicty jet as the SUEP jet
-    /* if ( j.constituents().size() > maxNconstit) 
-    {
-        maxNconstit = j.constituents().size();
-        suepJet = j;
-	}*/
+    
     n_fatjet++;
   }
 
@@ -1460,15 +1330,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
     FatJet_tau21_CA.push_back(nSub2_CA.result(j)/nSub1_CA.result(j));
     FatJet_tau32_CA.push_back(nSub3_CA.result(j)/nSub2_CA.result(j));
     
-    // Jet momentum scaling, rho
-
     
-    // SUEP select the highest track multiplicty jet as the SUEP jet
-    /* if ( j.constituents().size() > maxNconstit) 
-    {
-        maxNconstit = j.constituents().size();
-        suepJet = j;
-	}*/
     n_fatjet_CA++;
   }
 
@@ -1524,75 +1386,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
  event_sphericity  = event_algo.sphericity();
  event_circularity = event_algo.circularity();
 
- // done for suep jet (not boosted)
- /* vector<math::XYZVector> suep_tracks; // tracks associated to highest multplicity jet
- if (maxNconstit > 0 ){
-    for (auto suep_trk : suepJet.constituents() ){
-       trk = math::XYZVector(0,0,0);
-       trk.SetXYZ(suep_trk.px(), suep_trk.py(), suep_trk.pz() );
-       suep_tracks.push_back(trk);
-    }
- }
- EventShapeVariables suep_algo(suep_tracks);
- suepJet_isotropy    = suep_algo.isotropy();
- suepJet_sphericity  = suep_algo.sphericity();
- suepJet_circularity = suep_algo.circularity();
-
-
- bPFcand_pt.clear();
- bPFcand_eta.clear();
- bPFcand_phi.clear();
- bPFcand_m.clear();
- bPFcand_pdgid.clear();
- n_bpfcand = 0;*/
-
- /*if (n_fatjet>1){                                                                         //seems to work without this, mostly suep/boosted but not sure about some lines here
-   vector<math::XYZVector> boost_tracks; // after boost with deltaphi removal 
-
-    TLorentzVector suep_p4 = TLorentzVector();
-    TLorentzVector isr_p4 = TLorentzVector();
-    if (FatJet_nconst[0]  > FatJet_nconst[1]){
-      suep_p4.SetPtEtaPhiM(FatJet_pt[0], FatJet_eta[0], FatJet_phi[0], FatJet_mass[0]);
-      isr_p4.SetPtEtaPhiM(FatJet_pt[1], FatJet_eta[1], FatJet_phi[1], FatJet_mass[1]);
-    }
-    else{
-      suep_p4.SetPtEtaPhiM(FatJet_pt[1], FatJet_eta[1], FatJet_phi[1], FatJet_mass[1]);
-      isr_p4.SetPtEtaPhiM(FatJet_pt[0], FatJet_eta[0], FatJet_phi[0], FatJet_mass[0]);
-
-    }
-    TVector3 boost_pt = suep_p4.BoostVector();
-    isr_p4.Boost(-boost_pt);
-
-    for (auto evt_trk : fj_part ){
-        TLorentzVector trk_p4 = TLorentzVector();
-        trk_p4.SetPtEtaPhiM( evt_trk.pt(), evt_trk.eta(), evt_trk.phi_std(), evt_trk.m());
-        trk_p4.Boost(-boost_pt);
-
-	      if (isnan(trk_p4.Phi()) || isnan(isr_p4.Phi())) {continue;}
-        if ( abs(trk_p4.DeltaPhi(isr_p4)) < 1.6 ) continue;
-
-	      bPFcand_pt.push_back(trk_p4.Pt());
-	      bPFcand_eta.push_back(trk_p4.Eta());
-	      bPFcand_phi.push_back(trk_p4.Phi());
-	      bPFcand_m.push_back(trk_p4.M());
-	      bPFcand_pdgid.push_back(PFcand_pdgid[(UInt_t)evt_trk.user_index()]);
-       
-        trk = math::XYZVector(0,0,0);
-        trk.SetXYZ(trk_p4.Px(), trk_p4.Py(), trk_p4.Pz() );
-        boost_tracks.push_back(trk);
-      	n_bpfcand += 1;
-    }
-    EventShapeVariables boost_algo(boost_tracks);
-    eventBoosted_isotropy    = boost_algo.isotropy();
-    eventBoosted_sphericity  = boost_algo.sphericity();
-    eventBoosted_circularity = boost_algo.circularity();
- }
- else{
-    eventBoosted_isotropy    = -1; 
-    eventBoosted_sphericity  = -1; 
-    eventBoosted_circularity = -1; 
-    }                                                         */                             
-
+ 
   
  // * 
  // L1 info
@@ -1671,8 +1465,6 @@ edm::Handle<GenLumiInfoHeader> genLumiInfoHead;
     
     if (genLumiInfoHead.isValid()) {
       label = genLumiInfoHead->configDescription();
-      boost::replace_all(label, "-", "_");                                                                 //maybe removable
-      boost::replace_all(label, "/", "_");
       label = std::string("GenModel_") + label;
     }
 }

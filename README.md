@@ -1,4 +1,4 @@
-# To check out
+# To check out test
 ```
 cmsrel CMSSW_10_6_26 #you can use CMSSW_11_1_0
 cd CMSSW_10_6_26/src

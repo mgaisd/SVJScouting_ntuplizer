@@ -946,10 +946,7 @@ if(runScouting and isMC){  //do not run for data
     PFcand_vertex.push_back(pfcands_iter.vertex());
    
     // Cluster charged PF candidates into fat jets
-    if (pfcands_iter.vertex() != 0) continue;
-    if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
     if (pfcands_iter.pt() < 0.5) continue; 
-    if (getCharge(pfcands_iter.pdgId()) == 0 ) continue;
 
     // For clustering fat jets
     PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
@@ -1278,6 +1275,18 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
     FatJet_mass.push_back(j.m());
 
     FatJet_nconst.push_back(j.constituents().size());
+    
+    if (j.constituents().size() < 3){
+      cout << "#####" << endl;
+      cout << "##### New jet with very few constituents" << endl;
+      cout << "#####" << endl;
+      for (auto &c: j.constituents()){
+	cout << "Particle ID and pT of constituent" << endl;
+	cout << PFcand_pdgid[c.user_index()] << endl;
+	cout << PFcand_pt[c.user_index()] << endl;
+      }
+
+    }
 
     PseudoJet sd_ak8 = sd_groomer(j);
     FatJet_msoftdrop.push_back(sd_ak8.m());
@@ -1312,6 +1321,17 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
     FatJet_mass_CA.push_back(j.m());
 
     FatJet_nconst_CA.push_back(j.constituents().size());
+
+    /*if (j.constituents().size() < 3){                           //might need adjustments from the version above for CA
+      cout << "#####" << endl;
+      cout << "##### New jet with very few constituents" << endl;
+      cout << "#####" << endl;
+      for (auto &c: j.constituents()){
+	cout << "Particle ID of constituent" << endl;
+	cout << PFcand_pdgid[c.user_index()] << endl;
+	}
+
+	}*/
 
     PseudoJet sd_CA8 = sd_groomer(j);
     FatJet_msoftdrop_CA.push_back(sd_CA8.m());

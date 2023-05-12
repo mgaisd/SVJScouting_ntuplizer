@@ -21,6 +21,7 @@
 
 // CMSSW data formats
 #include "DataFormats/Math/interface/deltaR.h"
+#include "DataFormats/JetReco/interface/GenJet.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Scouting/interface/ScoutingMuon.h"
 #include "DataFormats/Scouting/interface/ScoutingParticle.h"
@@ -130,6 +131,7 @@ private:
   const edm::EDGetTokenT<std::vector<ScoutingParticle> >  	pfcandsToken;
   const edm::EDGetTokenT<std::vector<ScoutingPFJet> >  		pfjetsToken;
   const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
+  const edm::EDGetTokenT<std::vector<reco::GenJet> >             genjetsToken; 
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
@@ -278,8 +280,6 @@ private:
   vector<Float16_t>  	       Jet_nConstituents;
   vector<bool>                 Jet_passId;
 
-  
- 
   //PFCand
   UInt_t                       n_pfcand;
   UInt_t                       n_pfMu;
@@ -349,6 +349,14 @@ private:
   vector<Float16_t>            FatJet_nconst_CA;
   vector<Float16_t>            FatJet_girth_CA;
  
+  //GenJets
+  UInt_t                       n_genjet;
+  vector<Float16_t>            GenJet_pt;
+  vector<Float16_t>            GenJet_eta;
+  vector<Float16_t>            GenJet_phi;
+  vector<Float16_t>            GenJet_m;
+
+
 //  float                        rho;
   float                        rho2;
   float                        prefire;
@@ -379,6 +387,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   pfcandsToken             (consumes<std::vector<ScoutingParticle> >         (iConfig.getParameter<edm::InputTag>("pfcands"))), 
   pfjetsToken              (consumes<std::vector<ScoutingPFJet> >            (iConfig.getParameter<edm::InputTag>("pfjets"))), 
   pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
+  genjetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genjets"))), 
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))),    
@@ -593,6 +602,14 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_nconst_CA"                  ,&FatJet_nconst_CA                 );
   tree->Branch("FatJet_girth_CA"                      ,&FatJet_girth_CA                    );
 
+  tree->Branch("n_genjet"                           ,&n_genjet                          ,"n_genjet/i");
+  tree->Branch("GenJet_pt"                          ,&GenJet_pt                        );
+  tree->Branch("GenJet_eta"                         ,&GenJet_eta                       );
+  tree->Branch("GenJet_phi"                         ,&GenJet_phi                       );
+  tree->Branch("GenJet_m"                           ,&GenJet_m                         );
+
+ 
+
   tree->Branch("rho"                            ,&rho2                           );
 
   tree->Branch("event_isotropy"                 ,&event_isotropy                );
@@ -615,6 +632,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 
   Handle<vector<reco::PFJet> > pfjetsoffH;
+  Handle<vector<reco::GenJet> > genjetsH;
 
   Handle<vector<ScoutingElectron> > electronsH;
   Handle<vector<ScoutingMuon> > muonsH;
@@ -638,6 +656,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     iEvent.getByToken(pfjetsToken, pfjetsH);
       
     iEvent.getByToken(pfcandsToken, pfcandsH);
+
+    iEvent.getByToken(genjetsToken, genjetsH);
 
  
    
@@ -1386,6 +1406,29 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
     n_fatjet_CA++;
   }
 
+  // * 
+  // GenJets 
+  // * 
+  GenJet_pt.clear();
+  GenJet_eta.clear();
+  GenJet_phi.clear();
+  GenJet_m.clear();
+  
+  n_genjet = 0;
+
+  if(runScouting){
+   for (auto genjet = genjetsH->begin(); genjet != genjetsH->end(); ++genjet) {
+
+    GenJet_pt .push_back( genjet->pt() );
+    GenJet_eta.push_back( genjet->eta());
+    GenJet_phi.push_back( genjet->phi());
+    GenJet_m  .push_back( genjet->mass()  );
+
+    n_genjet++;
+
+
+  }
+  }
 
 
   unsigned int n_pfcand_tot = 0;

@@ -156,7 +156,11 @@ if params.fileList == "none" : readFiles = params.inputFiles
 else : 
     readFiles = cms.untracked.vstring( FileUtils.loadListFromFile (os.environ['CMSSW_BASE']+'/src/PhysicsTools/ScoutingNanoAOD/test/'+params.fileList) )
 process.source = cms.Source("PoolSource",
-	fileNames = cms.untracked.vstring(readFiles) 
+	fileNames = cms.untracked.vstring(
+            readFiles
+#            "file:uifha.root",
+#            "file:4tswa.root",
+        ) 
 )
 
 # Load the standard set of configuration modules
@@ -270,6 +274,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     photons           = cms.InputTag("hltScoutingEgammaPacker"),
     pfcands           = cms.InputTag("hltScoutingPFPacker"),
     pfjetsoff         = cms.InputTag("ak4PFJets"),
+    genjets       = cms.InputTag("ak8GenJetsNoNu"),
     pfjets            = cms.InputTag("hltScoutingPFPacker"),
     vertices_2016     = cms.InputTag("hltScoutingPFPacker",""), #Will try 2016 Packer and default to others if failed
     vertices          = cms.InputTag("hltScoutingPrimaryVertexPacker","primaryVtx"),

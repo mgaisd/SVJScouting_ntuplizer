@@ -3,7 +3,6 @@
 #include <vector>
 #include <iostream>
 #include <math.h>
-#include <fstream>
 
 #include "boost/algorithm/string.hpp"
 
@@ -101,7 +100,6 @@
 #include "PhysicsTools/CandUtils/interface/Thrust.h"
 
 
-
 using namespace std;
 
 
@@ -111,7 +109,6 @@ public:
   ~ScoutingNanoAOD();
 		
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
-	
 	
 private:
   virtual void beginJob() override;
@@ -125,7 +122,6 @@ private:
   int getCharge(int pdgId);
   bool jetID(const ScoutingPFJet &pfjet);
   bool jetIDoff(const reco::PFJet &pfjet);
-
   const edm::InputTag triggerResultsTag;
   const edm::EDGetTokenT<edm::TriggerResults>             	triggerResultsToken;
   const edm::EDGetTokenT<std::vector<ScoutingMuon> >            muonsToken;
@@ -300,7 +296,7 @@ private:
   vector<Float16_t>            PFcand_alldR;
   
   
-  // SUEP decay products
+  // SUEP decay products (could maybe remove?)
   float                        scalar_pt;
   float                        scalar_eta;
   float                        scalar_phi;
@@ -331,6 +327,7 @@ private:
   vector<Float16_t>            FatJet_msoftdrop;
   vector<Float16_t>            FatJet_mtrim;
   vector<Float16_t>            FatJet_nconst;
+  vector<Float16_t>            FatJet_girth;
 
   // Fatjets Cambridge Aachen 
   UInt_t                       n_fatjet_CA;
@@ -350,7 +347,7 @@ private:
   vector<Float16_t>            FatJet_msoftdrop_CA;
   vector<Float16_t>            FatJet_mtrim_CA;
   vector<Float16_t>            FatJet_nconst_CA;
-
+  vector<Float16_t>            FatJet_girth_CA;
  
 //  float                        rho;
   float                        rho2;
@@ -375,7 +372,7 @@ private:
 
 };
 
-ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig): 
+ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   muonsToken               (consumes<std::vector<ScoutingMuon> >             (iConfig.getParameter<edm::InputTag>("muons"))), 
   electronsToken           (consumes<std::vector<ScoutingElectron> >         (iConfig.getParameter<edm::InputTag>("electrons"))), 
   photonsToken             (consumes<std::vector<ScoutingPhoton> >           (iConfig.getParameter<edm::InputTag>("photons"))), 
@@ -398,13 +395,12 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   isMC                     (iConfig.existsAs<bool>("isMC")              ?    iConfig.getParameter<bool>  ("isMC")            : true),
   era_16                   (iConfig.existsAs<bool>("era_16")            ?    iConfig.getParameter<bool>  ("era_16")            : false),
 
-
-  hltPSProv_(iConfig,consumesCollector(),*this), //it needs a referernce to the calling module for some reason, hence the *this   
+  hltPSProv_(iConfig,consumesCollector(),*this), //it needs a reference to the calling module for some reason, hence the *this   
   hltProcess_(iConfig.getParameter<std::string>("hltProcess")),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("bits"))),
   l1Seeds_(iConfig.getParameter<std::vector<std::string> >("l1Seeds")),
   hltSeeds_(iConfig.getParameter<std::vector<std::string> >("hltSeeds"))
- 
+
 {
  // now do whatever initialization is needed
   usesResource("TFileService");
@@ -576,6 +572,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_msoftdrop"               ,&FatJet_msoftdrop              );
   tree->Branch("FatJet_mtrim"                   ,&FatJet_mtrim                  );
   tree->Branch("FatJet_nconst"                  ,&FatJet_nconst                 );
+  tree->Branch("FatJet_girth"                      ,&FatJet_girth                    );
   
   tree->Branch("n_fatjet_CA"                       ,&n_fatjet_CA                      ,"n_fatjet_CA/i");
   tree->Branch("FatJet_area_CA"                    ,&FatJet_area_CA                   );
@@ -594,6 +591,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_msoftdrop_CA"               ,&FatJet_msoftdrop_CA              );
   tree->Branch("FatJet_mtrim_CA"                   ,&FatJet_mtrim_CA                  );
   tree->Branch("FatJet_nconst_CA"                  ,&FatJet_nconst_CA                 );
+  tree->Branch("FatJet_girth_CA"                      ,&FatJet_girth_CA                    );
 
   tree->Branch("rho"                            ,&rho2                           );
 
@@ -601,7 +599,6 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("event_circularity"              ,&event_circularity             );
   tree->Branch("event_sphericity"               ,&event_sphericity              );
   tree->Branch("event_thrust"                   ,&event_thrust                  );
-  
   
 }
 
@@ -1210,6 +1207,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
   FatJet_msoftdrop.clear();
   FatJet_mtrim.clear();
   FatJet_nconst.clear();
+  FatJet_girth.clear();
   
   // * 
   // FatJets_CA 
@@ -1230,6 +1228,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
   FatJet_msoftdrop_CA.clear();
   FatJet_mtrim_CA.clear();
   FatJet_nconst_CA.clear();
+  FatJet_girth_CA.clear();
 
   JetDefinition ak08_def = JetDefinition(antikt_algorithm, 0.8);
   double sd_z_cut = 0.10;
@@ -1260,10 +1259,10 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
   ClusterSequenceArea ak08_cs(fj_part, ak08_def, area_def);
-  vector<PseudoJet> ak08_jets = sorted_by_pt(ak08_cs.inclusive_jets(30.0)); //pt min
+  vector<PseudoJet> ak08_jets = sorted_by_pt(ak08_cs.inclusive_jets(100.0)); //pt min
 
   ClusterSequenceArea CA08_cs(fj_part, CA08_def, area_def);//CA 
-  vector<PseudoJet> CA08_jets = sorted_by_pt(CA08_cs.inclusive_jets(30.0)); //pt min
+  vector<PseudoJet> CA08_jets = sorted_by_pt(CA08_cs.inclusive_jets(100.0)); //pt min
 
   
   n_fatjet = 0;
@@ -1306,7 +1305,24 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
     FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
     FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
 
+
+    float i_girth = 0.0;
     
+    for(auto &k : j.constituents()){
+      
+      float dR = j.delta_R(k);
+      float pT = k.pt();
+      
+      //moment calcs
+      i_girth += pT*dR;
+    }
+    
+    //finish moment calcs
+    i_girth /= j.pt();
+
+    FatJet_girth.push_back(i_girth);
+
+
     n_fatjet++;
   }
 
@@ -1322,16 +1338,16 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
 
     FatJet_nconst_CA.push_back(j.constituents().size());
 
-    /*if (j.constituents().size() < 3){                           //might need adjustments from the version above for CA
+    if (j.constituents().size() < 3){                          
       cout << "#####" << endl;
-      cout << "##### New jet with very few constituents" << endl;
+      cout << "##### New CA-jet with very few constituents" << endl;
       cout << "#####" << endl;
       for (auto &c: j.constituents()){
 	cout << "Particle ID of constituent" << endl;
 	cout << PFcand_pdgid[c.user_index()] << endl;
 	}
 
-	}*/
+	}
 
     PseudoJet sd_CA8 = sd_groomer(j);
     FatJet_msoftdrop_CA.push_back(sd_CA8.m());
@@ -1351,7 +1367,22 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
     FatJet_tau21_CA.push_back(nSub2_CA.result(j)/nSub1_CA.result(j));
     FatJet_tau32_CA.push_back(nSub3_CA.result(j)/nSub2_CA.result(j));
     
+    float i_girth = 0.0;
     
+    for(auto &k : j.constituents()){
+      
+      float dR = j.delta_R(k);
+      float pT = k.pt();
+      
+      //moment calcs
+      i_girth += pT*dR;
+    }
+    
+    //finish moment calcs
+    i_girth /= j.pt();
+
+    FatJet_girth_CA.push_back(i_girth);    
+
     n_fatjet_CA++;
   }
 
@@ -1419,7 +1450,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
 
     //I seem to recall this function being slow so perhaps cache for a given lumi 
     //(it only changes on lumi boundaries)  
-    //note to the reader, what I'm doing is extremely dangerious (a const cast), never do this!           
+    //note to the reader, what I'm doing is extremely dangerous (a const cast), never do this!           
     //however in this narrow case, it fixes a bug in l1t::L1TGlobalUtil (the method should be const)          
     //and it is safe for this specific instance                                                                                     
     l1t::L1TGlobalUtil& l1GtUtils = const_cast<l1t::L1TGlobalUtil&> (hltPSProv_.l1tGlobalUtil());
@@ -1538,7 +1569,6 @@ bool ScoutingNanoAOD::jetID(const ScoutingPFJet &pfjet){
 
     return passID;
 }
-
 void ScoutingNanoAOD::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.setUnknown();
@@ -1546,3 +1576,4 @@ void ScoutingNanoAOD::fillDescriptions(edm::ConfigurationDescriptions& descripti
 }
 
 DEFINE_FWK_MODULE(ScoutingNanoAOD);
+

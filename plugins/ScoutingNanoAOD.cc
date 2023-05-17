@@ -296,19 +296,6 @@ private:
   vector<Float16_t>            PFcand_alldR;
   
   
-  // SUEP decay products (could maybe remove?)
-  float                        scalar_pt;
-  float                        scalar_eta;
-  float                        scalar_phi;
-  float                        scalar_m;
-  vector<Float16_t>	       truth_pts;
-  vector<Float16_t>	       truth_etas;
-  vector<Float16_t>	       truth_phis;
-  vector<Float16_t>	       truth_dR;
-  vector<Float16_t>	       truth_mass;
-  vector<UInt_t>	       truth_PV;
-  vector<Float16_t>	       truth_PVdZ;
-
   // Fatjets 
   UInt_t                       n_fatjet;
   vector<Float16_t>            FatJet_area;
@@ -328,6 +315,15 @@ private:
   vector<Float16_t>            FatJet_mtrim;
   vector<Float16_t>            FatJet_nconst;
   vector<Float16_t>            FatJet_girth;
+  // Fatjet Subjet info
+  vector<Float16_t>            FatJet_sj1_pt;
+  vector<Float16_t>            FatJet_sj1_eta;
+  vector<Float16_t>            FatJet_sj1_phi;
+  vector<Float16_t>            FatJet_sj1_mass;
+  vector<Float16_t>            FatJet_sj2_pt;
+  vector<Float16_t>            FatJet_sj2_eta;
+  vector<Float16_t>            FatJet_sj2_phi;
+  vector<Float16_t>            FatJet_sj2_mass;
 
   // Fatjets Cambridge Aachen 
   UInt_t                       n_fatjet_CA;
@@ -348,6 +344,16 @@ private:
   vector<Float16_t>            FatJet_mtrim_CA;
   vector<Float16_t>            FatJet_nconst_CA;
   vector<Float16_t>            FatJet_girth_CA;
+  //CA-Fatjet Subjet info
+  vector<Float16_t>            FatJet_sj1_pt_CA;
+  vector<Float16_t>            FatJet_sj1_eta_CA;
+  vector<Float16_t>            FatJet_sj1_phi_CA;
+  vector<Float16_t>            FatJet_sj1_mass_CA;
+  vector<Float16_t>            FatJet_sj2_pt_CA;
+  vector<Float16_t>            FatJet_sj2_eta_CA;
+  vector<Float16_t>            FatJet_sj2_phi_CA;
+  vector<Float16_t>            FatJet_sj2_mass_CA;
+
  
   //GenJets
   UInt_t                       n_genjet;
@@ -486,18 +492,6 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("PFcand_dR"        	        ,&PFcand_dR 	                );
   tree->Branch("PFcand_alldR"        	        ,&PFcand_alldR 	                );
 
-  tree->Branch("scalar_pt"                      ,&scalar_pt                     );
-  tree->Branch("scalar_eta"                     ,&scalar_eta                    );
-  tree->Branch("scalar_phi"                     ,&scalar_phi                    );
-  tree->Branch("scalar_m"                       ,&scalar_m                      );
-  tree->Branch("gen_pt"                         ,&truth_pts                     );
-  tree->Branch("gen_eta"                        ,&truth_etas                    );
-  tree->Branch("gen_phi"                        ,&truth_phis                    );
-  tree->Branch("gen_mass"                       ,&truth_mass                    );
-  tree->Branch("gen_dR"                         ,&truth_dR                      );
-  tree->Branch("gen_PV"                         ,&truth_PV                      );
-  tree->Branch("gen_PVdZ"                       ,&truth_PVdZ                    );
-
   tree->Branch("n_mu"            	        ,&n_mu 	                        ,"n_mu/i");
   tree->Branch("Muon_pt"                        ,&Muon_pt                       );
   tree->Branch("Muon_eta"                       ,&Muon_eta                      );
@@ -581,8 +575,18 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_msoftdrop"               ,&FatJet_msoftdrop              );
   tree->Branch("FatJet_mtrim"                   ,&FatJet_mtrim                  );
   tree->Branch("FatJet_nconst"                  ,&FatJet_nconst                 );
-  tree->Branch("FatJet_girth"                      ,&FatJet_girth                    );
+  tree->Branch("FatJet_girth"                   ,&FatJet_girth                  );
   
+  tree->Branch("FatJet_sj1_pt"                  ,&FatJet_sj1_pt                  );
+  tree->Branch("FatJet_sj1_eta"                 ,&FatJet_sj1_eta                 );
+  tree->Branch("FatJet_sj1_phi"                 ,&FatJet_sj1_phi                 );
+  tree->Branch("FatJet_sj1_mass"                ,&FatJet_sj1_mass                );
+  tree->Branch("FatJet_sj2_pt"                  ,&FatJet_sj2_pt                  );
+  tree->Branch("FatJet_sj2_eta"                 ,&FatJet_sj2_eta                 );
+  tree->Branch("FatJet_sj2_phi"                 ,&FatJet_sj2_phi                 );
+  tree->Branch("FatJet_sj2_mass"                ,&FatJet_sj2_mass                );
+  
+
   tree->Branch("n_fatjet_CA"                       ,&n_fatjet_CA                      ,"n_fatjet_CA/i");
   tree->Branch("FatJet_area_CA"                    ,&FatJet_area_CA                   );
   tree->Branch("FatJet_eta_CA"                     ,&FatJet_eta_CA                    );
@@ -600,7 +604,17 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_msoftdrop_CA"               ,&FatJet_msoftdrop_CA              );
   tree->Branch("FatJet_mtrim_CA"                   ,&FatJet_mtrim_CA                  );
   tree->Branch("FatJet_nconst_CA"                  ,&FatJet_nconst_CA                 );
-  tree->Branch("FatJet_girth_CA"                      ,&FatJet_girth_CA                    );
+  tree->Branch("FatJet_girth_CA"                   ,&FatJet_girth_CA                  );
+
+  tree->Branch("FatJet_sj1_pt_CA"                  ,&FatJet_sj1_pt_CA                  );
+  tree->Branch("FatJet_sj1_eta_CA"                 ,&FatJet_sj1_eta_CA                 );
+  tree->Branch("FatJet_sj1_phi_CA"                 ,&FatJet_sj1_phi_CA                 );
+  tree->Branch("FatJet_sj1_mass_CA"                ,&FatJet_sj1_mass_CA                );
+  tree->Branch("FatJet_sj2_pt_CA"                  ,&FatJet_sj2_pt_CA                  );
+  tree->Branch("FatJet_sj2_eta_CA"                 ,&FatJet_sj2_eta_CA                 );
+  tree->Branch("FatJet_sj2_phi_CA"                 ,&FatJet_sj2_phi_CA                 );
+  tree->Branch("FatJet_sj2_mass_CA"                ,&FatJet_sj2_mass_CA                );
+
 
   tree->Branch("n_genjet"                           ,&n_genjet                          ,"n_genjet/i");
   tree->Branch("GenJet_pt"                          ,&GenJet_pt                        );
@@ -852,30 +866,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   }
 
 
-if(runScouting and isMC){  //do not run for data
-  Handle<vector<reco::GenParticle> > genP;
-  iEvent.getByToken(gensToken2, genP);
 
-  truth_pts.clear();
-  truth_etas.clear();
-  truth_phis.clear();
-  truth_mass.clear();
-  truth_dR.clear();
-  truth_PV.clear();
-  truth_PVdZ.clear();
-
-  for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
-   
-    if (genp_iter->status()!=1){continue;}
-    if (genp_iter->charge()==0){continue;}
-      truth_pts.push_back(genp_iter->pt());
-      truth_etas.push_back(genp_iter->eta());
-      truth_phis.push_back(genp_iter->phi());
-      truth_mass.push_back(genp_iter->mass());
-
-      
-  }
-}
   // * 
   // Particle Flow candidates 
   // *
@@ -909,8 +900,8 @@ if(runScouting and isMC){  //do not run for data
     PFcand_alldR.clear();
 
     
-    vector<unsigned int> daughters_used; // for 1-to-1 reco-truth matching
-    daughters_used.clear();
+    // vector<unsigned int> daughters_used; // for 1-to-1 reco-truth matching
+    // daughters_used.clear();
 //////////////////////////////////////
 //new code 
   vector<vector<float> > dr_vector;
@@ -1023,29 +1014,6 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
     }
     else{ 
       PFcand_dR.push_back(0.3);//no match found set as fake value
-    }
-  }
-for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands again to set dR values in proper positions
-    auto it = find(used_gen.begin(), used_gen.end(), e); // see if PF cand has a match
-    if(it != used_gen.end()){
-      float dR = dr_matched.at(it-used_gen.begin());// get dR associated with this PF cand      
-      truth_dR.push_back(dR); //push back dR at that match positon into proper position.
-      int genPV = gen_pv.at(it-used_gen.begin());// get dR associated with this PF cand
-      if(genPV ==0){
-      truth_PV.push_back(0);
-      }
-      else if(genPV ==-1){
-      truth_PV.push_back(2);
-      truth_PVdZ.push_back(-1);
-      }
-      else{
-      truth_PV.push_back(1);     
-      }     
-    }
-    else{ 
-      truth_dR.push_back(0.3);//no match found set as fake value
-      truth_PV.push_back(3);
-      truth_PVdZ.push_back(-1);     
     }
   }
 
@@ -1251,12 +1219,14 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
   FatJet_girth_CA.clear();
 
   JetDefinition ak08_def = JetDefinition(antikt_algorithm, 0.8);
+  JetDefinition ak04_def = JetDefinition(antikt_algorithm, 0.4);
   double sd_z_cut = 0.10;
   double sd_beta = 0;
   SoftDrop sd_groomer = SoftDrop(sd_z_cut, sd_beta, 1.0);
   Filter trimmer = Filter(JetDefinition(kt_algorithm, 0.2), SelectorPtFractionMin(0.03));
 
   JetDefinition CA08_def = JetDefinition(cambridge_algorithm, 0.8);  
+  JetDefinition CA04_def = JetDefinition(cambridge_algorithm, 0.4);  
 
  
   double beta = 1.0;                                                                                  
@@ -1295,6 +1265,7 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
 
     FatJet_nconst.push_back(j.constituents().size());
     
+        
     if (j.constituents().size() < 3){
       cout << "#####" << endl;
       cout << "##### New jet with very few constituents" << endl;
@@ -1309,6 +1280,30 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
 
     PseudoJet sd_ak8 = sd_groomer(j);
     FatJet_msoftdrop.push_back(sd_ak8.m());
+
+    //softdrop subjets
+    ClusterSequence ak04_sd_cs(sd_ak8.constituents(), ak04_def);
+    
+    vector<PseudoJet> subjets = sorted_by_pt(ak04_sd_cs.inclusive_jets(0.01));
+
+    //int nsub = 2;
+    //vector<fastjet::PseudoJet> subjets =ak08_sd_cs.exclusive_subjets(sd_ak8, nsub);
+    //vector<fastjet::PseudoJet> subjets =ak08_cs.exclusive_subjets(sd_ak8, nsub);
+    //cout << "size" << subjets.size() << endl << "jet pt" << j.pt() << endl<< "#######" << endl  << subjets[0].e() << endl;
+    //cout << "#######" << endl  << subjets[0].m() << endl;
+   
+    FatJet_sj1_pt.push_back(subjets[0].pt());
+    FatJet_sj1_eta.push_back(subjets[0].eta());
+    FatJet_sj1_phi.push_back(subjets[0].phi());
+    FatJet_sj1_mass.push_back(subjets[0].m());
+    FatJet_sj2_pt.push_back(subjets[1].pt());
+    FatJet_sj2_eta.push_back(subjets[1].eta());
+    FatJet_sj2_phi.push_back(subjets[1].phi());
+    FatJet_sj2_mass.push_back(subjets[1].m());     //.e() and .E() are the same, can also use .m(): http://fastjet.fr/repo/doxygen-3.4.1/PseudoJet_8hh_source.html#l00117
+    
+    
+
+    
     
     PseudoJet trimmed_ak8 = trimmer(j);
     FatJet_mtrim.push_back(trimmed_ak8.m());
@@ -1324,8 +1319,8 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
     FatJet_tau4.push_back(nSub4.result(j));
     FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
     FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
-
-
+    
+    
     float i_girth = 0.0;
     
     for(auto &k : j.constituents()){
@@ -1371,7 +1366,23 @@ for(int e = 0; e < static_cast<int>(truth_pts.size()); e++){//loop over pf cands
 
     PseudoJet sd_CA8 = sd_groomer(j);
     FatJet_msoftdrop_CA.push_back(sd_CA8.m());
+
+    //softdrop subjets
+    ClusterSequence CA04_sd_cs(sd_CA8.constituents(), CA04_def);
     
+    vector<PseudoJet> subjets_CA = sorted_by_pt(CA04_sd_cs.inclusive_jets(0.01));
+   
+    FatJet_sj1_pt_CA.push_back(subjets_CA[0].pt());
+    FatJet_sj1_eta_CA.push_back(subjets_CA[0].eta());
+    FatJet_sj1_phi_CA.push_back(subjets_CA[0].phi());
+    FatJet_sj1_mass_CA.push_back(subjets_CA[0].m());
+    FatJet_sj2_pt_CA.push_back(subjets_CA[1].pt());
+    FatJet_sj2_eta_CA.push_back(subjets_CA[1].eta());
+    FatJet_sj2_phi_CA.push_back(subjets_CA[1].phi());
+    FatJet_sj2_mass_CA.push_back(subjets_CA[1].m());  
+
+
+
     PseudoJet trimmed_CA8 = trimmer(j);
     FatJet_mtrim_CA.push_back(trimmed_CA8.m());
     

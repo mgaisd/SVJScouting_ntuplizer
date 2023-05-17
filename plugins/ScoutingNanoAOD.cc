@@ -1226,8 +1226,6 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
   Filter trimmer = Filter(JetDefinition(kt_algorithm, 0.2), SelectorPtFractionMin(0.03));
 
   JetDefinition CA08_def = JetDefinition(cambridge_algorithm, 0.8);  
-  JetDefinition CA04_def = JetDefinition(cambridge_algorithm, 0.4);  
-
  
   double beta = 1.0;                                                                                  
   Nsubjettiness nSub1 = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
@@ -1368,9 +1366,9 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
     FatJet_msoftdrop_CA.push_back(sd_CA8.m());
 
     //softdrop subjets
-    ClusterSequence CA04_sd_cs(sd_CA8.constituents(), CA04_def);
+    ClusterSequence ak04_sd_cs_CA(sd_CA8.constituents(), ak04_def);
     
-    vector<PseudoJet> subjets_CA = sorted_by_pt(CA04_sd_cs.inclusive_jets(0.01));
+    vector<PseudoJet> subjets_CA = sorted_by_pt(ak04_sd_cs_CA.inclusive_jets(0.01));
    
     FatJet_sj1_pt_CA.push_back(subjets_CA[0].pt());
     FatJet_sj1_eta_CA.push_back(subjets_CA[0].eta());

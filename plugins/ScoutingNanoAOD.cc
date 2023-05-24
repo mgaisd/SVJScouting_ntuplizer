@@ -360,8 +360,16 @@ private:
   vector<Float16_t>            GenJet_pt;
   vector<Float16_t>            GenJet_eta;
   vector<Float16_t>            GenJet_phi;
-  vector<Float16_t>            GenJet_m;
-
+  vector<Float16_t>            GenJet_mass;
+  
+  vector<Float16_t>            const_pt;
+  vector<Float16_t>            const_eta;
+  vector<Float16_t>            const_phi;
+  vector<Float16_t>            const_mass;
+  vector<Float16_t>            const_pdgID;
+  vector<Float16_t>            const_charge;
+  vector<vector<Float16_t> >   GenJetConst;
+  
 
 //  float                        rho;
   float                        rho2;
@@ -620,9 +628,16 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("GenJet_pt"                          ,&GenJet_pt                        );
   tree->Branch("GenJet_eta"                         ,&GenJet_eta                       );
   tree->Branch("GenJet_phi"                         ,&GenJet_phi                       );
-  tree->Branch("GenJet_m"                           ,&GenJet_m                         );
+  tree->Branch("GenJet_mass"                           ,&GenJet_mass                         );
 
- 
+  tree->Branch("GenJetConst"                       ,&GenJetConst                      );  
+
+
+  /*  tree->Branch("GenJetConst_pt"                          ,&const_pt                        );
+  tree->Branch("GenJetConst_eta"                         ,&const_eta                       );
+  tree->Branch("GenJetConst_phi"                         ,&const_phi                       );
+  tree->Branch("GenJetConst_mass"                           ,&const_mass                         );
+  */
 
   tree->Branch("rho"                            ,&rho2                           );
 
@@ -916,7 +931,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
     vector<float> dr_vector_row; //sets all dR values between pFcands and gen tracks
     if (pfcands_iter.pt() < 0.5) continue;
-    if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
+    //if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
 
     PFcand_pt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.pt())));
     PFcand_eta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.eta())));
@@ -1421,17 +1436,53 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
   GenJet_pt.clear();
   GenJet_eta.clear();
   GenJet_phi.clear();
-  GenJet_m.clear();
+  GenJet_mass.clear();
   
   n_genjet = 0;
-
+  
+  const_pt.clear();
+  const_eta.clear();
+  const_phi.clear();
+  const_mass.clear();
+  const_pdgID.clear();
+  const_charge.clear();
+  GenJetConst.clear();
+  
   if(runScouting){
    for (auto genjet = genjetsH->begin(); genjet != genjetsH->end(); ++genjet) {
 
     GenJet_pt .push_back( genjet->pt() );
     GenJet_eta.push_back( genjet->eta());
     GenJet_phi.push_back( genjet->phi());
-    GenJet_m  .push_back( genjet->mass()  );
+    GenJet_mass  .push_back( genjet->mass()  );
+    //  cout << "###"<< endl;
+    //  cout << genjet->getGenConstituents().size();
+    //  cout << "###" << endl;
+
+
+    // if (genjet->pt() > 100){
+      for (auto c: genjet->getGenConstituents()){
+	if (c->pt() > 0.5){
+	  // cout << "###"<< endl;
+	  // cout << genjet->getGenConstituents().size();
+	  // cout << "###" << endl;
+	  const_pt.push_back(c->pt());
+	  const_eta.push_back(c->eta());
+	  const_phi.push_back(c->phi());
+	  const_mass.push_back(c->mass());
+	  const_pdgID.push_back(c->pdgId());
+	  const_charge.push_back(c->charge());
+
+	  GenJetConst.push_back(const_pt);
+	  GenJetConst.push_back(const_eta);
+	  GenJetConst.push_back(const_phi);
+	  GenJetConst.push_back(const_mass);
+	  GenJetConst.push_back(const_pdgID);
+	  GenJetConst.push_back(const_charge);
+	}
+      }
+    
+      //	}
 
     n_genjet++;
 
@@ -1439,6 +1490,7 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
   }
   }
 
+  //cout << "genjetconst size: " << GenJetConst.size() << endl;
 
   unsigned int n_pfcand_tot = 0;
   for (auto & pfcands_iter : PFcands ) {

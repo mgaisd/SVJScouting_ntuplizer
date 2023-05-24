@@ -1450,22 +1450,22 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
   
   if(runScouting){
    for (auto genjet = genjetsH->begin(); genjet != genjetsH->end(); ++genjet) {
-
-    GenJet_pt .push_back( genjet->pt() );
-    GenJet_eta.push_back( genjet->eta());
-    GenJet_phi.push_back( genjet->phi());
-    GenJet_mass  .push_back( genjet->mass()  );
-    //  cout << "###"<< endl;
-    //  cout << genjet->getGenConstituents().size();
-    //  cout << "###" << endl;
+    if (genjet->pt() > 100){
+      GenJet_pt .push_back( genjet->pt() );
+      GenJet_eta.push_back( genjet->eta());
+      GenJet_phi.push_back( genjet->phi());
+      GenJet_mass  .push_back( genjet->mass()  );
+      //  cout << "###"<< endl;
+      //  cout << genjet->getGenConstituents().size();
+      //  cout << "###" << endl;
 
 
     // if (genjet->pt() > 100){
       for (auto c: genjet->getGenConstituents()){
 	if (c->pt() > 0.5){
-	  // cout << "###"<< endl;
-	  // cout << genjet->getGenConstituents().size();
-	  // cout << "###" << endl;
+	  cout << "###"<< endl;
+	  cout << genjet->getGenConstituents().size() << endl;
+	  cout << "###" << endl;
 	  const_pt.push_back(c->pt());
 	  const_eta.push_back(c->eta());
 	  const_phi.push_back(c->phi());
@@ -1487,7 +1487,8 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
     n_genjet++;
 
 
-  }
+    }
+   }
   }
 
   //cout << "genjetconst size: " << GenJetConst.size() << endl;

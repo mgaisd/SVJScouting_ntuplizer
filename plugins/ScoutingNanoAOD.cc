@@ -156,6 +156,7 @@ private:
   bool doData;       
   bool doSignal;       
   bool isMC;
+  bool saveConst;
   bool era_16;
   bool runScouting = false;
   bool runOffline =false;
@@ -416,6 +417,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")            : false),
   doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")            : false),
   isMC                     (iConfig.existsAs<bool>("isMC")              ?    iConfig.getParameter<bool>  ("isMC")            : true),
+  saveConst                (iConfig.existsAs<bool>("saveConst")         ?    iConfig.getParameter<bool>  ("saveConst")        : false),
   era_16                   (iConfig.existsAs<bool>("era_16")            ?    iConfig.getParameter<bool>  ("era_16")            : false),
 
   hltPSProv_(iConfig,consumesCollector(),*this), //it needs a reference to the calling module for some reason, hence the *this   
@@ -632,12 +634,6 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
 
   tree->Branch("GenJetConst"                       ,&GenJetConst                      );  
 
-
-  /*  tree->Branch("GenJetConst_pt"                          ,&const_pt                        );
-  tree->Branch("GenJetConst_eta"                         ,&const_eta                       );
-  tree->Branch("GenJetConst_phi"                         ,&const_phi                       );
-  tree->Branch("GenJetConst_mass"                           ,&const_mass                         );
-  */
 
   tree->Branch("rho"                            ,&rho2                           );
 
@@ -1460,31 +1456,31 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
       //  cout << "###" << endl;
 
 
-    // if (genjet->pt() > 100){
-      for (auto c: genjet->getGenConstituents()){
-	if (c->pt() > 0.5){
-	  cout << "###"<< endl;
-	  cout << genjet->getGenConstituents().size() << endl;
-	  cout << "###" << endl;
-	  const_pt.push_back(c->pt());
-	  const_eta.push_back(c->eta());
-	  const_phi.push_back(c->phi());
-	  const_mass.push_back(c->mass());
-	  const_pdgID.push_back(c->pdgId());
-	  const_charge.push_back(c->charge());
+      if (saveConst){
+	for (auto c: genjet->getGenConstituents()){
+	  if (c->pt() > 0.5){
+	    cout << "###"<< endl;
+	    cout << genjet->getGenConstituents().size() << endl;
+	    cout << "###" << endl;
+	    const_pt.push_back(c->pt());
+	    const_eta.push_back(c->eta());
+	    const_phi.push_back(c->phi());
+	    const_mass.push_back(c->mass());
+	    const_pdgID.push_back(c->pdgId());
+	    const_charge.push_back(c->charge());
 
-	  GenJetConst.push_back(const_pt);
-	  GenJetConst.push_back(const_eta);
-	  GenJetConst.push_back(const_phi);
-	  GenJetConst.push_back(const_mass);
-	  GenJetConst.push_back(const_pdgID);
-	  GenJetConst.push_back(const_charge);
+	    GenJetConst.push_back(const_pt);
+	    GenJetConst.push_back(const_eta);
+	    GenJetConst.push_back(const_phi);
+	    GenJetConst.push_back(const_mass);
+	    GenJetConst.push_back(const_pdgID);
+	    GenJetConst.push_back(const_charge);
+	  }
 	}
-      }
     
-      //	}
+      }
 
-    n_genjet++;
+	n_genjet++;
 
 
     }

@@ -35,6 +35,13 @@ params.register(
 )
 
 params.register(
+    'saveConst', 
+    False, 
+    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
+    'Flag to indicate whether or not to save jet constituents'
+)
+
+params.register(
     'reducedInfo', 
     False, 
     VarParsing.multiplicity.singleton,VarParsing.varType.bool,

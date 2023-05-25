@@ -325,6 +325,13 @@ private:
   vector<Float16_t>            FatJet_sj2_eta;
   vector<Float16_t>            FatJet_sj2_phi;
   vector<Float16_t>            FatJet_sj2_mass;
+  // Fatjet Constituents
+  vector<Float16_t>            FatJetConst_pt;
+  vector<Float16_t>            FatJetConst_eta;
+  vector<Float16_t>            FatJetConst_phi;
+  vector<Float16_t>            FatJetConst_mass;
+  vector<vector<Float16_t> >   FatJetConst;
+
 
   // Fatjets Cambridge Aachen 
   UInt_t                       n_fatjet_CA;
@@ -363,12 +370,12 @@ private:
   vector<Float16_t>            GenJet_phi;
   vector<Float16_t>            GenJet_mass;
   
-  vector<Float16_t>            const_pt;
-  vector<Float16_t>            const_eta;
-  vector<Float16_t>            const_phi;
-  vector<Float16_t>            const_mass;
-  vector<Float16_t>            const_pdgID;
-  vector<Float16_t>            const_charge;
+  vector<Float16_t>            GenJetConst_pt;
+  vector<Float16_t>            GenJetConst_eta;
+  vector<Float16_t>            GenJetConst_phi;
+  vector<Float16_t>            GenJetConst_mass;
+  vector<Float16_t>            GenJetConst_pdgID;
+  vector<Float16_t>            GenJetConst_charge;
   vector<vector<Float16_t> >   GenJetConst;
   
 
@@ -587,6 +594,8 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_nconst"                  ,&FatJet_nconst                 );
   tree->Branch("FatJet_girth"                   ,&FatJet_girth                  );
   
+  tree->Branch("FatJetConst"                    ,&FatJetConst                    );  
+
   tree->Branch("FatJet_sj1_pt"                  ,&FatJet_sj1_pt                  );
   tree->Branch("FatJet_sj1_eta"                 ,&FatJet_sj1_eta                 );
   tree->Branch("FatJet_sj1_phi"                 ,&FatJet_sj1_phi                 );
@@ -924,6 +933,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Electron_totPt =0; 
   n_pfMu =0;
   n_pfEl =0;
+  /*//test to print out list of genparticles
+  vector<int> pdgList;
+  pdgList.clear();
+  tree->Branch("pdgList"                    ,&pdgList                   );
+  //end*/
   for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
     vector<float> dr_vector_row; //sets all dR values between pFcands and gen tracks
     if (pfcands_iter.pt() < 0.5) continue;
@@ -940,6 +954,19 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
      Electron_totPt += pfcands_iter.pt(); 
      n_pfEl ++;
     }
+    /*//test to print out list of genparticles
+    Handle<vector<reco::GenParticle> > genP;
+    iEvent.getByToken(gensToken2, genP);
+    for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
+      if (genp_iter->status()==1){
+	if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
+	  pdgList.push_back(genp_iter->pdgId());
+	  cout << genp_iter->pdgId() << endl;
+	}
+      }
+    }
+    //end*/
+
     if(doSignal){
       Handle<vector<reco::GenParticle> > genP;
       iEvent.getByToken(gensToken2, genP);
@@ -971,7 +998,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
     temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
     temp_jet.set_user_index(n_pfcand);
-    if (pfcands_iter.vertex() == 0 && getCharge(pfcands_iter.pdgId()) != 0 ){
+    if (pfcands_iter.vertex() == 0){
       fj_part.push_back(temp_jet);
     
       // Event shape variables on whole event
@@ -1208,6 +1235,8 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
   FatJet_nconst.clear();
   FatJet_girth.clear();
   
+  FatJetConst.clear();
+  
   // * 
   // FatJets_CA 
   // *
@@ -1289,6 +1318,30 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
 
     PseudoJet sd_ak8 = sd_groomer(j);
     FatJet_msoftdrop.push_back(sd_ak8.m());
+
+    //Fatjet constituents
+    if (saveConst){
+      FatJetConst_pt.clear();
+      FatJetConst_eta.clear();
+      FatJetConst_phi.clear();
+      FatJetConst_mass.clear();
+
+      for (auto &c: j.constituents()){
+	if (PFcand_pt[c.user_index()] > 0.5){
+	  FatJetConst_pt.push_back(PFcand_pt[c.user_index()]);
+	  FatJetConst_eta.push_back(PFcand_eta[c.user_index()]);
+	  FatJetConst_phi.push_back(PFcand_phi[c.user_index()]);
+	  FatJetConst_mass.push_back(PFcand_m[c.user_index()]);
+
+	}
+      }
+      FatJetConst.push_back(FatJetConst_pt);
+      FatJetConst.push_back(FatJetConst_eta);
+      FatJetConst.push_back(FatJetConst_phi);
+      FatJetConst.push_back(FatJetConst_mass);
+      
+    }
+
 
     //softdrop subjets
     ClusterSequence ak04_sd_cs(sd_ak8.constituents(), ak04_def);
@@ -1436,12 +1489,6 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
   
   n_genjet = 0;
   
-  const_pt.clear();
-  const_eta.clear();
-  const_phi.clear();
-  const_mass.clear();
-  const_pdgID.clear();
-  const_charge.clear();
   GenJetConst.clear();
   
   if(runScouting){
@@ -1457,26 +1504,34 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
 
 
       if (saveConst){
+	GenJetConst_pt.clear();
+	GenJetConst_eta.clear();
+	GenJetConst_phi.clear();
+	GenJetConst_mass.clear();
+	GenJetConst_pdgID.clear();
+	GenJetConst_charge.clear();
+
 	for (auto c: genjet->getGenConstituents()){
 	  if (c->pt() > 0.5){
-	    cout << "###"<< endl;
-	    cout << genjet->getGenConstituents().size() << endl;
-	    cout << "###" << endl;
-	    const_pt.push_back(c->pt());
-	    const_eta.push_back(c->eta());
-	    const_phi.push_back(c->phi());
-	    const_mass.push_back(c->mass());
-	    const_pdgID.push_back(c->pdgId());
-	    const_charge.push_back(c->charge());
+	    //cout << "###"<< endl;
+	    //cout << genjet->getGenConstituents().size() << endl;
+	    //cout << "###" << endl;
+	    GenJetConst_pt.push_back(c->pt());
+	    GenJetConst_eta.push_back(c->eta());
+	    GenJetConst_phi.push_back(c->phi());
+	    GenJetConst_mass.push_back(c->mass());
+	    GenJetConst_pdgID.push_back(c->pdgId());
+	    GenJetConst_charge.push_back(c->charge());
 
-	    GenJetConst.push_back(const_pt);
-	    GenJetConst.push_back(const_eta);
-	    GenJetConst.push_back(const_phi);
-	    GenJetConst.push_back(const_mass);
-	    GenJetConst.push_back(const_pdgID);
-	    GenJetConst.push_back(const_charge);
 	  }
 	}
+
+	GenJetConst.push_back(GenJetConst_pt);
+	GenJetConst.push_back(GenJetConst_eta);
+	GenJetConst.push_back(GenJetConst_phi);
+	GenJetConst.push_back(GenJetConst_mass);
+	GenJetConst.push_back(GenJetConst_pdgID);
+	GenJetConst.push_back(GenJetConst_charge);
     
       }
 
@@ -1492,7 +1547,7 @@ for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands
   unsigned int n_pfcand_tot = 0;
   for (auto & pfcands_iter : PFcands ) {
     if (pfcands_iter.pt() < 1.) continue;
-    if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
+    //if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
     int tmpidx = -1;
     int ak08count = 0;
     for (auto &j: ak08_jets) {

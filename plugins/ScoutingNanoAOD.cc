@@ -318,11 +318,12 @@ private:
   vector<Float16_t>            FatJet_sj2_phi;
   vector<Float16_t>            FatJet_sj2_mass;
   // Fatjet Constituents
-  vector<Float16_t>            FatJetConst_pt;
-  vector<Float16_t>            FatJetConst_eta;
-  vector<Float16_t>            FatJetConst_phi;
-  vector<Float16_t>            FatJetConst_mass;
-  vector<vector<Float16_t> >   FatJetConst;
+  vector<vector<Float16_t> >   FatJetConst_pt;
+  vector<vector<Float16_t> >   FatJetConst_eta;
+  vector<vector<Float16_t> >   FatJetConst_phi;
+  vector<vector<Float16_t> >   FatJetConst_mass;
+  vector<vector<Float16_t> >   FatJetConst_pdgID;
+  vector<vector<Float16_t> >   FatJetConst_charge;
 
   // Fatjets Cambridge Aachen 
   UInt_t                       n_fatjet_CA;
@@ -361,13 +362,13 @@ private:
   vector<Float16_t>            GenJet_phi;
   vector<Float16_t>            GenJet_mass;
   
-  vector<Float16_t>            GenJetConst_pt;
-  vector<Float16_t>            GenJetConst_eta;
-  vector<Float16_t>            GenJetConst_phi;
-  vector<Float16_t>            GenJetConst_mass;
-  vector<Float16_t>            GenJetConst_pdgID;
-  vector<Float16_t>            GenJetConst_charge;
-  vector<vector<Float16_t> >   GenJetConst;
+  vector<vector<Float16_t> >   GenJetConst_pt;
+  vector<vector<Float16_t> >   GenJetConst_eta;
+  vector<vector<Float16_t> >   GenJetConst_phi;
+  vector<vector<Float16_t> >   GenJetConst_mass;
+  vector<vector<Float16_t> >   GenJetConst_pdgID;
+  vector<vector<Float16_t> >   GenJetConst_charge;
+
     
   float                        rho2;
   float                        prefire;
@@ -587,7 +588,12 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_nconst"                     ,&FatJet_nconst                 );
   tree->Branch("FatJet_girth"                      ,&FatJet_girth                  );
   
-  tree->Branch("FatJetConst"                       ,&FatJetConst                    );  
+  tree->Branch("FatJetConst_pt"                    ,&FatJetConst_pt                 );  
+  tree->Branch("FatJetConst_eta"                   ,&FatJetConst_eta                );  
+  tree->Branch("FatJetConst_phi"                   ,&FatJetConst_phi                );  
+  tree->Branch("FatJetConst_mass"                  ,&FatJetConst_mass               );  
+  tree->Branch("FatJetConst_pdgID"                 ,&FatJetConst_pdgID              );  
+  tree->Branch("FatJetConst_charge"                ,&FatJetConst_charge             );  
 
   tree->Branch("FatJet_sj1_pt"                     ,&FatJet_sj1_pt                  );
   tree->Branch("FatJet_sj1_eta"                    ,&FatJet_sj1_eta                 );
@@ -633,7 +639,13 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("GenJet_eta"                        ,&GenJet_eta                       );
   tree->Branch("GenJet_phi"                        ,&GenJet_phi                       );
   tree->Branch("GenJet_mass"                       ,&GenJet_mass                      );
-  tree->Branch("GenJetConst"                       ,&GenJetConst                      );  
+
+  tree->Branch("GenJetConst_pt"                    ,&GenJetConst_pt                 );  
+  tree->Branch("GenJetConst_eta"                   ,&GenJetConst_eta                );  
+  tree->Branch("GenJetConst_phi"                   ,&GenJetConst_phi                );  
+  tree->Branch("GenJetConst_mass"                  ,&GenJetConst_mass               );  
+  tree->Branch("GenJetConst_pdgID"                 ,&GenJetConst_pdgID              );  
+  tree->Branch("GenJetConst_charge"                ,&GenJetConst_charge             );  
 
 
   tree->Branch("rho"                            ,&rho2                           );
@@ -948,6 +960,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   if(isMC){
     for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
+      if (genp_iter->status()!=1) continue;
       if (genp_iter->pdgId()!=12 && genp_iter->pdgId()!=14 && genp_iter->pdgId()!=16){
 	if (genp_iter->pt() < 0.5) continue;
 	PseudoJet temp_genpjet = PseudoJet(0, 0, 0, 0);
@@ -1134,7 +1147,13 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   FatJet_mtrim.clear();
   FatJet_nconst.clear();
   FatJet_girth.clear();
-  FatJetConst.clear();
+  FatJetConst_pt.clear();
+  FatJetConst_eta.clear();
+  FatJetConst_phi.clear();
+  FatJetConst_mass.clear();
+  FatJetConst_pdgID.clear();
+  FatJetConst_charge.clear();
+
   
   // * 
   // FatJets_CA 
@@ -1219,24 +1238,38 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
     //Fatjet constituents
     if (saveConst){
-      FatJetConst_pt.clear();
-      FatJetConst_eta.clear();
-      FatJetConst_phi.clear();
-      FatJetConst_mass.clear();
+      vector<Float16_t> temp_pt;
+      vector<Float16_t> temp_eta;
+      vector<Float16_t> temp_phi;
+      vector<Float16_t> temp_mass;
+      vector<Float16_t> temp_pdgID;
+      vector<Float16_t> temp_charge;
+
+      temp_pt.clear();
+      temp_eta.clear();
+      temp_phi.clear();
+      temp_mass.clear();
+      temp_pdgID.clear();
+      temp_charge.clear();
+
 
       for (auto &c: j.constituents()){
 	if (PFcand_pt[c.user_index()] > 0.5){
-	  FatJetConst_pt.push_back(PFcand_pt[c.user_index()]); //PFcand_pt vs PFcands.pt vs pfcandsH->pt?
-	  FatJetConst_eta.push_back(PFcand_eta[c.user_index()]);
-	  FatJetConst_phi.push_back(PFcand_phi[c.user_index()]);
-	  FatJetConst_mass.push_back(PFcand_m[c.user_index()]);
+	  temp_pt.push_back(PFcand_pt[c.user_index()]); //PFcand_pt vs PFcands.pt vs pfcandsH->pt?
+	  temp_eta.push_back(PFcand_eta[c.user_index()]);
+	  temp_phi.push_back(PFcand_phi[c.user_index()]);
+	  temp_mass.push_back(PFcand_m[c.user_index()]);
+	  temp_pdgID.push_back(PFcand_pdgid[c.user_index()]);
+	  temp_charge.push_back(PFcand_q[c.user_index()]);
 
 	}
       }
-      FatJetConst.push_back(FatJetConst_pt);
-      FatJetConst.push_back(FatJetConst_eta);
-      FatJetConst.push_back(FatJetConst_phi);
-      FatJetConst.push_back(FatJetConst_mass);
+      FatJetConst_pt.push_back(temp_pt);
+      FatJetConst_eta.push_back(temp_eta);
+      FatJetConst_phi.push_back(temp_phi);
+      FatJetConst_mass.push_back(temp_mass);
+      FatJetConst_pdgID.push_back(temp_pdgID);
+      FatJetConst_charge.push_back(temp_charge);
       
     }
 
@@ -1412,10 +1445,16 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     GenJet_eta.clear();
     GenJet_phi.clear();
     GenJet_mass.clear();
+    GenJetConst_pt.clear();
+    GenJetConst_eta.clear();
+    GenJetConst_phi.clear();
+    GenJetConst_mass.clear();
+    GenJetConst_pdgID.clear();
+    GenJetConst_charge.clear();
     
     n_genjet = 0;
     
-    GenJetConst.clear();
+
     
     for (auto genjet = genjetsH->begin(); genjet != genjetsH->end(); ++genjet) {
       if (genjet->pt() > minFatJetPt){
@@ -1428,32 +1467,39 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	//  cout << "###" << endl;
 	
 	if (saveConst){
-	  GenJetConst_pt.clear();
-	  GenJetConst_eta.clear();
-	  GenJetConst_phi.clear();
-	  GenJetConst_mass.clear();
-	  GenJetConst_pdgID.clear();
-	  GenJetConst_charge.clear();
+	  vector<Float16_t> temp_pt;
+	  vector<Float16_t> temp_eta;
+	  vector<Float16_t> temp_phi;
+	  vector<Float16_t> temp_mass;
+	  vector<Float16_t> temp_pdgID;
+	  vector<Float16_t> temp_charge;
+
+	  temp_pt.clear();
+	  temp_eta.clear();
+	  temp_phi.clear();
+	  temp_mass.clear();
+	  temp_pdgID.clear();
+	  temp_charge.clear();
 	  
 	  for (auto c: genjet->getGenConstituents()){
 	    if (c->pt() > 0.5){
 	      //cout << "###"<< endl;
 	      //cout << genjet->getGenConstituents().size() << endl;
 	      //cout << "###" << endl;
-	      GenJetConst_pt.push_back(c->pt());
-	      GenJetConst_eta.push_back(c->eta());
-	      GenJetConst_phi.push_back(c->phi());
-	      GenJetConst_mass.push_back(c->mass());
-	      GenJetConst_pdgID.push_back(c->pdgId());
-	      GenJetConst_charge.push_back(c->charge());
+	      temp_pt.push_back(c->pt());
+	      temp_eta.push_back(c->eta());
+	      temp_phi.push_back(c->phi());
+	      temp_mass.push_back(c->mass());
+	      temp_pdgID.push_back(c->pdgId());
+	      temp_charge.push_back(c->charge());
 	    }
 	  }
-	  GenJetConst.push_back(GenJetConst_pt);
-	  GenJetConst.push_back(GenJetConst_eta);
-	  GenJetConst.push_back(GenJetConst_phi);
-	  GenJetConst.push_back(GenJetConst_mass);
-	  GenJetConst.push_back(GenJetConst_pdgID);
-	  GenJetConst.push_back(GenJetConst_charge);
+	  GenJetConst_pt.push_back(temp_pt);
+	  GenJetConst_eta.push_back(temp_eta);
+	  GenJetConst_phi.push_back(temp_phi);
+	  GenJetConst_mass.push_back(temp_mass);
+	  GenJetConst_pdgID.push_back(temp_pdgID);
+	  GenJetConst_charge.push_back(temp_charge);
 	}
 	n_genjet++;
       }

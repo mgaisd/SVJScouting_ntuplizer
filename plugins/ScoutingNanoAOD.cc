@@ -937,14 +937,16 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     }
     }*/
 
+
+  Handle<vector<reco::GenParticle> > genP;
+  iEvent.getByToken(gensToken2, genP);
+  vector<math::XYZVector> genp_event_p3s; // all particle (px,py,pz)
+  math::XYZVector genp_p3 = math::XYZVector(0,0,0); 
+  n_genp = 0;
+  vector<PseudoJet> fj_genp;
+  fj_genp.clear();
+
   if(isMC){
-    Handle<vector<reco::GenParticle> > genP;
-    iEvent.getByToken(gensToken2, genP);
-    vector<math::XYZVector> genp_event_p3s; // all particle (px,py,pz)
-    math::XYZVector genp_p3 = math::XYZVector(0,0,0); 
-    n_genp = 0;
-    vector<PseudoJet> fj_genp;
-    fj_genp.clear();
     for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
       if (genp_iter->pdgId()!=12 && genp_iter->pdgId()!=14 && genp_iter->pdgId()!=16){
 	if (genp_iter->pt() < 0.5) continue;

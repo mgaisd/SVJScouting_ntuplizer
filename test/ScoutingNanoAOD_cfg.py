@@ -251,6 +251,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     doData            = cms.bool(not params.isMC and not params.signal),
     doSignal          = cms.bool(runSig), 
     isMC              = cms.bool(params.isMC),
+    saveConst         = cms.bool(params.saveConst),
     #monitor           = cms.bool(params.monitor),
     era_16            = cms.bool(params.era == "2016"),
     #runScouting          = cms.bool(params.runScouting),
@@ -297,6 +298,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     #rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
     rho2              = cms.InputTag("hltScoutingPFPacker","rho"),
 #    genLumi            = cms.InputTag("generator"),
+    recojets          = cms.InputTag("ak8PFJetsCHS")
 
     # for JEC corrections eventually
     #L1corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L1FastJet_AK4CaloHLT.txt'),

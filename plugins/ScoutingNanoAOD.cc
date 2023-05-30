@@ -120,7 +120,8 @@ private:
   const edm::EDGetTokenT<std::vector<ScoutingParticle> >  	pfcandsToken;
   const edm::EDGetTokenT<std::vector<ScoutingPFJet> >  		pfjetsToken;
   const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
-  const edm::EDGetTokenT<std::vector<reco::GenJet> >             genjetsToken; 
+  const edm::EDGetTokenT<std::vector<reco::GenJet> >            genjetsToken; 
+  const edm::EDGetTokenT<std::vector<reco::PFJet> >             recojetsToken; 
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
@@ -369,6 +370,13 @@ private:
   vector<vector<Float16_t> >   GenJetConst_pdgID;
   vector<vector<Float16_t> >   GenJetConst_charge;
 
+  //RecoJets (AK8 jets clustered from PFcands of offline reconstruction)
+  UInt_t                       n_recojet;
+  vector<Float16_t>            RecoJet_pt;
+  vector<Float16_t>            RecoJet_eta;
+  vector<Float16_t>            RecoJet_phi;
+  vector<Float16_t>            RecoJet_mass;
+  
     
   float                        rho2;
   float                        prefire;
@@ -399,6 +407,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   pfjetsToken              (consumes<std::vector<ScoutingPFJet> >            (iConfig.getParameter<edm::InputTag>("pfjets"))), 
   pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
   genjetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genjets"))), 
+  recojetsToken             (consumes<std::vector<reco::PFJet> >             (iConfig.getParameter<edm::InputTag>("recojets"))), 
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))),    
@@ -647,6 +656,11 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("GenJetConst_pdgID"                 ,&GenJetConst_pdgID              );  
   tree->Branch("GenJetConst_charge"                ,&GenJetConst_charge             );  
 
+  tree->Branch("n_recojet"                         ,&n_recojet                      ,"n_recojet/i");
+  tree->Branch("RecoJet_pt"                        ,&RecoJet_pt                     );
+  tree->Branch("RecoJet_eta"                       ,&RecoJet_eta                    );
+  tree->Branch("RecoJet_phi"                       ,&RecoJet_phi                    );
+  tree->Branch("RecoJet_mass"                      ,&RecoJet_mass                   );
 
   tree->Branch("rho"                            ,&rho2                           );
 
@@ -670,6 +684,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   Handle<vector<reco::PFJet> > pfjetsoffH;
   Handle<vector<reco::GenJet> > genjetsH;
+  Handle<vector<reco::PFJet> > recojetsH;
   Handle<vector<ScoutingElectron> > electronsH;
   Handle<vector<ScoutingMuon> > muonsH;
   Handle<vector<ScoutingPhoton> > photonsH;
@@ -684,6 +699,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByToken(pfjetsToken, pfjetsH);
   iEvent.getByToken(pfcandsToken, pfcandsH);
   iEvent.getByToken(genjetsToken, genjetsH);
+  iEvent.getByToken(recojetsToken, recojetsH);
   
   Handle<vector<PileupSummaryInfo> > puInfo;
   if(auto handle = iEvent.getHandle(pileupInfoToken2)){
@@ -1506,6 +1522,31 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     }
     //cout << "genjetconst size: " << GenJetConst.size() << endl;
   }
+
+  // * 
+  // RecoJets 
+  // * 
+
+  RecoJet_pt.clear();
+  RecoJet_eta.clear();
+  RecoJet_phi.clear();
+  RecoJet_mass.clear();
+  
+  n_recojet = 0;
+  
+  
+  
+  for (auto recojet = recojetsH->begin(); recojet != recojetsH->end(); ++recojet) {
+    if (recojet->p4().Pt() > minFatJetPt){
+      RecoJet_pt .push_back( recojet->p4().Pt() );
+      RecoJet_eta.push_back( recojet->p4().Eta());
+      RecoJet_phi.push_back( recojet->p4().Phi());
+      RecoJet_mass  .push_back( recojet->p4().M());
+      
+      n_recojet++;
+    }
+  }
+  
   
   unsigned int n_pfcand_tot = 0;
   for (auto & pfcands_iter : PFcands ) {

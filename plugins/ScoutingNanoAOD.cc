@@ -376,6 +376,13 @@ private:
   vector<Float16_t>            RecoJet_eta;
   vector<Float16_t>            RecoJet_phi;
   vector<Float16_t>            RecoJet_mass;
+
+  vector<vector<Float16_t> >   RecoJetConst_pt;
+  vector<vector<Float16_t> >   RecoJetConst_eta;
+  vector<vector<Float16_t> >   RecoJetConst_phi;
+  vector<vector<Float16_t> >   RecoJetConst_mass;
+  vector<vector<Float16_t> >   RecoJetConst_pdgID;
+  vector<vector<Float16_t> >   RecoJetConst_charge;
   
     
   float                        rho2;
@@ -662,6 +669,14 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("RecoJet_phi"                       ,&RecoJet_phi                    );
   tree->Branch("RecoJet_mass"                      ,&RecoJet_mass                   );
 
+  tree->Branch("RecoJetConst_pt"                    ,&RecoJetConst_pt                 );  
+  tree->Branch("RecoJetConst_eta"                   ,&RecoJetConst_eta                );  
+  tree->Branch("RecoJetConst_phi"                   ,&RecoJetConst_phi                );  
+  tree->Branch("RecoJetConst_mass"                  ,&RecoJetConst_mass               );  
+  tree->Branch("RecoJetConst_pdgID"                 ,&RecoJetConst_pdgID              );  
+  tree->Branch("RecoJetConst_charge"                ,&RecoJetConst_charge             );  
+
+
   tree->Branch("rho"                            ,&rho2                           );
 
   tree->Branch("event_isotropy"                 ,&event_isotropy                );
@@ -885,9 +900,14 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   // Particle Flow candidates 
   // *
 
+  /*  vector<int> PFpdgList;
+  PFpdgList.clear();
+  tree->Branch("PFpdgList"                    ,&PFpdgList                   );
+  cout << "list of PFcandidates" << endl;*/
+
   for (auto pfcands_iter = pfcandsH->begin(); pfcands_iter != pfcandsH->end(); ++pfcands_iter) {
-       ScoutingParticle tmp(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())),pfcands_iter->m(),pfcands_iter->pdgId(),pfcands_iter->vertex());         
-       PFcands.push_back(tmp);
+    ScoutingParticle tmp(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())),pfcands_iter->m(),pfcands_iter->pdgId(),pfcands_iter->vertex());         
+    PFcands.push_back(tmp);
   }
 
   //sort PFcands according to pT
@@ -922,6 +942,14 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     PFcand_pdgid.push_back(pfcands_iter.pdgId());
     PFcand_q.push_back(getCharge(pfcands_iter.pdgId()));
     PFcand_vertex.push_back(pfcands_iter.vertex());
+
+    //to print list of pdgIDs
+    /*if (std::find(PFpdgList.begin(), PFpdgList.end(), pfcands_iter.pdgId()) == PFpdgList.end()) {
+      PFpdgList.push_back(pfcands_iter.pdgId());
+      cout << pfcands_iter.pdgId() << endl;
+      }*/
+    //until here
+
    
     // Cluster PF candidates into fat jets
     if (pfcands_iter.pt() < 0.5) continue; 
@@ -951,7 +979,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   vector<int> pdgList;
   pdgList.clear();
   tree->Branch("pdgList"                    ,&pdgList                   );
-
+  cout << "list of genparticles" << endl;
 
 
   Handle<vector<reco::GenParticle> > genP;
@@ -1239,9 +1267,9 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	cout << PFcand_pdgid[c.user_index()] << endl;
 	cout << PFcand_pt[c.user_index()] << endl;
       }
-
+      
     }
-
+    
     PseudoJet sd_ak8 = sd_groomer(j);
     FatJet_msoftdrop.push_back(sd_ak8.m());
 
@@ -1524,19 +1552,69 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   RecoJet_eta.clear();
   RecoJet_phi.clear();
   RecoJet_mass.clear();
+  RecoJetConst_pt.clear();
+  RecoJetConst_eta.clear();
+  RecoJetConst_phi.clear();
+  RecoJetConst_mass.clear();
+  RecoJetConst_pdgID.clear();
+  RecoJetConst_charge.clear();
   
   n_recojet = 0;
   
-  
-  
+  vector<int> recopdgList;
+  pdgList.clear();
+  tree->Branch("recopdgList"                    ,&recopdgList                   );
+  cout << "list of recojet particles" << endl;
+
   for (auto recojet = recojetsH->begin(); recojet != recojetsH->end(); ++recojet) {
     if (recojet->p4().Pt() > minFatJetPt){
       RecoJet_pt .push_back( recojet->p4().Pt() );
       RecoJet_eta.push_back( recojet->p4().Eta());
       RecoJet_phi.push_back( recojet->p4().Phi());
       RecoJet_mass  .push_back( recojet->p4().M());
+
+      if (saveConst){
+	vector<Float16_t> temp_pt;
+	vector<Float16_t> temp_eta;
+	vector<Float16_t> temp_phi;
+	vector<Float16_t> temp_mass;
+	vector<Float16_t> temp_pdgID;
+	vector<Float16_t> temp_charge;
+	
+	temp_pt.clear();
+	temp_eta.clear();
+	temp_phi.clear();
+	temp_mass.clear();
+	temp_pdgID.clear();
+	temp_charge.clear();
+	
+	for (auto c: recojet->getJetConstituents()){
+	  if (c->pt() > 0.5){
+	    if (std::find(recopdgList.begin(), recopdgList.end(), c->pdgId()) == recopdgList.end()) {
+	      recopdgList.push_back(c->pdgId());
+	      cout << c->pdgId() << endl;
+	    }
+	    //cout << "###"<< endl;
+	    //cout << genjet->getGenConstituents().size() << endl;
+	    //cout << "###" << endl;
+	    temp_pt.push_back(c->pt());
+	    temp_eta.push_back(c->eta());
+	    temp_phi.push_back(c->phi());
+	    temp_mass.push_back(c->mass());
+	    temp_pdgID.push_back(c->pdgId());
+	    temp_charge.push_back(c->charge());
+	  }
+	}
+	RecoJetConst_pt.push_back(temp_pt);
+	RecoJetConst_eta.push_back(temp_eta);
+	RecoJetConst_phi.push_back(temp_phi);
+	RecoJetConst_mass.push_back(temp_mass);
+	RecoJetConst_pdgID.push_back(temp_pdgID);
+	RecoJetConst_charge.push_back(temp_charge);
+      }
       
       n_recojet++;
+      
     }
   }
   

@@ -923,7 +923,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     PFcand_q.push_back(getCharge(pfcands_iter.pdgId()));
     PFcand_vertex.push_back(pfcands_iter.vertex());
    
-    // Cluster charged PF candidates into fat jets
+    // Cluster PF candidates into fat jets
     if (pfcands_iter.pt() < 0.5) continue; 
 
     // For clustering fat jets
@@ -946,24 +946,12 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   //Genparticles
   //
 
-
-  /* //test to print out list of genparticles
-
+  
+  //to print list of genparticles
   vector<int> pdgList;
   pdgList.clear();
   tree->Branch("pdgList"                    ,&pdgList                   );
 
-
-  Handle<vector<reco::GenParticle> > genP;
-  iEvent.getByToken(gensToken2, genP);
-  for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
-    if (genp_iter->status()==1){
-      if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
-	pdgList.push_back(genp_iter->pdgId());
-	cout << genp_iter->pdgId() << endl;
-      }
-    }
-    }*/
 
 
   Handle<vector<reco::GenParticle> > genP;
@@ -977,19 +965,24 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   if(isMC){
     for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
       if (genp_iter->status()!=1) continue;
-      if (genp_iter->pdgId()!=12 && genp_iter->pdgId()!=14 && genp_iter->pdgId()!=16){
-	if (genp_iter->pt() < 0.5) continue;
-	PseudoJet temp_genpjet = PseudoJet(0, 0, 0, 0);
-	temp_genpjet.reset_PtYPhiM(genp_iter->pt(),genp_iter->eta(), genp_iter->phi(), genp_iter->mass());
-	temp_genpjet.set_user_index(n_genp);
-	fj_genp.push_back(temp_genpjet);
-	
-	// Event shape variables
-	genp_p3 = math::XYZVector(0,0,0);
-	genp_p3.SetXYZ(temp_genpjet.px(), temp_genpjet.py(), temp_genpjet.pz() );
-	genp_event_p3s.push_back(genp_p3);
-	
+      if (abs(genp_iter->pdgId())==12 || abs(genp_iter->pdgId())==14 || abs(genp_iter->pdgId())==16) continue; //remove neutrinos
+      if (abs(genp_iter->pdgId())==51 || abs(genp_iter->pdgId())==53) continue; //remove dark matter
+      if (genp_iter->pt() < 0.5) continue;
+      //to print list of genparticle pdgIDs 
+      if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
+	pdgList.push_back(genp_iter->pdgId());
+	cout << genp_iter->pdgId() << endl;
       }
+      PseudoJet temp_genpjet = PseudoJet(0, 0, 0, 0);
+      temp_genpjet.reset_PtYPhiM(genp_iter->pt(),genp_iter->eta(), genp_iter->phi(), genp_iter->mass());
+      temp_genpjet.set_user_index(n_genp);
+      fj_genp.push_back(temp_genpjet);
+	
+      // Event shape variables
+      genp_p3 = math::XYZVector(0,0,0);
+      genp_p3.SetXYZ(temp_genpjet.px(), temp_genpjet.py(), temp_genpjet.pz() );
+      genp_event_p3s.push_back(genp_p3);
+      
       n_genp++;
     }
   }

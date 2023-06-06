@@ -269,6 +269,13 @@ private:
   vector<Float16_t>  	       Jet_nConstituents;
   vector<bool>                 Jet_passId;
 
+  //manual AK4 jets from PFcandidates
+  UInt_t                       n_AK4;
+  vector<Float16_t>            AK4_pt;
+  vector<Float16_t>            AK4_eta;
+  vector<Float16_t>            AK4_phi;
+  vector<Float16_t>            AK4_mass;
+
   //PFCand
   UInt_t                       n_pfcand;
   vector<Float16_t>            PFcand_pt;
@@ -584,7 +591,12 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("Jet_nConstituents"                 ,&Jet_nConstituents             );
   tree->Branch("Jet_passId"                        ,&Jet_passId                    );
   
-  
+  tree->Branch("n_AK4"                             ,&n_AK4                         ,"n_AK4/i");
+  tree->Branch("AK4_pt"                            ,&AK4_pt                        );
+  tree->Branch("AK4_eta"                           ,&AK4_eta                       );
+  tree->Branch("AK4_phi"                           ,&AK4_phi                       );
+  tree->Branch("AK4_mass"                          ,&AK4_mass                      );
+
   tree->Branch("n_fatjet"                          ,&n_fatjet                      ,"n_fatjet/i");
   tree->Branch("FatJet_area"                       ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                        ,&FatJet_eta                    );
@@ -684,6 +696,22 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("event_sphericity"               ,&event_sphericity              );
   tree->Branch("event_thrust"                   ,&event_thrust                  );
   
+}
+
+
+double customDeltaPhi(double phi1,double phi2)
+{
+  double result = phi1 - phi2;
+  while (result > TMath::Pi()) result -= 2*TMath::Pi();
+  while (result <= -TMath::Pi()) result += 2*TMath::Pi();
+  return abs(result);
+}
+
+double customDeltaR(double eta1,double phi1,double eta2,double phi2)
+{
+  double deta = eta1 - eta2;
+  double dphi = customDeltaPhi(phi1, phi2);
+  return std::sqrt(deta*deta + dphi*dphi);
 }
 
 
@@ -958,7 +986,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
     temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
     temp_jet.set_user_index(n_pfcand);
-    if (pfcands_iter.vertex() == 0 or getCharge(pfcands_iter.pdgId()) == 0){
+    if (pfcands_iter.vertex() == 0 or pfcands_iter.vertex() == 1 or getCharge(pfcands_iter.pdgId()) == 0){
       fj_part.push_back(temp_jet);
 
       // Event shape variables
@@ -976,11 +1004,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   
   //to print list of genparticles
-  vector<int> pdgList;
+  /* vector<int> pdgList;
   pdgList.clear();
   tree->Branch("pdgList"                    ,&pdgList                   );
   cout << "list of genparticles" << endl;
-
+  */
 
   Handle<vector<reco::GenParticle> > genP;
   iEvent.getByToken(gensToken2, genP);
@@ -997,10 +1025,10 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       if (abs(genp_iter->pdgId())==51 || abs(genp_iter->pdgId())==53) continue; //remove dark matter
       if (genp_iter->pt() < 0.5) continue;
       //to print list of genparticle pdgIDs 
-      if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
+      /* if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
 	pdgList.push_back(genp_iter->pdgId());
 	cout << genp_iter->pdgId() << endl;
-      }
+	}*/
       PseudoJet temp_genpjet = PseudoJet(0, 0, 0, 0);
       temp_genpjet.reset_PtYPhiM(genp_iter->pt(),genp_iter->eta(), genp_iter->phi(), genp_iter->mass());
       temp_genpjet.set_user_index(n_genp);
@@ -1249,6 +1277,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   n_fatjet = 0;
   for(auto &j: ak08_jets) {
+    if(abs(j.eta()) > 2.4) continue;
     FatJet_area.push_back(j.area());
     FatJet_eta .push_back(j.pseudorapidity());
     FatJet_phi .push_back(j.phi_std());
@@ -1447,6 +1476,26 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_fatjet_CA++;
   }
 
+  //
+  //AK4 Jets
+  //
+
+  ClusterSequenceArea ak04_cs(fj_part, ak04_def, area_def);
+  vector<PseudoJet> ak04_jets = sorted_by_pt(ak04_cs.inclusive_jets(minFatJetPt)); //pt min
+
+  n_AK4 = 0;
+  for(auto &j: ak04_jets) {
+    if(abs(j.eta()) > 2.4) continue;
+    AK4_eta .push_back(j.pseudorapidity());
+    AK4_phi .push_back(j.phi_std());
+    AK4_pt  .push_back(j.pt());
+    AK4_mass.push_back(j.m());
+
+    n_AK4++;
+  }
+
+
+
 
   // *
   //GenParticle Jets
@@ -1464,6 +1513,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     vector<PseudoJet> genp_jets = sorted_by_pt(genp_ak08_cs.inclusive_jets(minFatJetPt)); //pt min
     
     for(auto &j: genp_jets) {
+      if(abs(j.eta()) > 2.4) continue;
       GenPJet_eta .push_back(j.pseudorapidity());
       GenPJet_phi .push_back(j.phi_std());
       GenPJet_pt  .push_back(j.pt());
@@ -1495,6 +1545,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     
     for (auto genjet = genjetsH->begin(); genjet != genjetsH->end(); ++genjet) {
       if (genjet->pt() > minFatJetPt){
+	if(abs(genjet->eta()) > 2.4) continue;
 	GenJet_pt .push_back( genjet->pt() );
 	GenJet_eta.push_back( genjet->eta());
 	GenJet_phi.push_back( genjet->phi());
@@ -1561,13 +1612,15 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   
   n_recojet = 0;
   
-  vector<int> recopdgList;
+  /* vector<int> recopdgList;
   pdgList.clear();
   tree->Branch("recopdgList"                    ,&recopdgList                   );
   cout << "list of recojet particles" << endl;
+  */
 
   for (auto recojet = recojetsH->begin(); recojet != recojetsH->end(); ++recojet) {
     if (recojet->p4().Pt() > minFatJetPt){
+      if(abs(recojet->eta()) > 2.4) continue;
       RecoJet_pt .push_back( recojet->p4().Pt() );
       RecoJet_eta.push_back( recojet->p4().Eta());
       RecoJet_phi.push_back( recojet->p4().Phi());
@@ -1590,10 +1643,10 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	
 	for (auto c: recojet->getJetConstituents()){
 	  if (c->pt() > 0.5){
-	    if (std::find(recopdgList.begin(), recopdgList.end(), c->pdgId()) == recopdgList.end()) {
+	    /*if (std::find(recopdgList.begin(), recopdgList.end(), c->pdgId()) == recopdgList.end()) {
 	      recopdgList.push_back(c->pdgId());
 	      cout << c->pdgId() << endl;
-	    }
+	      }*/
 	    //cout << "###"<< endl;
 	    //cout << genjet->getGenConstituents().size() << endl;
 	    //cout << "###" << endl;
@@ -1618,6 +1671,23 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     }
   }
   
+  //Jet matching between scouting jets and genjets
+
+  vector<bool> FatJet_matched;
+  bool matched;
+  tree->Branch("FatJet_matched", &FatJet_matched);
+  for(auto &scouting: ak08_jets) {
+    if(abs(scouting.eta()>2.4)) continue;
+    matched = false;
+    for (auto gen = genjetsH->begin(); gen != genjetsH->end(); ++gen) { 
+      if(abs(gen->eta()>2.4) || gen->pt() <= minFatJetPt) continue;
+      if(customDeltaR(scouting.eta(), scouting.phi_std(), gen->eta(), gen->phi())<=0.1){
+	matched = true;
+	break;
+      }
+    }
+    FatJet_matched.push_back(matched);
+  }
   
   unsigned int n_pfcand_tot = 0;
   for (auto & pfcands_iter : PFcands ) {

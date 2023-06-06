@@ -275,6 +275,7 @@ private:
   vector<Float16_t>            AK4_eta;
   vector<Float16_t>            AK4_phi;
   vector<Float16_t>            AK4_mass;
+  vector<Float16_t>            AK4_nconst;
 
   //PFCand
   UInt_t                       n_pfcand;
@@ -596,6 +597,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("AK4_eta"                           ,&AK4_eta                       );
   tree->Branch("AK4_phi"                           ,&AK4_phi                       );
   tree->Branch("AK4_mass"                          ,&AK4_mass                      );
+  tree->Branch("AK4_nconst"                        ,&AK4_nconst                    );
 
   tree->Branch("n_fatjet"                          ,&n_fatjet                      ,"n_fatjet/i");
   tree->Branch("FatJet_area"                       ,&FatJet_area                   );
@@ -988,7 +990,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     temp_jet.set_user_index(n_pfcand);
     if (pfcands_iter.vertex() == 0 or pfcands_iter.vertex() == 1 or getCharge(pfcands_iter.pdgId()) == 0){
       fj_part.push_back(temp_jet);
-
+      
       // Event shape variables
       p3 = math::XYZVector(0,0,0);
       p3.SetXYZ(temp_jet.px(), temp_jet.py(), temp_jet.pz() );
@@ -1482,14 +1484,22 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   ClusterSequenceArea ak04_cs(fj_part, ak04_def, area_def);
   vector<PseudoJet> ak04_jets = sorted_by_pt(ak04_cs.inclusive_jets(minFatJetPt)); //pt min
+  
+  AK4_pt.clear();
+  AK4_eta.clear();
+  AK4_phi.clear();
+  AK4_mass.clear();
+  AK4_nconst.clear();
 
   n_AK4 = 0;
+
   for(auto &j: ak04_jets) {
     if(abs(j.eta()) > 2.4) continue;
     AK4_eta .push_back(j.pseudorapidity());
     AK4_phi .push_back(j.phi_std());
     AK4_pt  .push_back(j.pt());
     AK4_mass.push_back(j.m());
+    AK4_nconst.push_back( j.constituents().size() );
 
     n_AK4++;
   }

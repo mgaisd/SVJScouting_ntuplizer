@@ -988,14 +988,14 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
     temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
     temp_jet.set_user_index(n_pfcand);
-    if (pfcands_iter.vertex() == 0 or pfcands_iter.vertex() == 1 or getCharge(pfcands_iter.pdgId()) == 0){
-      fj_part.push_back(temp_jet);
-      
-      // Event shape variables
-      p3 = math::XYZVector(0,0,0);
-      p3.SetXYZ(temp_jet.px(), temp_jet.py(), temp_jet.pz() );
-      event_p3s.push_back(p3);
-    }
+    //if (pfcands_iter.vertex() == 0 or pfcands_iter.vertex() == 1 or getCharge(pfcands_iter.pdgId()) == 0){
+    fj_part.push_back(temp_jet);
+    
+    // Event shape variables
+    p3 = math::XYZVector(0,0,0);
+    p3.SetXYZ(temp_jet.px(), temp_jet.py(), temp_jet.pz() );
+    event_p3s.push_back(p3);
+    //}
     n_pfcand++;
   }
 
@@ -1479,7 +1479,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   }
 
   //
-  //AK4 Jets
+  //manual AK4 Jets
   //
 
   ClusterSequenceArea ak04_cs(fj_part, ak04_def, area_def);
@@ -1691,12 +1691,30 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     matched = false;
     for (auto gen = genjetsH->begin(); gen != genjetsH->end(); ++gen) { 
       if(abs(gen->eta()>2.4) || gen->pt() <= minFatJetPt) continue;
-      if(customDeltaR(scouting.eta(), scouting.phi_std(), gen->eta(), gen->phi())<=0.1){
+      if(customDeltaR(scouting.eta(), scouting.phi_std(), gen->eta(), gen->phi())<=0.8){
 	matched = true;
 	break;
       }
     }
     FatJet_matched.push_back(matched);
+  }
+
+  //Jet matching between pre-clustered and manual AK4 jets
+
+  vector<bool> AK4_matched;
+  bool ak4matched;
+  tree->Branch("AK4_matched", &AK4_matched);
+  for(auto &manual: ak04_jets) {
+    if(abs(manual.eta()>2.4)) continue;
+    ak4matched = false;
+    for (auto j = pfjetsH->begin(); j != pfjetsH->end(); ++j) { 
+      if(abs(j->eta()>2.4) || j->pt() <= minFatJetPt) continue;
+      if(customDeltaR(manual.eta(), manual.phi_std(), j->eta(), j->phi())<=0.4){
+	ak4matched = true;
+	break;
+      }
+    }
+    AK4_matched.push_back(ak4matched);
   }
   
   unsigned int n_pfcand_tot = 0;

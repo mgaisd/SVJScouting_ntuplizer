@@ -1411,9 +1411,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_fatjet++;
   }
   //Constituents of leading FatJet
-  if(saveConst){
+  if(saveConst && n_fatjet > 0){
     auto &leadingFatJet = ak08_jets[0];
+    //cout << "number of FatJets:" << endl << n_fatjet << endl;
     //cout << "leading Fatjet pt:" << endl << leadingFatJet.pt() << endl;
+    //cout << "number of constituents:" << endl << leadingFatJet.constituents().size() << endl;
     for (auto &c: leadingFatJet.constituents()){
       if (PFcand_pt[c.user_index()] > 0.5){
 	FatJetConst_pt.push_back(PFcand_pt[c.user_index()]);
@@ -1627,9 +1629,12 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     }
     //cout << "genjetconst size: " << GenJetConst.size() << endl;
   
-    if(saveConst){
+    if(saveConst && n_genjet > 0){
       auto leadingGenJet = genjetsH->begin();
+      //cout << "number of GenJets:" << endl << n_genjet << endl;
       //cout << "leading Genjet pt:" << endl << leadingGenJet->pt() << endl;
+      //cout << "number of constituents:" << endl << leadingGenJet->getGenConstituents().size() << endl;
+
       for (auto c: leadingGenJet->getGenConstituents()){
 	if (c->pt() > 0.5){
 	  GenJetConst_pt.push_back(c->pt());
@@ -1717,9 +1722,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       
     }
   }
-  if(saveConst){
+  if(saveConst && n_recojet > 0){
     auto leadingRecoJet = recojetsH->begin();
+    //cout << "number of offline Jets:" << endl << n_recojet << endl;
     //cout << "leading offline jet pt:" << endl << leadingRecoJet->pt() << endl;
+    //cout << "number of constituents:" << endl << leadingRecoJet->getJetConstituents().size() << endl << "-------------------" << endl;
     for (auto c: leadingRecoJet->getJetConstituents()){
       if (c->pt() > 0.5){
 	RecoJetConst_pt.push_back(c->pt());

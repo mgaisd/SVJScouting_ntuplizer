@@ -149,7 +149,7 @@ private:
   bool era_16;
   bool runScouting = true;
   bool runOffline =false;
-  float minFatJetPt = 100.;
+  float minFatJetPt = 200.;
   std::string label;
 
   HLTPrescaleProvider hltPSProv_;
@@ -270,12 +270,12 @@ private:
   vector<bool>                 Jet_passId;
 
   //manual AK4 jets from PFcandidates
-  UInt_t                       n_AK4;
+  /*UInt_t                       n_AK4;
   vector<Float16_t>            AK4_pt;
   vector<Float16_t>            AK4_eta;
   vector<Float16_t>            AK4_phi;
   vector<Float16_t>            AK4_mass;
-  vector<Float16_t>            AK4_nconst;
+  vector<Float16_t>            AK4_nconst;*/
 
   //PFCand
   UInt_t                       n_pfcand;
@@ -592,12 +592,12 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("Jet_nConstituents"                 ,&Jet_nConstituents             );
   tree->Branch("Jet_passId"                        ,&Jet_passId                    );
   
-  tree->Branch("n_AK4"                             ,&n_AK4                         ,"n_AK4/i");
+  /*tree->Branch("n_AK4"                             ,&n_AK4                         ,"n_AK4/i");
   tree->Branch("AK4_pt"                            ,&AK4_pt                        );
   tree->Branch("AK4_eta"                           ,&AK4_eta                       );
   tree->Branch("AK4_phi"                           ,&AK4_phi                       );
   tree->Branch("AK4_mass"                          ,&AK4_mass                      );
-  tree->Branch("AK4_nconst"                        ,&AK4_nconst                    );
+  tree->Branch("AK4_nconst"                        ,&AK4_nconst                    );*/
 
   tree->Branch("n_fatjet"                          ,&n_fatjet                      ,"n_fatjet/i");
   tree->Branch("FatJet_area"                       ,&FatJet_area                   );
@@ -1506,7 +1506,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   //
   //manual AK4 Jets
   //
-
+  /*
   ClusterSequenceArea ak04_cs(fj_part, ak04_def, area_def);
   vector<PseudoJet> ak04_jets = sorted_by_pt(ak04_cs.inclusive_jets(minFatJetPt)); //pt min
   
@@ -1529,7 +1529,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_AK4++;
   }
 
-
+  */
 
 
   // *

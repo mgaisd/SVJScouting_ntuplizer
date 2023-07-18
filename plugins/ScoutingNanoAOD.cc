@@ -146,6 +146,7 @@ private:
   bool doSignal;       
   bool isMC;
   bool saveConst;
+  bool onlyScouting;
   bool era_16;
   bool runScouting = true;
   bool runOffline =false;
@@ -290,14 +291,14 @@ private:
   vector<Float16_t>            PFcand_dR;
   vector<Float16_t>            PFcand_alldR;
   
-  // GenParticles
+  /*// GenParticles
   UInt_t                       n_genp;
   UInt_t                       n_genpjet;  
   vector<Float16_t>            GenPJet_pt;
   vector<Float16_t>            GenPJet_eta;
   vector<Float16_t>            GenPJet_phi;
   vector<Float16_t>            GenPJet_mass;
-  
+  */
   // Fatjets 
   UInt_t                       n_fatjet;
   vector<Float16_t>            FatJet_area;
@@ -317,8 +318,8 @@ private:
   vector<Float16_t>            FatJet_mtrim;
   vector<Float16_t>            FatJet_nconst;
   vector<Float16_t>            FatJet_girth;
-  // Fatjet Subjet info
-  vector<Float16_t>            FatJet_sj1_pt;
+  // Fatjet Subjet info (take way to much disk space for some reason)
+  /*vector<Float16_t>            FatJet_sj1_pt;
   vector<Float16_t>            FatJet_sj1_eta;
   vector<Float16_t>            FatJet_sj1_phi;
   vector<Float16_t>            FatJet_sj1_mass;
@@ -326,6 +327,7 @@ private:
   vector<Float16_t>            FatJet_sj2_eta;
   vector<Float16_t>            FatJet_sj2_phi;
   vector<Float16_t>            FatJet_sj2_mass;
+  */
   // Fatjet Constituents
   vector<Float16_t>            FatJetConst_pt;
   vector<Float16_t>            FatJetConst_eta;
@@ -335,7 +337,7 @@ private:
   vector<Float16_t>            FatJetConst_charge;
 
   // Fatjets Cambridge Aachen 
-  UInt_t                       n_fatjet_CA;
+  /*UInt_t                       n_fatjet_CA;
   vector<Float16_t>            FatJet_area_CA;
   vector<Float16_t>            FatJet_eta_CA;
   vector<Float16_t>            FatJet_n2b1_CA;
@@ -353,6 +355,7 @@ private:
   vector<Float16_t>            FatJet_mtrim_CA;
   vector<Float16_t>            FatJet_nconst_CA;
   vector<Float16_t>            FatJet_girth_CA;
+  
   //CA-Fatjet Subjet info
   vector<Float16_t>            FatJet_sj1_pt_CA;
   vector<Float16_t>            FatJet_sj1_eta_CA;
@@ -362,7 +365,7 @@ private:
   vector<Float16_t>            FatJet_sj2_eta_CA;
   vector<Float16_t>            FatJet_sj2_phi_CA;
   vector<Float16_t>            FatJet_sj2_mass_CA;
-
+  */
  
   //GenJets
   UInt_t                       n_genjet;
@@ -433,12 +436,13 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   prefireTokenup           (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProbUp"))),
   prefireTokendown         (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProbDown"))),
   genLumiInfoHeadTag_      (consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),
-  doL1                     (iConfig.existsAs<bool>("doL1")              ?    iConfig.getParameter<bool>  ("doL1")            : false),
-  doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")            : false),
-  doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")            : false),
-  isMC                     (iConfig.existsAs<bool>("isMC")              ?    iConfig.getParameter<bool>  ("isMC")            : true),
+  doL1                     (iConfig.existsAs<bool>("doL1")              ?    iConfig.getParameter<bool>  ("doL1")             : false),
+  doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")           : false),
+  doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")         : false),
+  isMC                     (iConfig.existsAs<bool>("isMC")              ?    iConfig.getParameter<bool>  ("isMC")             : true),
   saveConst                (iConfig.existsAs<bool>("saveConst")         ?    iConfig.getParameter<bool>  ("saveConst")        : false),
-  era_16                   (iConfig.existsAs<bool>("era_16")            ?    iConfig.getParameter<bool>  ("era_16")            : false),
+  onlyScouting             (iConfig.existsAs<bool>("onlyScouting")      ?    iConfig.getParameter<bool>  ("onlyScouting")     : false),
+  era_16                   (iConfig.existsAs<bool>("era_16")            ?    iConfig.getParameter<bool>  ("era_16")           : false),
 
   hltPSProv_(iConfig,consumesCollector(),*this), //it needs a reference to the calling module for some reason, hence the *this   
   hltProcess_(iConfig.getParameter<std::string>("hltProcess")),
@@ -520,14 +524,14 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("PFcand_alldR"        	        ,&PFcand_alldR 	                );
   */
 
-  tree->Branch("n_genp"            	        ,&n_genp 		        ,"n_genp/i");	
+  /*tree->Branch("n_genp"            	        ,&n_genp 		        ,"n_genp/i");	
 
   tree->Branch("n_genpjet"                      ,&n_genpjet                      ,"n_genpjet/i");
   tree->Branch("GenPJet_pt"        	        ,&GenPJet_pt 		        );
   tree->Branch("GenPJet_eta"                    ,&GenPJet_eta 	                );
   tree->Branch("GenPJet_phi"           	        ,&GenPJet_phi		        );
   tree->Branch("GenPJet_mass"         	        ,&GenPJet_mass 		        );
- 
+  */
 
   tree->Branch("n_mu"            	        ,&n_mu 	                        ,"n_mu/i");
   tree->Branch("Muon_pt"                        ,&Muon_pt                       );
@@ -625,7 +629,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJetConst_pdgID"                 ,&FatJetConst_pdgID              );  
   tree->Branch("FatJetConst_charge"                ,&FatJetConst_charge             );  
 
-  tree->Branch("FatJet_sj1_pt"                     ,&FatJet_sj1_pt                  );
+  /*tree->Branch("FatJet_sj1_pt"                     ,&FatJet_sj1_pt                  );
   tree->Branch("FatJet_sj1_eta"                    ,&FatJet_sj1_eta                 );
   tree->Branch("FatJet_sj1_phi"                    ,&FatJet_sj1_phi                 );
   tree->Branch("FatJet_sj1_mass"                   ,&FatJet_sj1_mass                );
@@ -633,9 +637,9 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_sj2_eta"                    ,&FatJet_sj2_eta                 );
   tree->Branch("FatJet_sj2_phi"                    ,&FatJet_sj2_phi                 );
   tree->Branch("FatJet_sj2_mass"                   ,&FatJet_sj2_mass                );
-  
+  */
 
-  tree->Branch("n_fatjet_CA"                       ,&n_fatjet_CA                      ,"n_fatjet_CA/i");
+  /*tree->Branch("n_fatjet_CA"                       ,&n_fatjet_CA                      ,"n_fatjet_CA/i");
   tree->Branch("FatJet_area_CA"                    ,&FatJet_area_CA                   );
   tree->Branch("FatJet_eta_CA"                     ,&FatJet_eta_CA                    );
   tree->Branch("FatJet_n2b1_CA"                    ,&FatJet_n2b1_CA                   );
@@ -662,7 +666,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_sj2_eta_CA"                 ,&FatJet_sj2_eta_CA                 );
   tree->Branch("FatJet_sj2_phi_CA"                 ,&FatJet_sj2_phi_CA                 );
   tree->Branch("FatJet_sj2_mass_CA"                ,&FatJet_sj2_mass_CA                );
-
+  */
 
   tree->Branch("n_genjet"                          ,&n_genjet                         ,"n_genjet/i");
   tree->Branch("GenJet_pt"                         ,&GenJet_pt                        );
@@ -1008,9 +1012,9 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_pfcand++;
   }
 
-
+  
   //
-  //Genparticles
+  //manual Genparticles genp
   //
 
   
@@ -1020,7 +1024,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   tree->Branch("pdgList"                    ,&pdgList                   );
   cout << "list of genparticles" << endl;
   */
-
+  /*
   Handle<vector<reco::GenParticle> > genP;
   iEvent.getByToken(gensToken2, genP);
   vector<math::XYZVector> genp_event_p3s; // all particle (px,py,pz)
@@ -1036,10 +1040,10 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       if (abs(genp_iter->pdgId())==51 || abs(genp_iter->pdgId())==53) continue; //remove dark matter
       if (genp_iter->pt() < 0.5) continue;
       //to print list of genparticle pdgIDs 
-      /* if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
-	pdgList.push_back(genp_iter->pdgId());
-	cout << genp_iter->pdgId() << endl;
-	}*/
+      // if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
+      //pdgList.push_back(genp_iter->pdgId());
+      //cout << genp_iter->pdgId() << endl;
+      //}
       PseudoJet temp_genpjet = PseudoJet(0, 0, 0, 0);
       temp_genpjet.reset_PtYPhiM(genp_iter->pt(),genp_iter->eta(), genp_iter->phi(), genp_iter->mass());
       temp_genpjet.set_user_index(n_genp);
@@ -1053,7 +1057,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       n_genp++;
     }
   }
-  
+  */
   ///////////////////////////////////////
 
   // 
@@ -1234,7 +1238,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   // * 
   // FatJets_CA 
   // *
-  FatJet_area_CA.clear();
+  /*FatJet_area_CA.clear();
   FatJet_eta_CA .clear();
   FatJet_phi_CA .clear();
   FatJet_pt_CA  .clear();
@@ -1251,7 +1255,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   FatJet_mtrim_CA.clear();
   FatJet_nconst_CA.clear();
   FatJet_girth_CA.clear();
-
+  */
   JetDefinition ak08_def = JetDefinition(antikt_algorithm, 0.8);
   JetDefinition ak04_def = JetDefinition(antikt_algorithm, 0.4);
   double sd_z_cut = 0.10;
@@ -1259,7 +1263,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   SoftDrop sd_groomer = SoftDrop(sd_z_cut, sd_beta, 1.0);
   Filter trimmer = Filter(JetDefinition(kt_algorithm, 0.2), SelectorPtFractionMin(0.03));
 
-  JetDefinition CA08_def = JetDefinition(cambridge_algorithm, 0.8);  
+  //JetDefinition CA08_def = JetDefinition(cambridge_algorithm, 0.8);  
  
   double beta = 1.0;                                                                                  
   Nsubjettiness nSub1 = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
@@ -1268,11 +1272,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Nsubjettiness nSub4 = Nsubjettiness(4, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
   Nsubjettiness nSub5 = Nsubjettiness(5, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
 
-  Nsubjettiness nSub1_CA = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta)); 
-  Nsubjettiness nSub2_CA = Nsubjettiness(2, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
-  Nsubjettiness nSub3_CA = Nsubjettiness(3, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
-  Nsubjettiness nSub4_CA = Nsubjettiness(4, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
-  Nsubjettiness nSub5_CA = Nsubjettiness(5, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //Nsubjettiness nSub1_CA = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta)); 
+  //Nsubjettiness nSub2_CA = Nsubjettiness(2, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //Nsubjettiness nSub3_CA = Nsubjettiness(3, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //Nsubjettiness nSub4_CA = Nsubjettiness(4, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //Nsubjettiness nSub5_CA = Nsubjettiness(5, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
 
   EnergyCorrelatorN2 N2=EnergyCorrelatorN2(1.0);
   EnergyCorrelatorN3 N3=EnergyCorrelatorN3(1.0);
@@ -1283,8 +1287,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   ClusterSequenceArea ak08_cs(fj_part, ak08_def, area_def);
   vector<PseudoJet> ak08_jets = sorted_by_pt(ak08_cs.inclusive_jets(minFatJetPt)); //pt min
 
-  ClusterSequenceArea CA08_cs(fj_part, CA08_def, area_def);//CA 
-  vector<PseudoJet> CA08_jets = sorted_by_pt(CA08_cs.inclusive_jets(minFatJetPt)); //pt min
+  //ClusterSequenceArea CA08_cs(fj_part, CA08_def, area_def);//CA 
+  //vector<PseudoJet> CA08_jets = sorted_by_pt(CA08_cs.inclusive_jets(minFatJetPt)); //pt min
 
   n_fatjet = 0;
   for(auto &j: ak08_jets) {
@@ -1351,7 +1355,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       }*/
 
 
-    //softdrop subjets
+    /*//softdrop subjets
     ClusterSequence ak04_sd_cs(sd_ak8.constituents(), ak04_def);
     
     vector<PseudoJet> subjets = sorted_by_pt(ak04_sd_cs.inclusive_jets(0.01));
@@ -1370,7 +1374,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     FatJet_sj2_eta.push_back(subjets[1].eta());
     FatJet_sj2_phi.push_back(subjets[1].phi());
     FatJet_sj2_mass.push_back(subjets[1].m());     //.e() and .E() are the same, can also use .m(): http://fastjet.fr/repo/doxygen-3.4.1/PseudoJet_8hh_source.html#l00117
-    
+    */
     
 
     
@@ -1428,7 +1432,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     }
   }
 
-    //Cambridge Aachen
+  /*//Cambridge Aachen
   n_fatjet_CA = 0;
   for(auto &j: CA08_jets) {
     FatJet_area_CA.push_back(j.area());
@@ -1466,7 +1470,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     FatJet_sj2_eta_CA.push_back(subjets_CA[1].eta());
     FatJet_sj2_phi_CA.push_back(subjets_CA[1].phi());
     FatJet_sj2_mass_CA.push_back(subjets_CA[1].m());  
-
+    
 
 
     PseudoJet trimmed_CA8 = trimmer(j);
@@ -1501,7 +1505,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     FatJet_girth_CA.push_back(i_girth);    
 
     n_fatjet_CA++;
-  }
+    }*/
 
   //
   //manual AK4 Jets
@@ -1531,7 +1535,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   */
 
-
+  /*
   // *
   //GenParticle Jets
   // *
@@ -1556,13 +1560,13 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       
       n_genpjet++;
     }
-  }
+    }*/
 
   // * 
   // GenJets 
   // * 
 
-  if(isMC){
+  if(isMC && !onlyScouting){
     GenJet_pt.clear();
     GenJet_eta.clear();
     GenJet_phi.clear();
@@ -1651,94 +1655,56 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   // RecoJets 
   // * 
 
-  RecoJet_pt.clear();
-  RecoJet_eta.clear();
-  RecoJet_phi.clear();
-  RecoJet_mass.clear();
-  RecoJetConst_pt.clear();
-  RecoJetConst_eta.clear();
-  RecoJetConst_phi.clear();
-  RecoJetConst_mass.clear();
-  RecoJetConst_pdgID.clear();
-  RecoJetConst_charge.clear();
+  if(!onlyScouting){
+    RecoJet_pt.clear();
+    RecoJet_eta.clear();
+    RecoJet_phi.clear();
+    RecoJet_mass.clear();
+    RecoJetConst_pt.clear();
+    RecoJetConst_eta.clear();
+    RecoJetConst_phi.clear();
+    RecoJetConst_mass.clear();
+    RecoJetConst_pdgID.clear();
+    RecoJetConst_charge.clear();
   
-  n_recojet = 0;
+    n_recojet = 0;
   
-  /* vector<int> recopdgList;
-  pdgList.clear();
-  tree->Branch("recopdgList"                    ,&recopdgList                   );
-  cout << "list of recojet particles" << endl;
-  */
+    /* vector<int> recopdgList;
+       pdgList.clear();
+       tree->Branch("recopdgList"                    ,&recopdgList                   );
+       cout << "list of recojet particles" << endl;
+    */
 
-  for (auto recojet = recojetsH->begin(); recojet != recojetsH->end(); ++recojet) {
-    if (recojet->p4().Pt() > minFatJetPt){
-      if(abs(recojet->eta()) > 2.4) continue;
-      RecoJet_pt .push_back( recojet->p4().Pt() );
-      RecoJet_eta.push_back( recojet->p4().Eta());
-      RecoJet_phi.push_back( recojet->p4().Phi());
-      RecoJet_mass  .push_back( recojet->p4().M());
+    for (auto recojet = recojetsH->begin(); recojet != recojetsH->end(); ++recojet) {
+      if (recojet->p4().Pt() > minFatJetPt){
+	if(abs(recojet->eta()) > 2.4) continue;
+	RecoJet_pt .push_back( recojet->p4().Pt() );
+	RecoJet_eta.push_back( recojet->p4().Eta());
+	RecoJet_phi.push_back( recojet->p4().Phi());
+	RecoJet_mass  .push_back( recojet->p4().M());
 
-      /*if (saveConst){
-	vector<Float16_t> temp_pt;
-	vector<Float16_t> temp_eta;
-	vector<Float16_t> temp_phi;
-	vector<Float16_t> temp_mass;
-	vector<Float16_t> temp_pdgID;
-	vector<Float16_t> temp_charge;
-	
-	temp_pt.clear();
-	temp_eta.clear();
-	temp_phi.clear();
-	temp_mass.clear();
-	temp_pdgID.clear();
-	temp_charge.clear();
-	
-	for (auto c: recojet->getJetConstituents()){
-	  if (c->pt() > 0.5){
-	    //if (std::find(recopdgList.begin(), recopdgList.end(), c->pdgId()) == recopdgList.end()) {
-	     // recopdgList.push_back(c->pdgId());
-	     // cout << c->pdgId() << endl;
-	     // }
-	    //cout << "###"<< endl;
-	    //cout << genjet->getGenConstituents().size() << endl;
-	    //cout << "###" << endl;
-	    temp_pt.push_back(c->pt());
-	    temp_eta.push_back(c->eta());
-	    temp_phi.push_back(c->phi());
-	    temp_mass.push_back(c->mass());
-	    temp_pdgID.push_back(c->pdgId());
-	    temp_charge.push_back(c->charge());
-	  }
-	}
-	RecoJetConst_pt.push_back(temp_pt);
-	RecoJetConst_eta.push_back(temp_eta);
-	RecoJetConst_phi.push_back(temp_phi);
-	RecoJetConst_mass.push_back(temp_mass);
-	RecoJetConst_pdgID.push_back(temp_pdgID);
-	RecoJetConst_charge.push_back(temp_charge);
-      }*/
+            
+	n_recojet++;
       
-      n_recojet++;
-      
+      }
     }
-  }
-  if(saveConst && n_recojet > 0){
-    auto leadingRecoJet = recojetsH->begin();
-    //cout << "number of offline Jets:" << endl << n_recojet << endl;
-    //cout << "leading offline jet pt:" << endl << leadingRecoJet->pt() << endl;
-    //cout << "number of constituents:" << endl << leadingRecoJet->getJetConstituents().size() << endl << "-------------------" << endl;
-    for (auto c: leadingRecoJet->getJetConstituents()){
-      if (c->pt() > 0.5){
-	RecoJetConst_pt.push_back(c->pt());
-	RecoJetConst_eta.push_back(c->eta());
-	RecoJetConst_phi.push_back(c->phi());
-	RecoJetConst_mass.push_back(c->mass());
-	RecoJetConst_pdgID.push_back(c->pdgId());
-	RecoJetConst_charge.push_back(c->charge());
+    if(saveConst && n_recojet > 0){
+      auto leadingRecoJet = recojetsH->begin();
+      //cout << "number of offline Jets:" << endl << n_recojet << endl;
+      //cout << "leading offline jet pt:" << endl << leadingRecoJet->pt() << endl;
+      //cout << "number of constituents:" << endl << leadingRecoJet->getJetConstituents().size() << endl << "-------------------" << endl;
+      for (auto c: leadingRecoJet->getJetConstituents()){
+	if (c->pt() > 0.5){
+	  RecoJetConst_pt.push_back(c->pt());
+	  RecoJetConst_eta.push_back(c->eta());
+	  RecoJetConst_phi.push_back(c->phi());
+	  RecoJetConst_mass.push_back(c->mass());
+	  RecoJetConst_pdgID.push_back(c->pdgId());
+	  RecoJetConst_charge.push_back(c->charge());
+	}
       }
     }
   }
-
   /*  //Jet matching between scouting jets and genjets
 
   for(auto &scouting: ak08_jets) {

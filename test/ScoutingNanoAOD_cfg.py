@@ -42,6 +42,13 @@ params.register(
 )
 
 params.register(
+    'onlyScouting', 
+    False, 
+    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
+    'Flag to indicate whether to save only scouting variables or gen/offline/scouting'
+)
+
+params.register(
     'reducedInfo', 
     False, 
     VarParsing.multiplicity.singleton,VarParsing.varType.bool,
@@ -252,6 +259,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     doSignal          = cms.bool(runSig), 
     isMC              = cms.bool(params.isMC),
     saveConst         = cms.bool(params.saveConst),
+    onlyScouting      = cms.bool(params.onlyScouting),
     #monitor           = cms.bool(params.monitor),
     era_16            = cms.bool(params.era == "2016"),
     #runScouting          = cms.bool(params.runScouting),

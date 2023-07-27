@@ -291,6 +291,12 @@ private:
   vector<Float16_t>            PFcand_dR;
   vector<Float16_t>            PFcand_alldR;
   
+  //pt_miss, dijet mass and transverse mass
+  Float16_t                    pt_miss;
+  Float16_t                    phi_miss;
+  Float16_t                    dijet_mass;
+  Float16_t                    transverse_mass;
+
   /*// GenParticles
   UInt_t                       n_genp;
   UInt_t                       n_genpjet;  
@@ -329,12 +335,19 @@ private:
   vector<Float16_t>            FatJet_sj2_mass;
   */
   // Fatjet Constituents
-  vector<Float16_t>            FatJetConst_pt;
-  vector<Float16_t>            FatJetConst_eta;
-  vector<Float16_t>            FatJetConst_phi;
-  vector<Float16_t>            FatJetConst_mass;
-  vector<Float16_t>            FatJetConst_pdgID;
-  vector<Float16_t>            FatJetConst_charge;
+  vector<Float16_t>            FatJet1Const_pt;
+  vector<Float16_t>            FatJet1Const_eta;
+  vector<Float16_t>            FatJet1Const_phi;
+  vector<Float16_t>            FatJet1Const_mass;
+  vector<Float16_t>            FatJet1Const_pdgID;
+  vector<Float16_t>            FatJet1Const_charge;
+
+  vector<Float16_t>            FatJet2Const_pt;
+  vector<Float16_t>            FatJet2Const_eta;
+  vector<Float16_t>            FatJet2Const_phi;
+  vector<Float16_t>            FatJet2Const_mass;
+  vector<Float16_t>            FatJet2Const_pdgID;
+  vector<Float16_t>            FatJet2Const_charge;
 
   // Fatjets Cambridge Aachen 
   /*UInt_t                       n_fatjet_CA;
@@ -523,6 +536,10 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("PFcand_dR"        	        ,&PFcand_dR 	                );
   tree->Branch("PFcand_alldR"        	        ,&PFcand_alldR 	                );
   */
+  
+  tree->Branch("pt_miss"                        ,&pt_miss                       );
+  tree->Branch("dijet_mass"                     ,&dijet_mass                    );
+  tree->Branch("transverse_mass"                ,&transverse_mass               );
 
   /*tree->Branch("n_genp"            	        ,&n_genp 		        ,"n_genp/i");	
 
@@ -622,12 +639,21 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_nconst"                     ,&FatJet_nconst                 );
   tree->Branch("FatJet_girth"                      ,&FatJet_girth                  );
   
-  tree->Branch("FatJetConst_pt"                    ,&FatJetConst_pt                 );  
-  tree->Branch("FatJetConst_eta"                   ,&FatJetConst_eta                );  
-  tree->Branch("FatJetConst_phi"                   ,&FatJetConst_phi                );  
-  tree->Branch("FatJetConst_mass"                  ,&FatJetConst_mass               );  
-  tree->Branch("FatJetConst_pdgID"                 ,&FatJetConst_pdgID              );  
-  tree->Branch("FatJetConst_charge"                ,&FatJetConst_charge             );  
+  if(saveConst){
+    tree->Branch("FatJet1Const_pt"                    ,&FatJet1Const_pt                 );  
+    tree->Branch("FatJet1Const_eta"                   ,&FatJet1Const_eta                );  
+    tree->Branch("FatJet1Const_phi"                   ,&FatJet1Const_phi                );  
+    tree->Branch("FatJet1Const_mass"                  ,&FatJet1Const_mass               );  
+    tree->Branch("FatJet1Const_pdgID"                 ,&FatJet1Const_pdgID              );  
+    tree->Branch("FatJet1Const_charge"                ,&FatJet1Const_charge             );  
+    
+    tree->Branch("FatJet2Const_pt"                    ,&FatJet2Const_pt                 );  
+    tree->Branch("FatJet2Const_eta"                   ,&FatJet2Const_eta                );  
+    tree->Branch("FatJet2Const_phi"                   ,&FatJet2Const_phi                );  
+    tree->Branch("FatJet2Const_mass"                  ,&FatJet2Const_mass               );  
+    tree->Branch("FatJet2Const_pdgID"                 ,&FatJet2Const_pdgID              );  
+    tree->Branch("FatJet2Const_charge"                ,&FatJet2Const_charge             );  
+  }
 
   /*tree->Branch("FatJet_sj1_pt"                     ,&FatJet_sj1_pt                  );
   tree->Branch("FatJet_sj1_eta"                    ,&FatJet_sj1_eta                 );
@@ -668,32 +694,39 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("FatJet_sj2_mass_CA"                ,&FatJet_sj2_mass_CA                );
   */
 
-  tree->Branch("n_genjet"                          ,&n_genjet                         ,"n_genjet/i");
-  tree->Branch("GenJet_pt"                         ,&GenJet_pt                        );
-  tree->Branch("GenJet_eta"                        ,&GenJet_eta                       );
-  tree->Branch("GenJet_phi"                        ,&GenJet_phi                       );
-  tree->Branch("GenJet_mass"                       ,&GenJet_mass                      );
+  if(isMC && !onlyScouting){
+    tree->Branch("n_genjet"                          ,&n_genjet                         ,"n_genjet/i");
+    tree->Branch("GenJet_pt"                         ,&GenJet_pt                        );
+    tree->Branch("GenJet_eta"                        ,&GenJet_eta                       );
+    tree->Branch("GenJet_phi"                        ,&GenJet_phi                       );
+    tree->Branch("GenJet_mass"                       ,&GenJet_mass                      );
 
-  tree->Branch("GenJetConst_pt"                    ,&GenJetConst_pt                 );  
-  tree->Branch("GenJetConst_eta"                   ,&GenJetConst_eta                );  
-  tree->Branch("GenJetConst_phi"                   ,&GenJetConst_phi                );  
-  tree->Branch("GenJetConst_mass"                  ,&GenJetConst_mass               );  
-  tree->Branch("GenJetConst_pdgID"                 ,&GenJetConst_pdgID              );  
-  tree->Branch("GenJetConst_charge"                ,&GenJetConst_charge             );  
+    if(saveConst){
+      tree->Branch("GenJetConst_pt"                    ,&GenJetConst_pt                 );  
+      tree->Branch("GenJetConst_eta"                   ,&GenJetConst_eta                );  
+      tree->Branch("GenJetConst_phi"                   ,&GenJetConst_phi                );  
+      tree->Branch("GenJetConst_mass"                  ,&GenJetConst_mass               );  
+      tree->Branch("GenJetConst_pdgID"                 ,&GenJetConst_pdgID              );  
+      tree->Branch("GenJetConst_charge"                ,&GenJetConst_charge             );  
+    }
+  }
 
-  tree->Branch("n_recojet"                         ,&n_recojet                      ,"n_recojet/i");
-  tree->Branch("RecoJet_pt"                        ,&RecoJet_pt                     );
-  tree->Branch("RecoJet_eta"                       ,&RecoJet_eta                    );
-  tree->Branch("RecoJet_phi"                       ,&RecoJet_phi                    );
-  tree->Branch("RecoJet_mass"                      ,&RecoJet_mass                   );
+  if(!onlyScouting){
+    tree->Branch("n_recojet"                         ,&n_recojet                      ,"n_recojet/i");
+    tree->Branch("RecoJet_pt"                        ,&RecoJet_pt                     );
+    tree->Branch("RecoJet_eta"                       ,&RecoJet_eta                    );
+    tree->Branch("RecoJet_phi"                       ,&RecoJet_phi                    );
+    tree->Branch("RecoJet_mass"                      ,&RecoJet_mass                   );
 
-  tree->Branch("RecoJetConst_pt"                    ,&RecoJetConst_pt                 );  
-  tree->Branch("RecoJetConst_eta"                   ,&RecoJetConst_eta                );  
-  tree->Branch("RecoJetConst_phi"                   ,&RecoJetConst_phi                );  
-  tree->Branch("RecoJetConst_mass"                  ,&RecoJetConst_mass               );  
-  tree->Branch("RecoJetConst_pdgID"                 ,&RecoJetConst_pdgID              );  
-  tree->Branch("RecoJetConst_charge"                ,&RecoJetConst_charge             );  
-
+    if(saveConst){
+      tree->Branch("RecoJetConst_pt"                    ,&RecoJetConst_pt                 );  
+      tree->Branch("RecoJetConst_eta"                   ,&RecoJetConst_eta                );  
+      tree->Branch("RecoJetConst_phi"                   ,&RecoJetConst_phi                );  
+      tree->Branch("RecoJetConst_mass"                  ,&RecoJetConst_mass               );  
+      tree->Branch("RecoJetConst_pdgID"                 ,&RecoJetConst_pdgID              );  
+      tree->Branch("RecoJetConst_charge"                ,&RecoJetConst_charge             );  
+    }
+  }
 
   tree->Branch("rho"                            ,&rho2                           );
 
@@ -1012,7 +1045,26 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_pfcand++;
   }
 
-  
+  //
+  // PT miss
+  //
+  // for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
+  Float16_t sum_px;
+  Float16_t sum_py;
+  sum_px = 0;
+  sum_py = 0;
+  pt_miss = 0;
+  phi_miss = 0;
+  for(auto & iter : fj_part){
+    sum_px += iter.px();
+    sum_py += iter.py();
+  }
+  pt_miss = sqrt(pow(sum_px,2)+pow(sum_py,2));
+  //TVector2 miss = TVector2(sum_px, sum_py); (0,2pi)
+  TLorentzVector miss = TLorentzVector(sum_px, sum_py, 0, 0); //(-pi,pi)
+  phi_miss = miss.Phi();
+
+
   //
   //manual Genparticles genp
   //
@@ -1227,12 +1279,20 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   FatJet_mtrim.clear();
   FatJet_nconst.clear();
   FatJet_girth.clear();
-  FatJetConst_pt.clear();
-  FatJetConst_eta.clear();
-  FatJetConst_phi.clear();
-  FatJetConst_mass.clear();
-  FatJetConst_pdgID.clear();
-  FatJetConst_charge.clear();
+
+  FatJet1Const_pt.clear();
+  FatJet1Const_eta.clear();
+  FatJet1Const_phi.clear();
+  FatJet1Const_mass.clear();
+  FatJet1Const_pdgID.clear();
+  FatJet1Const_charge.clear();
+
+  FatJet2Const_pt.clear();
+  FatJet2Const_eta.clear();
+  FatJet2Const_phi.clear();
+  FatJet2Const_mass.clear();
+  FatJet2Const_pdgID.clear();
+  FatJet2Const_charge.clear();
 
   
   // * 
@@ -1414,23 +1474,51 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
     n_fatjet++;
   }
-  //Constituents of leading FatJet
-  if(saveConst && n_fatjet > 0){
+  //Constituents of 2 leading FatJets
+  dijet_mass = 0;
+  transverse_mass = 0;
+
+  if(saveConst && n_fatjet > 1){ //only first fatjet: > 0, first two fatjets: > 1
     auto &leadingFatJet = ak08_jets[0];
+    auto &secondFatJet = ak08_jets[1];
     //cout << "number of FatJets:" << endl << n_fatjet << endl;
     //cout << "leading Fatjet pt:" << endl << leadingFatJet.pt() << endl;
     //cout << "number of constituents:" << endl << leadingFatJet.constituents().size() << endl;
     for (auto &c: leadingFatJet.constituents()){
       if (PFcand_pt[c.user_index()] > 0.5){
-	FatJetConst_pt.push_back(PFcand_pt[c.user_index()]);
-	FatJetConst_eta.push_back(PFcand_eta[c.user_index()]);
-	FatJetConst_phi.push_back(PFcand_phi[c.user_index()]);
-	FatJetConst_mass.push_back(PFcand_m[c.user_index()]);
-	FatJetConst_pdgID.push_back(PFcand_pdgid[c.user_index()]);
-	FatJetConst_charge.push_back(PFcand_q[c.user_index()]);  
+	FatJet1Const_pt.push_back(PFcand_pt[c.user_index()]);
+	FatJet1Const_eta.push_back(PFcand_eta[c.user_index()]);
+	FatJet1Const_phi.push_back(PFcand_phi[c.user_index()]);
+	FatJet1Const_mass.push_back(PFcand_m[c.user_index()]);
+	FatJet1Const_pdgID.push_back(PFcand_pdgid[c.user_index()]);
+	FatJet1Const_charge.push_back(PFcand_q[c.user_index()]);  
       }
     }
+
+    for (auto &c: secondFatJet.constituents()){
+      if (PFcand_pt[c.user_index()] > 0.5){
+	FatJet2Const_pt.push_back(PFcand_pt[c.user_index()]);
+	FatJet2Const_eta.push_back(PFcand_eta[c.user_index()]);
+	FatJet2Const_phi.push_back(PFcand_phi[c.user_index()]);
+	FatJet2Const_mass.push_back(PFcand_m[c.user_index()]);
+	FatJet2Const_pdgID.push_back(PFcand_pdgid[c.user_index()]);
+	FatJet2Const_charge.push_back(PFcand_q[c.user_index()]);  
+      }
+    }
+
+    //
+    //Dijet mass and transverse mass
+    //
+    TLorentzVector Fatjet1;
+    Fatjet1.SetPtEtaPhiM(leadingFatJet.pt(), leadingFatJet.eta(), leadingFatJet.phi_std(), leadingFatJet.m()); 
+    TLorentzVector Fatjet2;
+    Fatjet2.SetPtEtaPhiM(secondFatJet.pt(), secondFatJet.eta(), secondFatJet.phi_std(), secondFatJet.m()); 
+    TLorentzVector Dijet = Fatjet1 + Fatjet2;
+    dijet_mass = Dijet.M();
+    transverse_mass = sqrt(pow(dijet_mass,2) + 2*pt_miss * ( sqrt(pow(dijet_mass,2)+pow(Dijet.Pt(),2)) - Dijet.Pt()*cos(Dijet.Phi()-phi_miss) ));
   }
+
+  
 
   /*//Cambridge Aachen
   n_fatjet_CA = 0;

@@ -150,7 +150,7 @@ private:
   bool era_16;
   bool runScouting = true;
   bool runOffline =false;
-  float minFatJetPt = 200.;
+  float minFatJetPt = 150.;
   std::string label;
 
   HLTPrescaleProvider hltPSProv_;
@@ -291,11 +291,11 @@ private:
   vector<Float16_t>            PFcand_dR;
   vector<Float16_t>            PFcand_alldR;
   
-  //pt_miss, dijet mass and transverse mass
-  Float16_t                    pt_miss;
+  //pt_miss (MET), dijet mass (Mjj) and transverse mass (MT)
+  Float16_t                    MET;
   Float16_t                    phi_miss;
-  Float16_t                    dijet_mass;
-  Float16_t                    transverse_mass;
+  Float16_t                    Mjj;
+  Float16_t                    MT;
 
   /*// GenParticles
   UInt_t                       n_genp;
@@ -537,9 +537,9 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("PFcand_alldR"        	        ,&PFcand_alldR 	                );
   */
   
-  tree->Branch("pt_miss"                        ,&pt_miss                       );
-  tree->Branch("dijet_mass"                     ,&dijet_mass                    );
-  tree->Branch("transverse_mass"                ,&transverse_mass               );
+  tree->Branch("MET"                            ,&MET                           );
+  tree->Branch("Mjj"                            ,&Mjj                           );
+  tree->Branch("MT"                             ,&MT                            );
 
   /*tree->Branch("n_genp"            	        ,&n_genp 		        ,"n_genp/i");	
 
@@ -1053,13 +1053,13 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Float16_t sum_py;
   sum_px = 0;
   sum_py = 0;
-  pt_miss = 0;
+  MET = 0;
   phi_miss = 0;
   for(auto & iter : fj_part){
     sum_px += iter.px();
     sum_py += iter.py();
   }
-  pt_miss = sqrt(pow(sum_px,2)+pow(sum_py,2));
+  MET = sqrt(pow(sum_px,2)+pow(sum_py,2));
   //TVector2 miss = TVector2(sum_px, sum_py); (0,2pi)
   TLorentzVector miss = TLorentzVector(sum_px, sum_py, 0, 0); //(-pi,pi)
   phi_miss = miss.Phi();
@@ -1475,8 +1475,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_fatjet++;
   }
   //Constituents of 2 leading FatJets
-  dijet_mass = 0;
-  transverse_mass = 0;
+  Mjj = 0;
+  MT = 0;
 
   if(saveConst && n_fatjet > 1){ //only first fatjet: > 0, first two fatjets: > 1
     auto &leadingFatJet = ak08_jets[0];
@@ -1514,8 +1514,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     TLorentzVector Fatjet2;
     Fatjet2.SetPtEtaPhiM(secondFatJet.pt(), secondFatJet.eta(), secondFatJet.phi_std(), secondFatJet.m()); 
     TLorentzVector Dijet = Fatjet1 + Fatjet2;
-    dijet_mass = Dijet.M();
-    transverse_mass = sqrt(pow(dijet_mass,2) + 2*pt_miss * ( sqrt(pow(dijet_mass,2)+pow(Dijet.Pt(),2)) - Dijet.Pt()*cos(Dijet.Phi()-phi_miss) ));
+    Mjj = Dijet.M();
+    MT = sqrt(pow(Mjj,2) + 2*MET * ( sqrt(pow(Mjj,2)+pow(Dijet.Pt(),2)) - Dijet.Pt()*cos(Dijet.Phi()-phi_miss) ));
   }
 
   

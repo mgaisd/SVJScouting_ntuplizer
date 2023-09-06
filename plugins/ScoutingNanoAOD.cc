@@ -243,7 +243,7 @@ private:
   UInt_t                       n_jet;
   UInt_t                       n_jetId;
   float                        ht;
-  float                        htoff;
+  float                        htoff; //can delete
   bool                         passJetId;
   vector<Float16_t> 	       Jet_pt;
   vector<Float16_t>            Jet_eta;
@@ -293,7 +293,7 @@ private:
   
   //pt_miss (MET), dijet mass (Mjj) and transverse mass (MT)
   Float16_t                    MET;
-  Float16_t                    phi_miss;
+  Float16_t                    MET_phi;
   Float16_t                    Mjj;
   Float16_t                    MT;
 
@@ -538,6 +538,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   */
   
   tree->Branch("MET"                            ,&MET                           );
+  tree->Branch("MET_phi"                        ,&MET_phi                       );
   tree->Branch("Mjj"                            ,&Mjj                           );
   tree->Branch("MT"                             ,&MT                            );
 
@@ -1054,7 +1055,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   sum_px = 0;
   sum_py = 0;
   MET = 0;
-  phi_miss = 0;
+  MET_phi = 0;
   for(auto & iter : fj_part){
     sum_px += iter.px();
     sum_py += iter.py();
@@ -1062,7 +1063,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   MET = sqrt(pow(sum_px,2)+pow(sum_py,2));
   //TVector2 miss = TVector2(sum_px, sum_py); (0,2pi)
   TLorentzVector miss = TLorentzVector(sum_px, sum_py, 0, 0); //(-pi,pi)
-  phi_miss = miss.Phi();
+  MET_phi = miss.Phi();
 
 
   //
@@ -1515,7 +1516,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     Fatjet2.SetPtEtaPhiM(secondFatJet.pt(), secondFatJet.eta(), secondFatJet.phi_std(), secondFatJet.m()); 
     TLorentzVector Dijet = Fatjet1 + Fatjet2;
     Mjj = Dijet.M();
-    MT = sqrt(pow(Mjj,2) + 2*MET * ( sqrt(pow(Mjj,2)+pow(Dijet.Pt(),2)) - Dijet.Pt()*cos(Dijet.Phi()-phi_miss) ));
+    MT = sqrt(pow(Mjj,2) + 2*MET * ( sqrt(pow(Mjj,2)+pow(Dijet.Pt(),2)) - Dijet.Pt()*cos(Dijet.Phi()-MET_phi) ));
   }
 
   
@@ -1525,7 +1526,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   for(auto &j: CA08_jets) {
     FatJet_area_CA.push_back(j.area());
     FatJet_eta_CA .push_back(j.pseudorapidity());
-    FatJet_phi_CA .push_back(j.phi_std());
+    FatJet_phi_
+CA .push_back(j.phi_std());
     FatJet_pt_CA  .push_back(j.pt());
     FatJet_mass_CA.push_back(j.m());
 

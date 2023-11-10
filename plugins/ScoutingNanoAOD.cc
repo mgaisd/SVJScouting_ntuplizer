@@ -145,6 +145,7 @@ private:
   bool doData;       
   bool doSignal;       
   bool isMC;
+  bool truthstudy; //only do with signal!
   bool saveConst;
   bool onlyScouting;
   bool era_16;
@@ -297,14 +298,14 @@ private:
   Float16_t                    Mjj;
   Float16_t                    MT;
 
-  /*// GenParticles
+  // GenParticles
   UInt_t                       n_genp;
-  UInt_t                       n_genpjet;  
-  vector<Float16_t>            GenPJet_pt;
-  vector<Float16_t>            GenPJet_eta;
-  vector<Float16_t>            GenPJet_phi;
-  vector<Float16_t>            GenPJet_mass;
-  */
+  //UInt_t                       n_genpjet;  
+  //vector<Float16_t>            GenPJet_pt;
+  //vector<Float16_t>            GenPJet_eta;
+  //vector<Float16_t>            GenPJet_phi;
+  //vector<Float16_t>            GenPJet_mass;
+  
   // Fatjets 
   UInt_t                       n_fatjet;
   vector<Float16_t>            FatJet_area;
@@ -407,8 +408,16 @@ private:
   vector<Float16_t>            RecoJetConst_mass;
   vector<Float16_t>            RecoJetConst_pdgID;
   vector<Float16_t>            RecoJetConst_charge;
-  
-    
+
+  //truth study
+  vector<int> pdgList;
+  UInt_t n_dark1;
+  UInt_t n_dark2;
+  vector<Float16_t> DarkQuark_pt;
+  vector<Float16_t> DarkQuark_eta;
+  vector<Float16_t> DarkQuark_phi;
+  vector<Float16_t> DarkQuark_mass;
+      
   float                        rho2;
   float                        prefire;
   float                        prefireup;
@@ -453,6 +462,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")           : false),
   doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")         : false),
   isMC                     (iConfig.existsAs<bool>("isMC")              ?    iConfig.getParameter<bool>  ("isMC")             : true),
+  truthstudy               (iConfig.existsAs<bool>("truthstudy")        ?    iConfig.getParameter<bool>  ("truthstudy")       : false),
   saveConst                (iConfig.existsAs<bool>("saveConst")         ?    iConfig.getParameter<bool>  ("saveConst")        : false),
   onlyScouting             (iConfig.existsAs<bool>("onlyScouting")      ?    iConfig.getParameter<bool>  ("onlyScouting")     : false),
   era_16                   (iConfig.existsAs<bool>("era_16")            ?    iConfig.getParameter<bool>  ("era_16")           : false),
@@ -542,8 +552,8 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("Mjj"                            ,&Mjj                           );
   tree->Branch("MT"                             ,&MT                            );
 
-  /*tree->Branch("n_genp"            	        ,&n_genp 		        ,"n_genp/i");	
-
+  tree->Branch("n_genp"            	        ,&n_genp 		        ,"n_genp/i");	
+  /*
   tree->Branch("n_genpjet"                      ,&n_genpjet                      ,"n_genpjet/i");
   tree->Branch("GenPJet_pt"        	        ,&GenPJet_pt 		        );
   tree->Branch("GenPJet_eta"                    ,&GenPJet_eta 	                );
@@ -735,6 +745,15 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("event_circularity"              ,&event_circularity             );
   tree->Branch("event_sphericity"               ,&event_sphericity              );
   tree->Branch("event_thrust"                   ,&event_thrust                  );
+  
+  if(truthstudy){
+    tree->Branch("pdgList"                              ,&pdgList                             );
+    tree->Branch("DarkQuark_pt"                         ,&DarkQuark_pt                        );
+    tree->Branch("DarkQuark_eta"                        ,&DarkQuark_eta                       );
+    tree->Branch("DarkQuark_phi"                        ,&DarkQuark_phi                       );
+    tree->Branch("DarkQuark_mass"                       ,&DarkQuark_mass                      );
+  }
+
   
   //jet matching
   /*  vector<bool> AK4_matched;
@@ -1067,50 +1086,75 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 
   //
-  //manual Genparticles genp
-  //
+  //Genparticles genp
+  //(removed fj_genp for manual genjets)
+  
+  //truth study here!!
+  //to print list of genparticles
 
   
-  //to print list of genparticles
-  /* vector<int> pdgList;
-  pdgList.clear();
-  tree->Branch("pdgList"                    ,&pdgList                   );
-  cout << "list of genparticles" << endl;
-  */
-  /*
   Handle<vector<reco::GenParticle> > genP;
   iEvent.getByToken(gensToken2, genP);
-  vector<math::XYZVector> genp_event_p3s; // all particle (px,py,pz)
-  math::XYZVector genp_p3 = math::XYZVector(0,0,0); 
-  n_genp = 0;
-  vector<PseudoJet> fj_genp;
-  fj_genp.clear();
+  //vector<math::XYZVector> genp_event_p3s; // all particle (px,py,pz)
+  //math::XYZVector genp_p3 = math::XYZVector(0,0,0); 
 
-  if(isMC){
-    for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
-      if (genp_iter->status()!=1) continue;
-      if (abs(genp_iter->pdgId())==12 || abs(genp_iter->pdgId())==14 || abs(genp_iter->pdgId())==16) continue; //remove neutrinos
-      if (abs(genp_iter->pdgId())==51 || abs(genp_iter->pdgId())==53) continue; //remove dark matter
-      if (genp_iter->pt() < 0.5) continue;
-      //to print list of genparticle pdgIDs 
-      // if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
-      //pdgList.push_back(genp_iter->pdgId());
-      //cout << genp_iter->pdgId() << endl;
-      //}
-      PseudoJet temp_genpjet = PseudoJet(0, 0, 0, 0);
-      temp_genpjet.reset_PtYPhiM(genp_iter->pt(),genp_iter->eta(), genp_iter->phi(), genp_iter->mass());
-      temp_genpjet.set_user_index(n_genp);
-      fj_genp.push_back(temp_genpjet);
+  pdgList.clear();
+  
+  n_genp = 0;
+  n_dark1 = 0;
+  n_dark2 = 0;
+  vector<PseudoJet> dark_quarks;
+  dark_quarks.clear();
+
+  DarkQuark_pt.clear();
+  DarkQuark_eta.clear();
+  DarkQuark_phi.clear();
+  DarkQuark_mass.clear();
+
+  if(truthstudy){
+    cout << "list of genparticles" << endl;
+    if(isMC){
+      for (auto genp_iter = genP->begin(); genp_iter != genP->end(); ++genp_iter ) {
+	if (genp_iter->status()!=23) continue;
+	if (abs(genp_iter->pdgId())==12 || abs(genp_iter->pdgId())==14 || abs(genp_iter->pdgId())==16) continue; //remove neutrinos
+	if (abs(genp_iter->pdgId())==51 || abs(genp_iter->pdgId())==53) continue; //remove dark matter
+	if (genp_iter->pt() < 0.5) continue;
+	//to print list of unique genparticle pdgIDs 
+        if (std::find(pdgList.begin(), pdgList.end(), genp_iter->pdgId()) == pdgList.end()) {
+	  pdgList.push_back(genp_iter->pdgId());
+	  cout << genp_iter->pdgId() << endl;
+	}
+	if (genp_iter->pdgId()==4900101 && n_dark1==0){
+	  PseudoJet temp_genpjet = PseudoJet(0, 0, 0, 0);
+	  temp_genpjet.reset_PtYPhiM(genp_iter->pt(),genp_iter->eta(), genp_iter->phi(), genp_iter->mass());
+	  temp_genpjet.set_user_index(n_genp);
+	  dark_quarks.push_back(temp_genpjet);
+	  n_dark1++;
+	}
+	if (genp_iter->pdgId()==-4900101 && n_dark2==0){
+	  PseudoJet temp_genpjet = PseudoJet(0, 0, 0, 0);
+	  temp_genpjet.reset_PtYPhiM(genp_iter->pt(),genp_iter->eta(), genp_iter->phi(), genp_iter->mass());
+	  temp_genpjet.set_user_index(n_genp);
+	  dark_quarks.push_back(temp_genpjet);
+	  n_dark2++;
+	}
+	  
+	// Event shape variables
+	//genp_p3 = math::XYZVector(0,0,0);
+	//genp_p3.SetXYZ(temp_genpjet.px(), temp_genpjet.py(), temp_genpjet.pz() );
+	//genp_event_p3s.push_back(genp_p3);
 	
-      // Event shape variables
-      genp_p3 = math::XYZVector(0,0,0);
-      genp_p3.SetXYZ(temp_genpjet.px(), temp_genpjet.py(), temp_genpjet.pz() );
-      genp_event_p3s.push_back(genp_p3);
-      
-      n_genp++;
+	n_genp++;
+      }
+
+      for(auto &q: dark_quarks) {
+	DarkQuark_eta .push_back(q.pseudorapidity());
+	DarkQuark_phi .push_back(q.phi_std());
+	DarkQuark_pt  .push_back(q.pt());
+	DarkQuark_mass.push_back(q.m());
+      }
     }
   }
-  */
   ///////////////////////////////////////
 
   // 

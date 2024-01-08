@@ -1398,6 +1398,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   n_fatjet = 0;
   for(auto &j: ak08_jets) {
     if(abs(j.eta()) > 2.4) continue;
+    if(j.constituents().size() < 5) continue;
     FatJet_area.push_back(j.area());
     FatJet_eta .push_back(j.pseudorapidity());
     FatJet_phi .push_back(j.phi_std());
@@ -1406,8 +1407,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
     FatJet_nconst.push_back(j.constituents().size());
     
-        
-    if (j.constituents().size() < 3){
+    /*    
+    if (j.constituents().size() < 5){
       cout << "#####" << endl;
       cout << "##### New jet with very few constituents" << endl;
       cout << "#####" << endl;
@@ -1416,9 +1417,9 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	cout << PFcand_pdgid[c.user_index()] << endl;
 	cout << PFcand_pt[c.user_index()] << endl;
       }
-      
     }
-    
+    */
+
     PseudoJet sd_ak8 = sd_groomer(j);
     FatJet_msoftdrop.push_back(sd_ak8.m());
 

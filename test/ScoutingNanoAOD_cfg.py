@@ -270,7 +270,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
 )
 
 
-process.p = cms.Path(process.mmtree)
+process.p = cms.Path(process.mmtree) 
 
 
 if(params.isMC):

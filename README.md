@@ -1,28 +1,28 @@
+
+# Introduction
+The code is based on the [repository](https://github.com/mgaisd/SVJScouting) and runs on MiniAOD to produce NanoAOD-like format files.
+For the production of Run2 scouting MiniAOD for SVJ signal look at the [repository](https://github.com/cms-svj/SVJProduction).
+
+
 # To check out
 ```
 cmsrel CMSSW_10_6_26 #you can use CMSSW_11_1_0
 cd CMSSW_10_6_26/src
-git clone -b mods https://github.com/SUEPPhysics/SUEPScouting.git PhysicsTools/SUEPScouting
+git clone -b mods https://github.com/cesarecazzaniga/SVJScouting.git PhysicsTools/SVJScouting
 git clone -b master https://github.com/tresreid/PatUtils.git PhysicsTools/PatUtils
 ```
 
 # To setup and compile
-do this each time you login
 ```
 cd $CMSSW_BASE/src
 cmsenv
 scram b
 ```
 
-# To run QCD for year={2018,2017 or 2016} 2016 turns off scouting for qcd as this is not availible in the UL samples
+# Running the ntuplizer from MiniAOD to NanoAOD-lik format
 ```
-cmsRun SUEPScouting/test/ScoutingNanoAOD_cfg.py inputFiles=file:qcd.root outputFile=flatscouting_qcd.root maxEvents=-1 isMC=true era=<year>
+# To run on Signal 
 ```
-# To run Signal (note that "SUEP" must be in the input file name)
+cmsRun SVJScouting/test/ScoutingNanoAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year> signal=True
 ```
-cmsRun SUEPScouting/test/ScoutingNanoAOD_cfg.py inputFiles=file:SUEP.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year>
-```
-# To run Data
-```
-cmsRun SUEPScouting/test/ScoutingNanoAOD_cfg.py inputFiles=file:data.root outputFile=flatscouting_data.root maxEvents=-1 isMC=false era=<year>
-```
+

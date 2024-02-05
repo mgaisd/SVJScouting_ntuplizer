@@ -35,20 +35,6 @@ params.register(
 )
 
 params.register(
-    'saveConst', 
-    False, 
-    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
-    'Flag to indicate whether or not to save jet constituents'
-)
-
-params.register(
-    'onlyScouting', 
-    False, 
-    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
-    'Flag to indicate whether to save only scouting variables or gen/offline/scouting'
-)
-
-params.register(
     'reducedInfo', 
     False, 
     VarParsing.multiplicity.singleton,VarParsing.varType.bool,
@@ -114,25 +100,6 @@ params.register(
     VarParsing.multiplicity.singleton,VarParsing.varType.bool,
     'Flag to indicate whether or not signal is run'
 )
-#params.register(
-#    'runScouting', 
-#    True, 
-#    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
-#    'Flag to indicate whether or not signal is run'
-#)
-#params.register(
-#    'runOffline', 
-#    False, 
-#    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
-#    'Flag to indicate whether or not signal is run'
-#)
-
-#params.register(
-#    'monitor', 
-#    False, 
-#    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
-#    'Flag to indicate whether or not moninor is run'
-#)
 
 # Define the process
 process = cms.Process("LL")
@@ -144,10 +111,7 @@ params.parseArguments()
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.destinations = ['cout', 'cerr']
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000 
-#process.MessageLogger.cerr.threshold = 'INFO'
-#process.MessageLogger.cerr.INFO = cms.untracked.PSet(
-#    limit = cms.untracked.int32(-1)
-#)
+
 
 # Set the process options -- Display summary at the end, enable unscheduled execution
 process.options = cms.untracked.PSet( 
@@ -170,11 +134,7 @@ if params.fileList == "none" : readFiles = params.inputFiles
 else : 
     readFiles = cms.untracked.vstring( FileUtils.loadListFromFile (os.environ['CMSSW_BASE']+'/src/PhysicsTools/ScoutingNanoAOD/test/'+params.fileList) )
 process.source = cms.Source("PoolSource",
-	fileNames = cms.untracked.vstring(
-            readFiles
-#            "file:uifha.root",
-#            "file:4tswa.root",
-        ) 
+	fileNames = cms.untracked.vstring(readFiles) 
 )
 
 # Load the standard set of configuration modules
@@ -207,22 +167,6 @@ process.gentree = cms.EDAnalyzer("LHEWeightsTreeMaker",
     useLHEWeights = cms.bool(params.useWeights)
 )
 
-# get rho producer
-#runRho = not(params.isMC and params.era=="2016") 
-#if(runRho):
-#  if params.era=="2015":
-#    runRho = False
-##if(params.runScouting):
-#if(runRho):
-#  process.fixedGridRhoFastjetAllScouting = cms.EDProducer("FixedGridRhoProducerFastjetScouting",
-#      pfCandidatesTag = cms.InputTag("hltScoutingPFPacker"),
-#      electronsTag = cms.InputTag("hltScoutingEgammaPacker"),
-#      maxRapidity = cms.double(5.0),
-#      gridSpacing = cms.double(0.55),
-#  )
-#print("RUNNNING TEST| isMC %d| signal %d| data %d| scouting %d| offline %d")
-
-
 
 HLTInfo = [
     "DST_DoubleMu1_noVtx_CaloScouting_v*",
@@ -248,24 +192,16 @@ L1Info = [
     'L1_DoubleJet30er2p5_Mass_Min360_dEta_Max1p5',
     'L1_ETT2000']
 runSig = False
-#if "SUEP" in readFiles[0]:
-#  runSig = True
-#if params.signal:
-#  runSig = True
+if params.signal:
+  runSig = True
 
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     doL1              = cms.bool(False),
     doData            = cms.bool(not params.isMC and not params.signal),
     doSignal          = cms.bool(runSig), 
     isMC              = cms.bool(params.isMC),
-    saveConst         = cms.bool(params.saveConst),
-    onlyScouting      = cms.bool(params.onlyScouting),
-    #monitor           = cms.bool(params.monitor),
-    era_16            = cms.bool(params.era == "2016"),
-    #runScouting          = cms.bool(params.runScouting),
-    #runOffline          = cms.bool(params.runOffline),
-    #runScouting          = cms.bool(not(params.isMC and params.era == 2016)), #always run scouting except 2016MC
-    #runOffline          = cms.bool(params.isMC and not params.signal), #only run offline for QCD
+    #era_16            = cms.bool(params.era),      #== "2016"
+    era = cms.string(params.era),
     stageL1Trigger    = cms.uint32(2),
 
     hltProcess=cms.string("HLT"),
@@ -285,41 +221,57 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     l1tExtBlkInputTag = cms.InputTag("gtStage2Digis"),
     l1Seeds           = cms.vstring(L1Info),
     hltSeeds          = cms.vstring(HLTInfo),
+    GetLumiInfoHeader=cms.InputTag("generator"),
+
+    #scouting objects
     muons             = cms.InputTag("hltScoutingMuonPacker"),
     electrons         = cms.InputTag("hltScoutingEgammaPacker"),
     photons           = cms.InputTag("hltScoutingEgammaPacker"),
     pfcands           = cms.InputTag("hltScoutingPFPacker"),
-    pfjetsoff         = cms.InputTag("ak4PFJets"),
-    genjets       = cms.InputTag("ak8GenJetsNoNu"),
     pfjets            = cms.InputTag("hltScoutingPFPacker"),
-    vertices_2016     = cms.InputTag("hltScoutingPFPacker",""), #Will try 2016 Packer and default to others if failed
     vertices          = cms.InputTag("hltScoutingPrimaryVertexPacker","primaryVtx"),
+
+
+    #offline objects
+    pfjetsoff         = cms.InputTag("ak4PFJets"),
     offlineTracks     = cms.InputTag("particleFlow"),
     offlineTracks2     = cms.InputTag("packedPFCandidates"),
-    #offlineTracks     = cms.InputTag("generalTracks"),
+
+    #gen info and pileup
+
     pileupinfo        = cms.InputTag("addPileupInfo"),
     pileupinfo_sig    = cms.InputTag("slimmedAddPileupInfo"),
     geneventinfo     = cms.InputTag("generator"),
-    gens              = cms.InputTag("genParticles"),
+    #gens              = cms.InputTag("genParticles"),
     gens_sig          = cms.InputTag("genParticles"),
-    #gens_sig          = cms.InputTag("prunedGenParticles"),
-    #rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
+    rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
     rho2              = cms.InputTag("hltScoutingPFPacker","rho"),
-#    genLumi            = cms.InputTag("generator"),
-    recojets          = cms.InputTag("ak8PFJetsCHS")
+
+
+    # scouting objects
+    #muons=cms.InputTag("hltScoutingMuonPacker"),
+    #electrons=cms.InputTag("hltScoutingEgammaPacker"),
+    #photons=cms.InputTag("hltScoutingEgammaPacker"),
+    #pfcands=cms.InputTag("hltScoutingPFPacker"),
+    #pfjets=cms.InputTag("hltScoutingPFPacker"),
+    #tracks=cms.InputTag("hltScoutingTrackPacker"),
+    #metPt=cms.InputTag("hltScoutingPFPacker", "pfMetPt"),
+    #metPhi=cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
+
+    # offline objects
+    #pfcandsReco=cms.InputTag("packedPFCandidates"),
+    #pfjetsReco=cms.InputTag("slimmedJets"),
+    #metReco=cms.InputTag("slimmedMETs"),
 
     # for JEC corrections eventually
     #L1corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L1FastJet_AK4CaloHLT.txt'),
     #L2corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L2Relative_AK4CaloHLT.txt'),
     #L3corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L3Absolute_AK4CaloHLT.txt'),
 )
-#process.Tracer = cms.Service("Tracer")
 
-# add any intermediate modules to this task list
-# then unscheduled mode will call them automatically when the final module (mmtree) consumes their products
-#if(params.runScouting):
-#if(runRho):
-#  process.myTask = cms.Task(process.fixedGridRhoFastjetAllScouting)
+
+process.p = cms.Path(process.mmtree)
+
 
 if(params.isMC):
 #if(runSig or (params.isMC and not params.era=="2016")):

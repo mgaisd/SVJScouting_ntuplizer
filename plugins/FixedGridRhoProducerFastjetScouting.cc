@@ -1,4 +1,4 @@
-#include "PhysicsTools/SUEPScouting/plugins/FixedGridRhoProducerFastjetScouting.h"
+#include "PhysicsTools/SVJScouting/plugins/FixedGridRhoProducerFastjetScouting.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "DataFormats/Common/interface/View.h"
 #include "FWCore/Framework/interface/MakerMacros.h"

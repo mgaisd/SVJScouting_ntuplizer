@@ -20,8 +20,8 @@ scram b
 ```
 
 # Running the ntuplizer from MiniAOD to NanoAOD-lik format
-```
-# To run on Signal 
+To run on Signal :
+
 ```
 cmsRun SVJScouting/test/ScoutingNanoAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year> signal=True
 ```

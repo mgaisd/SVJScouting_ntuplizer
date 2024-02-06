@@ -200,7 +200,6 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     doData            = cms.bool(not params.isMC and not params.signal),
     doSignal          = cms.bool(runSig), 
     isMC              = cms.bool(params.isMC),
-    #era_16            = cms.bool(params.era),      #== "2016"
     era = cms.string(params.era),
     stageL1Trigger    = cms.uint32(2),
 
@@ -230,33 +229,27 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     pfcands           = cms.InputTag("hltScoutingPFPacker"),
     pfjets            = cms.InputTag("hltScoutingPFPacker"),
     vertices          = cms.InputTag("hltScoutingPrimaryVertexPacker","primaryVtx"),
+    metPt             = cms.InputTag("hltScoutingPFPacker", "pfMetPt"),
+    metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
 
     #offline objects
     pfjetsoff         = cms.InputTag("ak4PFJets"),
+    #pfcandsReco=cms.InputTag("packedPFCandidates"),
     offlineTracks     = cms.InputTag("particleFlow"),
     offlineTracks2     = cms.InputTag("packedPFCandidates"),
+    metReco            = cms.InputTag("slimmedMETs"),
 
     #gen info and pileup
 
     pileupinfo        = cms.InputTag("addPileupInfo"),
     pileupinfo_sig    = cms.InputTag("slimmedAddPileupInfo"),
     geneventinfo     = cms.InputTag("generator"),
-    #gens              = cms.InputTag("genParticles"),
     gens_sig          = cms.InputTag("genParticles"),
     rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
     rho2              = cms.InputTag("hltScoutingPFPacker","rho"),
 
 
-    # scouting objects
-    #muons=cms.InputTag("hltScoutingMuonPacker"),
-    #electrons=cms.InputTag("hltScoutingEgammaPacker"),
-    #photons=cms.InputTag("hltScoutingEgammaPacker"),
-    #pfcands=cms.InputTag("hltScoutingPFPacker"),
-    #pfjets=cms.InputTag("hltScoutingPFPacker"),
-    #tracks=cms.InputTag("hltScoutingTrackPacker"),
-    #metPt=cms.InputTag("hltScoutingPFPacker", "pfMetPt"),
-    #metPhi=cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
     # offline objects
     #pfcandsReco=cms.InputTag("packedPFCandidates"),

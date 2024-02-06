@@ -30,6 +30,13 @@
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenLumiInfoHeader.h"
 
+//Added for MET
+#include "DataFormats/METReco/interface/PFMET.h"
+#include "DataFormats/METReco/interface/PFMETCollection.h"
+#include "DataFormats/PatCandidates/interface/Jet.h"
+#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#include "DataFormats/PatCandidates/interface/MET.h"
+
 // Other relevant CMSSW includes
 #include "CommonTools/UtilAlgos/interface/TFileService.h" 
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
@@ -125,6 +132,7 @@ private:
   bool jetID(const ScoutingPFJet &pfjet);
   bool jetIDoff(const reco::PFJet &pfjet);
 
+  //Scouting tokens
   const edm::InputTag triggerResultsTag;
   const edm::EDGetTokenT<edm::TriggerResults>             	triggerResultsToken;
   const edm::EDGetTokenT<std::vector<ScoutingMuon> >            muonsToken;
@@ -132,23 +140,27 @@ private:
   const edm::EDGetTokenT<std::vector<ScoutingPhoton> >  	photonsToken;
   const edm::EDGetTokenT<std::vector<ScoutingParticle> >  	pfcandsToken;
   const edm::EDGetTokenT<std::vector<ScoutingPFJet> >  		pfjetsToken;
-  const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
   const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	verticesToken;
-  //const edm::EDGetTokenT<std::vector<ScoutingVertex> >          verticesToken2;
+  const edm::EDGetTokenT<double> metPtToken;
+  const edm::EDGetTokenT<double> metPhiToken;
+
+
+  //Offline tokens
+  const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
   const edm::EDGetTokenT<std::vector<reco::PFCandidate >>  	offlineTracksToken;
   const edm::EDGetTokenT<std::vector<pat::PackedCandidate >>  	offlineTracksToken2;
-  //const edm::EDGetTokenT<std::vector<reco::Track >>  	offlineTracksToken;
+  const edm::EDGetTokenT<std::vector<pat::MET>> recoMetCollection;
+
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
-  //const edm::EDGetTokenT<std::vector<reco::GenParticle> >  	gensToken;
-  //const edm::EDGetTokenT<std::vector<reco::GenParticle> >  	gensToken2;
-//  const edm::EDGetTokenT<double>  	rhoToken;
+  const edm::EDGetTokenT<GenLumiInfoHeader>  	genLumiInfoHeadTag_;
+
+
   const edm::EDGetTokenT<double>  	rhoToken2;
   const edm::EDGetTokenT<double>  	prefireToken;
   const edm::EDGetTokenT<double>  	prefireTokenup;
   const edm::EDGetTokenT<double>  	prefireTokendown;
-  const edm::EDGetTokenT<GenLumiInfoHeader>  	genLumiInfoHeadTag_;
 
   std::vector<std::string> triggerPathsVector;
   std::map<std::string, int> triggerPathsMap;
@@ -168,16 +180,7 @@ private:
   bool runScouting = false;
   bool runOffline =false;
   std::string label;
-  //std::string label2;
-  //edm::InputTag                algInputTag_;       
-  //edm::EDGetToken              algToken_;
-  //l1t::L1TGlobalUtil          *l1GtUtils_;
-  //triggerExpression::Data triggerCache_;
-  //std::vector<std::string> triggerPathsVector;
-  //std::map<std::string, int> triggerPathsMap;
-  //const edm::InputTag triggerResultsTag;
-  //const edm::EDGetTokenT<edm::TriggerResults>             	triggerResultsToken;
-  
+
   HLTPrescaleProvider hltPSProv_;
   
   std::string hltProcess_; //name of HLT process, usually "HLT"
@@ -318,11 +321,8 @@ private:
   
   vector<Float16_t> offlineTrack_pt;
   vector<Float16_t> offlineTrack_m;
-  //vector<Float16_t> offlineTrack_dxy;
   vector<Float16_t> offlineTrack_dzError;
-  //vector<Float16_t> offlineTrack_ptError;
   vector<Float16_t> offlineTrack_quality;
-  //vector<Float16_t> offlineTrack_chi2;
   vector<Float16_t> offlineTrack_eta;
   vector<Int_t> offlineTrack_event;
   vector<Float16_t> offlineTrack_phi;
@@ -331,23 +331,9 @@ private:
   vector<bool> offlineTrack_paired;
   vector<bool> onlineTrack_paired;
   vector<Int_t> offlineTrack_PFcandID;
-  //vector<Float16_t> offlineTrack_PFcandpv;
-  //vector<Float16_t> offlineTrack_PFcandpt;
-  //vector<Float16_t> offlineTrack_PFcanddz;
-  //vector<Float16_t> offlineTrack_PFcandeta;
-  //vector<Float16_t> offlineTrack_PFcandphi;
-  //vector<Float16_t> offlineTrack_PFcandq;
   vector<Float16_t> onlineTrack_dR;
   vector<Int_t> onlineTrack_offlineID;
-  //float offline_count;
-  //float offlinematched_count;
-  //float offline_frac;
-  //float offline_countHi;
-  //float offlinematched_countHi;
-  //float offline_fracHi;
-  //float offline_countLo;
-  //float offlinematched_countLo;
-  //float offline_fracLo;
+
 
   //PFCand
   UInt_t                       n_pfcand;
@@ -395,7 +381,7 @@ private:
   vector<Float16_t>            Vertex_ndof;
   vector<Float16_t>            Vertex_isValidVtx;
 
-//  float                        rho;
+  //prefire
   float                        rho2;
   float                        prefire;
   float                        prefireup;
@@ -406,9 +392,11 @@ private:
   float                        event_circularity;
   float                        event_sphericity;
   float                        event_thrust; // need to save actual reco objects for thrust
-  
 
-        
+  // MET
+  double met_pt, met_phi;
+  double met_pt_reco, met_phi_reco;
+    
   // TTree carrying the event weight information
   TTree* tree;
 
@@ -420,29 +408,38 @@ private:
 };
 
 ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig): 
+  
+  //Scouting tokens
   muonsToken               (consumes<std::vector<ScoutingMuon> >             (iConfig.getParameter<edm::InputTag>("muons"))), 
   electronsToken           (consumes<std::vector<ScoutingElectron> >         (iConfig.getParameter<edm::InputTag>("electrons"))), 
   photonsToken             (consumes<std::vector<ScoutingPhoton> >           (iConfig.getParameter<edm::InputTag>("photons"))), 
   pfcandsToken             (consumes<std::vector<ScoutingParticle> >         (iConfig.getParameter<edm::InputTag>("pfcands"))), 
   pfjetsToken              (consumes<std::vector<ScoutingPFJet> >            (iConfig.getParameter<edm::InputTag>("pfjets"))), 
-  pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
   verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
-  //verticesToken2           (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices_2016"))),
+  metPtToken               (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPt"))),
+  metPhiToken              (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPhi"))),
+  
+  //Offline tokens
+  pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
   offlineTracksToken       (consumes<std::vector<reco::PFCandidate>>         (iConfig.getParameter<edm::InputTag>("offlineTracks"))), 
   offlineTracksToken2       (consumes<std::vector<pat::PackedCandidate>>  (iConfig.getParameter<edm::InputTag>("offlineTracks2"))), 
-  //offlineTracksToken       (consumes<std::vector<reco::Track>>              (iConfig.getParameter<edm::InputTag>("offlineTracks"))), 
+  //recoPfCandidateToken (consumes<std::vector<pat::PackedCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
+  recoMetCollection         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
+
+
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
-  genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))),    
-  //gensToken                (consumes<std::vector<reco::GenParticle> >        (iConfig.getParameter<edm::InputTag>("gens"))),
-  //gensToken2               (consumes<std::vector<reco::GenParticle> >        (iConfig.getParameter<edm::InputTag>("gens_sig"))),
-  //rhoToken                 (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("rho"))),
+  genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
+  genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),   
+  
+  
   rhoToken2                (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("rho2"))),
   prefireToken             (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProb"))),
   prefireTokenup           (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProbUp"))),
   prefireTokendown         (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProbDown"))),
-//  genLumiInfoHeadTag_      (consumes<GenLumiInfoHeader>        (iConfig.getParameter<edm::InputTag>("genLumi"))),
-  genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),
+
+
+  
   doL1                     (iConfig.existsAs<bool>("doL1")              ?    iConfig.getParameter<bool>  ("doL1")            : false),
   doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")            : false),
   doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")            : false),
@@ -690,6 +687,12 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("event_sphericity"               ,&event_sphericity              );
   tree->Branch("event_thrust"                   ,&event_thrust                  );
 
+  //MET
+  tree->Branch("met_pt",&met_pt);
+  tree->Branch("met_phi",&met_phi);
+  tree->Branch("met_pt",&met_pt_reco);
+  tree->Branch("met_phi",&met_phi_reco);
+
 
 }
 
@@ -714,9 +717,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<vector<ScoutingVertex> > verticesH;
   Handle<vector<reco::PFCandidate> > tracksH1;
   Handle<vector<pat::PackedCandidate> > tracksH2;
+  Handle<std::vector<pat::MET>> metReco;
+  Handle<double> metPt;
+  Handle<double> metPhi;
+
   bool mini_track = false;
-
-
 
   if(auto handle = iEvent.getHandle(pfcandsToken)){
     runScouting = true;
@@ -735,6 +740,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     iEvent.getByToken(pfjetsToken, pfjetsH);
     iEvent.getByToken(pfcandsToken, pfcandsH);
     iEvent.getByToken(verticesToken, verticesH);
+    iEvent.getByToken(metPtToken, metPt);
+    iEvent.getByToken(metPhiToken, metPhi);
 
   }
   if(runOffline){
@@ -746,6 +753,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       iEvent.getByToken(offlineTracksToken2, tracksH2);
       mini_track = true;
       }
+    iEvent.getByToken(recoMetCollection, metReco);
   }
 
 
@@ -762,7 +770,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   run = iEvent.eventAuxiliary().run();
   event_ = iEvent.eventAuxiliary().event();
-  lumSec = iEvent.eventAuxiliary().luminosityBlock();
+  lumSec = iEvent.eventAuxiliary().luminosityBlock();  
 
   // Which triggers fired
   hltResult_.clear();
@@ -1021,7 +1029,6 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     PFcand_pdgid.push_back(pfcands_iter.pdgId());
     PFcand_q.push_back(getCharge(pfcands_iter.pdgId()));
     PFcand_vertex.push_back(pfcands_iter.vertex());
-    //printf("PF Vertex: %d\n",pfcands_iter.vertex());
 
     // Cluster charged PF candidates into fat jets
     if (pfcands_iter.vertex() != 0) continue;
@@ -1241,22 +1248,8 @@ if(runOffline){
       }
     }
   }
-///////////////////////////////////////
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-///////////////////////////////////////
 
   // 
   // Muons   
@@ -1513,9 +1506,6 @@ if(runOffline){
   ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
   vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(30.0)); //pt min
 
-  unsigned int maxNconstit=0;
-  PseudoJet suepJet = PseudoJet(0, 0, 0, 0);
-
   n_fatjet = 0;
   for(auto &j: ak8_jets) {
     FatJet_area.push_back(j.area());
@@ -1543,16 +1533,7 @@ if(runOffline){
     FatJet_tau4.push_back(nSub4.result(j));
     FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
     FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
-    
-    // Jet momentum scaling, rho
 
-    
-    // SUEP select the highest track multiplicty jet as the SUEP jet
-    if ( j.constituents().size() > maxNconstit) 
-    {
-        maxNconstit = j.constituents().size();
-        suepJet = j;
-    }
     n_fatjet++;
   }
 
@@ -1579,31 +1560,19 @@ if(runOffline){
       }else
         ak8count++;
     }
-    //FatJetPFCands_jetIdx.push_back(tmpidx);
-    //FatJetPFCands_pFCandsIdx.push_back(n_pfcand_tot);
     n_pfcand_tot++;
   }
 
 //  Handle<double> rhoH;
   Handle<double> rhoH2;
   if(runScouting){
-  //if(not (isMC and era_16)){
-  //iEvent.getByToken(rhoToken, rhoH);
-  //rho = *rhoH;
   iEvent.getByToken(rhoToken2, rhoH2);
   rho2 = *rhoH2;
   }else{// rho=0;
     rho2=0;}
 
   if(doSignal or (isMC and not era_16)){
-  //if(doSignal){
     PSweights = genEvtInfo->weights();
-    //printf("%lu\n",sizeof(PSweights));
-    //int testcout = 0;
-    //for(auto ps: PSweights){
-    //printf("%d: %f\n",testcout,ps);
-    //testcout++;
-    //}
     Handle<double> prefirewgt;
     iEvent.getByToken(prefireToken, prefirewgt);
     prefire = *prefirewgt;
@@ -1650,8 +1619,6 @@ if(runOffline){
           std::string l1Name = l1Seeds_[i];
           std::string pathName = bitName;
           if(bitName.find(l1Name) != std::string::npos ){
-             //l1bitmap.push_back(std::make_pair(l1seedsvector[i],passFinal));
-             //l1prescalemap.push_back(std::make_pair(l1seedsvector[i],prescale));
              l1Result_  .push_back(passFinal);
              l1Prescale_.push_back(prescale);
           }
@@ -1661,7 +1628,22 @@ if(runOffline){
 
  }
 
+ //Adding met info
+ met_pt = -1;
+ met_phi = -1;
+ met_pt_reco = -1;
+ met_phi_reco = -1;
 
+ if (runScouting){
+  met_pt = *metPt;
+  met_phi = *metPhi;
+ }
+ 
+ if (runOffline){
+    met_pt_reco = metReco->front().pt();
+    met_phi_reco = metReco->front().phi();
+ }
+  
  tree->Fill();	
 	
 }
@@ -1675,35 +1657,6 @@ void ScoutingNanoAOD::endJob() {
 }
 
 void ScoutingNanoAOD::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetup) {
-
-  //triggerPathsVector.push_back("DST_DoubleMu1_noVtx_CaloScouting_v*");
-  //triggerPathsVector.push_back("DST_DoubleMu3_noVtx_CaloScouting_v*");
-  //triggerPathsVector.push_back("DST_DoubleMu3_noVtx_Mass10_PFScouting_v*");
-  //triggerPathsVector.push_back("DST_L1HTT_CaloScouting_PFScouting_v*");
-  //triggerPathsVector.push_back("DST_CaloJet40_CaloScouting_PFScouting_v*");
-  //triggerPathsVector.push_back("DST_HT250_CaloScouting_v*");
-  //triggerPathsVector.push_back("DST_HT410_PFScouting_v*");
-  //triggerPathsVector.push_back("DST_HT450_PFScouting_v*");
-
-  //we need to initalise the menu each run (menu can and will change on run boundaries)           
-  //HLTConfigProvider hltConfig;
-  //bool changedConfig = false;
-  //hltConfig.init(iRun, iSetup, triggerResultsTag.process(), changedConfig);
-
-  //for (size_t i = 0; i < triggerPathsVector.size(); i++) {
-  //  triggerPathsMap[triggerPathsVector[i]] = -1;
-  //}
-
-  //for(size_t i = 0; i < triggerPathsVector.size(); i++){
-  //  TPRegexp pattern(triggerPathsVector[i]);
-  //  for(size_t j = 0; j < hltConfig.triggerNames().size(); j++){
-  //    std::string pathName = hltConfig.triggerNames()[j];
-  //    if(TString(pathName).Contains(pattern)){
-  //  triggerPathsMap[triggerPathsVector[i]] = j;
-  //    }
-  //  }
-  //}
-
 
   //we need to initalise the menu each run (menu can and will change on run boundaries)           
   //for L1

@@ -234,10 +234,12 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
 
 
     #offline objects
-    pfjetsoff         = cms.InputTag("ak4PFJets"),
+    #pfjetsoff         = cms.InputTag("ak4PFJets"),
     #pfcandsReco=cms.InputTag("packedPFCandidates"),
-    offlineTracks     = cms.InputTag("particleFlow"),
-    offlineTracks2     = cms.InputTag("packedPFCandidates"),
+    #offlineTracks     = cms.InputTag("particleFlow"),
+    #offlineTracks2     = cms.InputTag("packedPFCandidates"),
+    pfcandsReco=cms.InputTag("packedPFCandidates"),
+    pfjetsReco=cms.InputTag("slimmedJets"),
     metReco            = cms.InputTag("slimmedMETs"),
 
     #gen info and pileup

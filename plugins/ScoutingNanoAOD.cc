@@ -130,7 +130,8 @@ private:
   virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
   int getCharge(int pdgId);
   bool jetID(const ScoutingPFJet &pfjet);
-  bool jetIDoff(const reco::PFJet &pfjet);
+  //bool jetIDoff(const reco::PFJet &pfjet);
+  bool jetIDoff(const pat::Jet &pfjet);
 
   //Scouting tokens
   const edm::InputTag triggerResultsTag;
@@ -146,10 +147,12 @@ private:
 
 
   //Offline tokens
-  const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
-  const edm::EDGetTokenT<std::vector<reco::PFCandidate >>  	offlineTracksToken;
-  const edm::EDGetTokenT<std::vector<pat::PackedCandidate >>  	offlineTracksToken2;
-  const edm::EDGetTokenT<std::vector<pat::MET>> recoMetCollection;
+  //const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
+  //const edm::EDGetTokenT<std::vector<reco::PFCandidate >>  	offlineTracksToken;
+  //const edm::EDGetTokenT<std::vector<pat::PackedCandidate >>  	offlineTracksToken2;
+  const edm::EDGetTokenT<std::vector<pat::Jet>> recoJetToken;
+  const edm::EDGetTokenT<std::vector<pat::PackedCandidate>> recoPfCandidateToken;
+  const edm::EDGetTokenT<std::vector<pat::MET>> recoMetToken;
 
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
@@ -269,6 +272,8 @@ private:
   //PFJets
   UInt_t                       n_jet;
   UInt_t                       n_jetId;
+  UInt_t                      n_jetoff;
+  UInt_t                      n_jetIdoff;
   float                        ht;
   float                        htoff;
   bool                         passJetId;
@@ -319,23 +324,37 @@ private:
   vector<Float16_t>	       OffJet_HFEMMultiplicity;
   vector<bool>             OffJet_passId;
   
-  vector<Float16_t> offlineTrack_pt;
-  vector<Float16_t> offlineTrack_m;
-  vector<Float16_t> offlineTrack_dzError;
-  vector<Float16_t> offlineTrack_quality;
-  vector<Float16_t> offlineTrack_eta;
-  vector<Int_t> offlineTrack_event;
-  vector<Float16_t> offlineTrack_phi;
-  vector<Float16_t> offlineTrack_dR;
-  vector<Float16_t> offlineTrack_vz;
-  vector<bool> offlineTrack_paired;
-  vector<bool> onlineTrack_paired;
-  vector<Int_t> offlineTrack_PFcandID;
-  vector<Float16_t> onlineTrack_dR;
-  vector<Int_t> onlineTrack_offlineID;
+  //vector<Float16_t> offlineTrack_pt;
+  //vector<Float16_t> offlineTrack_m;
+  //vector<Float16_t> offlineTrack_dzError;
+  //vector<Float16_t> offlineTrack_quality;
+  //vector<Float16_t> offlineTrack_eta;
+  //vector<Int_t> offlineTrack_event;
+  //vector<Float16_t> offlineTrack_phi;
+  //vector<Float16_t> offlineTrack_dR;
+  //vector<Float16_t> offlineTrack_vz;
+  //vector<bool> offlineTrack_paired;
+  //vector<bool> onlineTrack_paired;
+  //vector<Int_t> offlineTrack_PFcandID;
+  //vector<Float16_t> onlineTrack_dR;
+  //vector<Int_t> onlineTrack_offlineID;
+
+  //CZZ: to add OffPFCands
+  UInt_t                       n_offpfcand;
+  UInt_t                       n_offpfMu;
+  UInt_t                       n_offpfEl;
+  vector<Float16_t>            OffPFcand_pt;
+  vector<Float16_t>            OffPFcand_eta;
+  vector<Float16_t>            OffPFcand_phi;
+  vector<Float16_t>            OffPFcand_m;
+  vector<Float16_t>            OffPFcand_pdgid;
+  vector<Float16_t>            OffPFcand_q;
+  vector<Float16_t>            OfflineFatJetPFCands_jetIdx;
+  vector<Float16_t>            OfflineFatJetPFCands_pFCandsIdx;
 
 
-  //PFCand
+
+  // Scouting PFCand
   UInt_t                       n_pfcand;
   UInt_t                       n_pfMu;
   UInt_t                       n_pfEl;
@@ -348,8 +367,6 @@ private:
   vector<Float16_t>            PFcand_vertex;
   vector<Float16_t>            FatJetPFCands_jetIdx;
   vector<Float16_t>            FatJetPFCands_pFCandsIdx;
-  vector<Float16_t>            PFcand_dR;
-  vector<Float16_t>            PFcand_alldR;
 
 
   // Fatjets 
@@ -371,6 +388,25 @@ private:
   vector<Float16_t>            FatJet_mtrim;
   vector<Float16_t>            FatJet_nconst;
 
+  // Fatjets offline
+  UInt_t                       n_fatjet_off;
+  vector<Float16_t>            OfflineFatJet_area;
+  vector<Float16_t>            OfflineFatJet_eta;
+  vector<Float16_t>            OfflineFatJet_n2b1;
+  vector<Float16_t>            OfflineFatJet_n3b1;
+  vector<Float16_t>            OfflineFatJet_phi;
+  vector<Float16_t>            OfflineFatJet_pt;
+  vector<Float16_t>            OfflineFatJet_tau1;
+  vector<Float16_t>            OfflineFatJet_tau2;
+  vector<Float16_t>            OfflineFatJet_tau3;
+  vector<Float16_t>            OfflineFatJet_tau4;
+  vector<Float16_t>            OfflineFatJet_tau21;
+  vector<Float16_t>            OfflineFatJet_tau32;
+  vector<Float16_t>            OfflineFatJet_mass;
+  vector<Float16_t>            OfflineFatJet_msoftdrop;
+  vector<Float16_t>            OfflineFatJet_mtrim;
+  vector<Float16_t>            OfflineFatJet_nconst;
+
   // Primary vertices
   UInt_t n_pvs;
   vector<Float16_t>            Vertex_x;
@@ -386,12 +422,6 @@ private:
   float                        prefire;
   float                        prefireup;
   float                        prefiredown;
-
-  // Event shape variables
-  float                        event_isotropy;
-  float                        event_circularity;
-  float                        event_sphericity;
-  float                        event_thrust; // need to save actual reco objects for thrust
 
   // MET
   double met_pt, met_phi;
@@ -420,26 +450,23 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   metPhiToken              (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPhi"))),
   
   //Offline tokens
-  pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
-  offlineTracksToken       (consumes<std::vector<reco::PFCandidate>>         (iConfig.getParameter<edm::InputTag>("offlineTracks"))), 
-  offlineTracksToken2       (consumes<std::vector<pat::PackedCandidate>>  (iConfig.getParameter<edm::InputTag>("offlineTracks2"))), 
-  //recoPfCandidateToken (consumes<std::vector<pat::PackedCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
-  recoMetCollection         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
-
+  //pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
+  //offlineTracksToken       (consumes<std::vector<reco::PFCandidate>>         (iConfig.getParameter<edm::InputTag>("offlineTracks"))), 
+  //offlineTracksToken2       (consumes<std::vector<pat::PackedCandidate>>  (iConfig.getParameter<edm::InputTag>("offlineTracks2"))),
+  recoJetToken         (consumes<std::vector<pat::Jet>>                    (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
+  recoPfCandidateToken (consumes<std::vector<pat::PackedCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))), 
+  recoMetToken         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
 
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
   genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),   
   
-  
   rhoToken2                (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("rho2"))),
   prefireToken             (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProb"))),
   prefireTokenup           (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProbUp"))),
   prefireTokendown         (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProbDown"))),
 
-
-  
   doL1                     (iConfig.existsAs<bool>("doL1")              ?    iConfig.getParameter<bool>  ("doL1")            : false),
   doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")            : false),
   doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")            : false),
@@ -499,7 +526,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("Electron_dphiin"                ,&Electron_dphiin 	        );
   tree->Branch("Electron_detain"                ,&Electron_detain 	        );
   tree->Branch("Electron_mHits"                 ,&Electron_mHits 	        );
-  tree->Branch("Electron_ooEMOop"               ,&Electron_ooEMOop              );            //CZZ: to be checked what it is
+  tree->Branch("Electron_ooEMOop"               ,&Electron_ooEMOop              );            
   tree->Branch("Electron_trkiso"                 ,&Electron_trkiso 	        );
   tree->Branch("Electron_ecaliso"               ,&Electron_ecaliso              );
   tree->Branch("Electron_hcaliso"               ,&Electron_hcaliso              );
@@ -604,7 +631,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
 
   tree->Branch("rho"                            ,&rho2                           );
 
-  //PF Candidates
+  //Scouting PF Candidates
   tree->Branch("nPFCands"            	        ,&n_pfcand 		        ,"nPFCands/i");	
   tree->Branch("nPFMuons"            	        ,&n_pfMu 		        ,"nPFMuons/i");	
   tree->Branch("nPFElectrons"            	        ,&n_pfEl 		        ,"nPFElectrons/i");	
@@ -616,10 +643,9 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("PFCands_charge"                       ,&PFcand_q                      );
   tree->Branch("PFCands_vertex"                  ,&PFcand_vertex                 );
 
-  //CZZ: added jet indices for PF candidates
+  //CZZ: added jet indices for Scouting PF candidates
   tree->Branch("FatJetPFCands_jetIdx"                   ,&FatJetPFCands_jetIdx 	                );
   tree->Branch("FatJetPFCands_pFCandsIdx"                   ,&FatJetPFCands_pFCandsIdx 	                );
-
 
   //Primary vertices 
   tree->Branch("nPVs"            	        ,&n_pvs                         ,"nPVs/i");	
@@ -639,6 +665,8 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
 
   
   //Offline AK4 PFJets
+  tree->Branch("nJet"            	        ,&n_jetoff                         ,"nOfflineJet/i");
+  tree->Branch("nJetId"            	        ,&n_jetIdoff                       ,"nOfflineJetId/i");
   tree->Branch("OfflineJet_pt"            	           ,&OffJet_pt                        );
   tree->Branch("OfflineJet_eta"            	           ,&OffJet_eta                       );
   tree->Branch("OfflineJet_phi"            	           ,&OffJet_phi                       );
@@ -661,37 +689,47 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("OfflineJet_HFEMMultiplicity"           ,&OffJet_HFEMMultiplicity          );
   tree->Branch("OfflineJet_passId"                     ,&OffJet_passId                    );
 
-  //offlineTracks
-  tree->Branch("OfflineTrack_pt"                 ,&offlineTrack_pt     );
-  tree->Branch("OfflineTrack_mass"                 ,&offlineTrack_m     );
-  tree->Branch("OfflineTrack_eta"                ,&offlineTrack_eta    );
-  tree->Branch("OfflineTrack_event"                ,&offlineTrack_event    );
-  tree->Branch("OfflineTrack_dzErr"                ,&offlineTrack_dzError    );
-  tree->Branch("OfflineTrack_trkQuality"                ,&offlineTrack_quality    );
-  tree->Branch("OfflineTrack_phi"                ,&offlineTrack_phi    );
-  tree->Branch("OfflineTrack_dR"                 ,&offlineTrack_dR     );
-  tree->Branch("OfflineTrack_vz"                 ,&offlineTrack_vz     );
-  tree->Branch("OfflineTrack_paired"                 ,&offlineTrack_paired     );
-  tree->Branch("OnlineTrack_paired"                ,&onlineTrack_paired    );
-  tree->Branch("OfflineTrack_pFCandsId"                 ,&offlineTrack_PFcandID     );
+
+  //CZZ: added Offline AK8 PFJets
+  tree->Branch("nOfflineFatJet"                       ,&n_fatjet                      ,"nOfflineFatJet/i");
+  tree->Branch("OfflineFatJet_area"                    ,&OfflineFatJet_area                   );
+  tree->Branch("OfflineFatJet_eta"                     ,&OfflineFatJet_eta                    );
+  tree->Branch("OfflineFatJet_n2b1"                    ,&OfflineFatJet_n2b1                   );
+  tree->Branch("OfflineFatJet_n3b1"                    ,&OfflineFatJet_n3b1                   );
+  tree->Branch("OfflineFatJet_phi"                     ,&OfflineFatJet_phi                    );
+  tree->Branch("OfflineFatJet_pt"                      ,&OfflineFatJet_pt                     );
+  tree->Branch("OfflineFatJet_tau1"                    ,&OfflineFatJet_tau1                   );
+  tree->Branch("OfflineFatJet_tau2"                    ,&OfflineFatJet_tau2                   );
+  tree->Branch("OfflineFatJet_tau3"                    ,&OfflineFatJet_tau3                   );
+  tree->Branch("OfflineFatJet_tau4"                    ,&OfflineFatJet_tau4                   );
+  tree->Branch("OfflineFatJet_tau21"                   ,&OfflineFatJet_tau21                  );
+  tree->Branch("OfflineFatJet_tau32"                   ,&OfflineFatJet_tau32                  );
+  tree->Branch("OfflineFatJet_mass"                    ,&OfflineFatJet_mass                   );
+  tree->Branch("OfflineFatJet_msoftdrop"               ,&OfflineFatJet_msoftdrop              );
+  tree->Branch("OfflineFatJet_mtrim"                   ,&OfflineFatJet_mtrim                  );
+  tree->Branch("OfflineFatJet_nconst"                  ,&OfflineFatJet_nconst                 );
 
 
-  //onlineTracks
-  tree->Branch("OnlineTrack_dR"                ,&onlineTrack_dR    );
-  tree->Branch("OnlineTrack_offlineId"                 ,&onlineTrack_offlineID     );
-  
+  //offline PF Cands
+  tree->Branch("nOfflinePFCands"            	        ,&n_offpfcand 		        ,"nOfflinePFCands/i");	
+  tree->Branch("nOfflinePFMuons"            	        ,&n_offpfMu 		        ,"nOfflinePFMuons/i");	
+  tree->Branch("nOfflinePFElectrons"            	        ,&n_offpfEl 		        ,"nOfflinePFElectrons/i");	
+  tree->Branch("OfflinePFCands_pt"                 ,&OffPFcand_pt     );
+  tree->Branch("OfflinePFCands_mass"                 ,&OffPFcand_m     );
+  tree->Branch("OfflinePFCands_eta"                ,&OffPFcand_eta    );
+  tree->Branch("OfflinePFCands_phi"                ,&OffPFcand_phi    );
+  tree->Branch("OfflinePFCands_pdgId"                   ,&OffPFcand_pdgid                  );
+  tree->Branch("OfflinePFCands_charge"                       ,&OffPFcand_q                      );
 
-  //event shapes
-  tree->Branch("event_isotropy"                 ,&event_isotropy                );
-  tree->Branch("event_circularity"              ,&event_circularity             );
-  tree->Branch("event_sphericity"               ,&event_sphericity              );
-  tree->Branch("event_thrust"                   ,&event_thrust                  );
+  //CZZ: added jet indices for Offline PF candidates
+  tree->Branch("OfflineFatJetPFCands_jetIdx"                   ,&OfflineFatJetPFCands_jetIdx 	                );
+  tree->Branch("OfflineFatJetPFCands_pFCandsIdx"                   ,&OfflineFatJetPFCands_pFCandsIdx 	                );
 
-  //MET
-  tree->Branch("met_pt",&met_pt);
-  tree->Branch("met_phi",&met_phi);
-  tree->Branch("met_pt",&met_pt_reco);
-  tree->Branch("met_phi",&met_phi_reco);
+  //CZZ: added MET collections
+  tree->Branch("MET_pt",&met_pt);
+  tree->Branch("MET_phi",&met_phi);
+  tree->Branch("OfflineMET_pt",&met_pt_reco);
+  tree->Branch("OfflineMET_phi",&met_phi_reco);
 
 
 }
@@ -707,7 +745,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   using namespace fastjet;
   using namespace fastjet::contrib;
     
-  Handle<vector<reco::PFJet> > pfjetsoffH;
+  //Handle<vector<reco::PFJet> > pfjetsoffH;
+  Handle<std::vector<pat::Jet>> pfjetsoffH;
 
   Handle<vector<ScoutingElectron> > electronsH;
   Handle<vector<ScoutingMuon> > muonsH;
@@ -715,24 +754,30 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<vector<ScoutingPFJet> > pfjetsH;
   Handle<vector<ScoutingParticle> > pfcandsH;
   Handle<vector<ScoutingVertex> > verticesH;
-  Handle<vector<reco::PFCandidate> > tracksH1;
-  Handle<vector<pat::PackedCandidate> > tracksH2;
+  Handle<std::vector<pat::PackedCandidate>> pfcandsoffH;
+  //Handle<vector<reco::PFCandidate> > tracksH1;
+  //Handle<vector<pat::PackedCandidate> > tracksH2;
+
   Handle<std::vector<pat::MET>> metReco;
   Handle<double> metPt;
   Handle<double> metPhi;
 
-  bool mini_track = false;
+  //bool mini_track = false;
 
   if(auto handle = iEvent.getHandle(pfcandsToken)){
     runScouting = true;
   }
-  if(auto handle = iEvent.getHandle(offlineTracksToken)){
+  //if(auto handle = iEvent.getHandle(offlineTracksToken)){
+  //  runOffline = true;
+  //}
+  //if(auto handle = iEvent.getHandle(offlineTracksToken2)){
+  //  runOffline = true;
+  //}
+  if(auto handle = iEvent.getHandle(recoPfCandidateToken)){
     runOffline = true;
   }
-  if(auto handle = iEvent.getHandle(offlineTracksToken2)){
-    runOffline = true;
-  }
-  //printf("RUNNNING TEST| isMC %d| signal %d| data %d| scouting %d| offline %d\n",isMC,doSignal,doData,runScouting,runOffline);
+
+
   if(runScouting){
     iEvent.getByToken(electronsToken, electronsH);
     iEvent.getByToken(muonsToken, muonsH);
@@ -745,15 +790,16 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   }
   if(runOffline){
-  //if(isMC or monitor){
-    if(auto handle = iEvent.getHandle(offlineTracksToken)){
-      iEvent.getByToken(offlineTracksToken, tracksH1);
-      iEvent.getByToken(pfjetsoffToken, pfjetsoffH);
-      }else{
-      iEvent.getByToken(offlineTracksToken2, tracksH2);
-      mini_track = true;
-      }
-    iEvent.getByToken(recoMetCollection, metReco);
+    //if(auto handle = iEvent.getHandle(offlineTracksToken)){
+      //iEvent.getByToken(offlineTracksToken, tracksH1);
+      //iEvent.getByToken(pfjetsoffToken, pfjetsoffH);
+    //  }else{
+    //  iEvent.getByToken(offlineTracksToken2, tracksH2);
+    //  mini_track = true;
+    //  }
+    iEvent.getByToken(recoPfCandidateToken, pfcandsoffH);
+    iEvent.getByToken(recoJetToken, pfjetsoffH);
+    iEvent.getByToken(recoMetToken, metReco);
   }
 
 
@@ -795,7 +841,6 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       const std::string& hltbitName = names.triggerName(i);
       std::string hltpathName = hltbitName;
       bool hltpassFinal = triggerBits->accept(i);
-        //std::cout<<"path: "<<hltpathName<<" pass: "<<hltpassFinal<<" out: "<<TString(hltpathName).Contains(pattern1)<<" out2: " << TString(hltpathName).Contains(pattern2)<<std::endl;
         if( 
           TString(hltpathName).Contains(pattern1) and hltpassFinal)
           {
@@ -846,60 +891,63 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   vector<ScoutingParticle> PFcands;
   PFcands.clear();
+
+
   if(runScouting){
   //if(not (isMC and era_16)){
-  for (auto electrons_iter = electronsH->begin(); electrons_iter != electronsH->end(); ++electrons_iter) 
-    {
-      Electron_pt.push_back(electrons_iter->pt());
-      Electron_eta.push_back(electrons_iter->eta());
-      Electron_phi.push_back(electrons_iter->phi());	
-      Electron_m.push_back(electrons_iter->m());
-      Electron_detain.push_back(electrons_iter->dEtaIn());
-      Electron_dphiin.push_back(electrons_iter->dPhiIn());
-      Electron_sigmaietaieta.push_back(electrons_iter->sigmaIetaIeta());
-      Electron_HoE.push_back(electrons_iter->hOverE());	
-      Electron_ooEMOop.push_back(electrons_iter->ooEMOop());
-      Electron_mHits.push_back(electrons_iter->missingHits());
-      Electron_charge.push_back(electrons_iter->charge());
-      Electron_trkiso.push_back(electrons_iter->trackIso());
-      Electron_ecaliso.push_back(electrons_iter->ecalIso());
-      Electron_hcaliso.push_back(electrons_iter->hcalIso());
-      Electron_d0.push_back(electrons_iter->d0());
-      Electron_dz.push_back(electrons_iter->dz());
-      n_ele++;
+    for (auto electrons_iter = electronsH->begin(); electrons_iter != electronsH->end(); ++electrons_iter) 
+      {
+        Electron_pt.push_back(electrons_iter->pt());
+        Electron_eta.push_back(electrons_iter->eta());
+        Electron_phi.push_back(electrons_iter->phi());	
+        Electron_m.push_back(electrons_iter->m());
+        Electron_detain.push_back(electrons_iter->dEtaIn());
+        Electron_dphiin.push_back(electrons_iter->dPhiIn());
+        Electron_sigmaietaieta.push_back(electrons_iter->sigmaIetaIeta());
+        Electron_HoE.push_back(electrons_iter->hOverE());	
+        Electron_ooEMOop.push_back(electrons_iter->ooEMOop());
+        Electron_mHits.push_back(electrons_iter->missingHits());
+        Electron_charge.push_back(electrons_iter->charge());
+        Electron_trkiso.push_back(electrons_iter->trackIso());
+        Electron_ecaliso.push_back(electrons_iter->ecalIso());
+        Electron_hcaliso.push_back(electrons_iter->hcalIso());
+        Electron_d0.push_back(electrons_iter->d0());
+        Electron_dz.push_back(electrons_iter->dz());
+        n_ele++;
 
-      ScoutingParticle tmp(electrons_iter->pt(),electrons_iter->eta(),electrons_iter->phi(),electrons_iter->m(),(-11)*electrons_iter->charge(),0);
-      PFcands.push_back(tmp);
-      TLorentzVector electron_p4 = TLorentzVector();
-      electron_p4.SetPtEtaPhiM(electrons_iter->pt(), electrons_iter->eta(), electrons_iter->phi(), electrons_iter->m());
-      float combinediso; 
-      bool electronID = false;
-      if(abs(electrons_iter->eta())<1.479){
-       combinediso = (electrons_iter->trackIso() + std::max(0.f,electrons_iter->ecalIso() -1.f) + electrons_iter->hcalIso()) / electron_p4.Et();
-        electronID = 
-        (fabs(electrons_iter->dEtaIn()) < 0.007)
-        & (fabs(electrons_iter->dPhiIn()) < 0.15)
-        & (electrons_iter->sigmaIetaIeta() < 0.01)
-        & (electrons_iter->hOverE() < 0.12)
-        & (fabs(electrons_iter->d0()) < 0.02)
-        & (fabs(electrons_iter->dz()) < 0.2)
-        & (electrons_iter->ooEMOop() < 0.05)
-        & (combinediso/electrons_iter->pt() < 0.15);
-      }else{
-       combinediso = (electrons_iter->trackIso() + electrons_iter->ecalIso()  + electrons_iter->hcalIso()) / electron_p4.Et();
-        electronID = 
-        (fabs(electrons_iter->dEtaIn()) < 0.009)
-        & (fabs(electrons_iter->dPhiIn()) < 0.10)
-        & (electrons_iter->sigmaIetaIeta() < 0.03)
-        & (electrons_iter->hOverE() < 0.10)
-        & (fabs(electrons_iter->d0()) < 0.02)
-        & (fabs(electrons_iter->dz()) < 0.2)
-        & (electrons_iter->ooEMOop() < 0.05)
-        & (combinediso/electrons_iter->pt() < 0.15);
-      }
-      Electron_combinediso.push_back(combinediso);
-      Electron_ID.push_back(electronID);
-    }}
+        ScoutingParticle tmp(electrons_iter->pt(),electrons_iter->eta(),electrons_iter->phi(),electrons_iter->m(),(-11)*electrons_iter->charge(),0);
+        PFcands.push_back(tmp);
+        TLorentzVector electron_p4 = TLorentzVector();
+        electron_p4.SetPtEtaPhiM(electrons_iter->pt(), electrons_iter->eta(), electrons_iter->phi(), electrons_iter->m());
+        float combinediso; 
+        bool electronID = false;
+        if(abs(electrons_iter->eta())<1.479){
+        combinediso = (electrons_iter->trackIso() + std::max(0.f,electrons_iter->ecalIso() -1.f) + electrons_iter->hcalIso()) / electron_p4.Et();
+          electronID = 
+          (fabs(electrons_iter->dEtaIn()) < 0.007)
+          & (fabs(electrons_iter->dPhiIn()) < 0.15)
+          & (electrons_iter->sigmaIetaIeta() < 0.01)
+          & (electrons_iter->hOverE() < 0.12)
+          & (fabs(electrons_iter->d0()) < 0.02)
+          & (fabs(electrons_iter->dz()) < 0.2)
+          & (electrons_iter->ooEMOop() < 0.05)
+          & (combinediso/electrons_iter->pt() < 0.15);
+        }else{
+        combinediso = (electrons_iter->trackIso() + electrons_iter->ecalIso()  + electrons_iter->hcalIso()) / electron_p4.Et();
+          electronID = 
+          (fabs(electrons_iter->dEtaIn()) < 0.009)
+          & (fabs(electrons_iter->dPhiIn()) < 0.10)
+          & (electrons_iter->sigmaIetaIeta() < 0.03)
+          & (electrons_iter->hOverE() < 0.10)
+          & (fabs(electrons_iter->d0()) < 0.02)
+          & (fabs(electrons_iter->dz()) < 0.2)
+          & (electrons_iter->ooEMOop() < 0.05)
+          & (combinediso/electrons_iter->pt() < 0.15);
+        }
+        Electron_combinediso.push_back(combinediso);
+        Electron_ID.push_back(electronID);
+    }
+  }
 
   // *
   // Photons here
@@ -963,13 +1011,27 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     }
   }
 
- 
 
   // * 
   // Particle Flow candidates 
   // *
 
-  
+  PFcand_pt.clear();
+  PFcand_eta.clear();
+  PFcand_phi.clear();
+  PFcand_m.clear();
+  PFcand_pdgid.clear();
+  PFcand_q.clear();
+  PFcand_vertex.clear();
+  FatJetPFCands_jetIdx.clear();
+  FatJetPFCands_pFCandsIdx.clear();
+
+  vector<PseudoJet> fj_part;
+  n_pfcand = 0;
+  n_pfMu =0;
+  n_pfEl =0;
+
+
   if(runScouting){
 
     for (auto pfcands_iter = pfcandsH->begin(); pfcands_iter != pfcandsH->end(); ++pfcands_iter) {
@@ -977,7 +1039,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     
       PFcands.push_back(tmp);
     }
-    }
+    
 
     //sort PFcands according to pT
     struct {
@@ -987,269 +1049,81 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     std::sort(PFcands.begin(), PFcands.end(), custompT);
 
 
-    PFcand_pt.clear();
-    PFcand_eta.clear();
-    PFcand_phi.clear();
-    PFcand_m.clear();
-    PFcand_pdgid.clear();
-    PFcand_q.clear();
-    PFcand_vertex.clear();
-    FatJetPFCands_jetIdx.clear();
-    FatJetPFCands_pFCandsIdx.clear();
+    for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
+      
+      if (pfcands_iter.pt() < 0.5) continue;
+      if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
 
-
+      PFcand_pt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.pt())));
+      PFcand_eta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.eta())));
+      PFcand_phi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.phi())));
+      if(abs(pfcands_iter.pdgId()) == 13){
+      n_pfMu ++;
+      }
+      if(abs(pfcands_iter.pdgId()) == 11){
+      n_pfEl ++;
+      }
     
-    vector<unsigned int> daughters_used; // for 1-to-1 reco-truth matching
-    daughters_used.clear();
-//////////////////////////////////////
-//new code 
-  vector<vector<float> > dr_vector;
-  vector<PseudoJet> fj_part;
-  vector<math::XYZVector> event_tracks; // all event tracks
-  math::XYZVector trk = math::XYZVector(0,0,0); 
-  n_pfcand = 0;
-  n_pfMu =0;
-  n_pfEl =0;
-  for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
-    vector<float> dr_vector_row; //sets all dR values between pFcands and gen tracks
-    if (pfcands_iter.pt() < 0.5) continue;
-    if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
+      PFcand_m.push_back(pfcands_iter.m());
+      PFcand_pdgid.push_back(pfcands_iter.pdgId());
+      PFcand_q.push_back(getCharge(pfcands_iter.pdgId()));
+      PFcand_vertex.push_back(pfcands_iter.vertex());
 
-    PFcand_pt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.pt())));
-    PFcand_eta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.eta())));
-    PFcand_phi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.phi())));
-    if(abs(pfcands_iter.pdgId()) == 13){
-     n_pfMu ++;
-    }
-    if(abs(pfcands_iter.pdgId()) == 11){
-     n_pfEl ++;
-    }
-   
-    PFcand_m.push_back(pfcands_iter.m());
-    PFcand_pdgid.push_back(pfcands_iter.pdgId());
-    PFcand_q.push_back(getCharge(pfcands_iter.pdgId()));
-    PFcand_vertex.push_back(pfcands_iter.vertex());
-
-    // Cluster charged PF candidates into fat jets
-    if (pfcands_iter.vertex() != 0) continue;
-    if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
-    if (pfcands_iter.pt() < 0.5) continue; 
-    if (getCharge(pfcands_iter.pdgId()) == 0 ) continue;
-
-    // For clustering fat jets
-    PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
-    temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
-    temp_jet.set_user_index(n_pfcand);
-    if (pfcands_iter.vertex() == 0 && getCharge(pfcands_iter.pdgId()) != 0 ){
+      // For clustering fat jets
+      PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
+      temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
+      temp_jet.set_user_index(n_pfcand);
       fj_part.push_back(temp_jet);
-    
-      // Event shape variables on whole event
-      trk = math::XYZVector(0,0,0);
-      trk.SetXYZ(temp_jet.px(), temp_jet.py(), temp_jet.pz() );
-      event_tracks.push_back(trk);
+      
+      n_pfcand++;
     }
 
-    n_pfcand++;
   }
 
+
+OffPFcand_pt.clear();
+OffPFcand_eta.clear();
+OffPFcand_phi.clear();
+OffPFcand_m.clear();
+OffPFcand_pdgid.clear();
+OffPFcand_q.clear();
+n_offpfcand = 0;
+n_offpfMu =0;
+n_offpfEl =0;
+vector<PseudoJet> off_fj_part;
 
 if(runOffline){
-  offlineTrack_pt.clear();
-  offlineTrack_dzError.clear();
-  offlineTrack_quality.clear();
-  offlineTrack_eta.clear();
-  offlineTrack_event.clear();
-  offlineTrack_m.clear();
-  offlineTrack_phi.clear();
-  offlineTrack_vz.clear();
-  offlineTrack_dR.clear();
-  offlineTrack_paired.clear();
-  offlineTrack_PFcandID.clear();
-  onlineTrack_dR.clear();
-  onlineTrack_paired.clear();
-  onlineTrack_offlineID.clear();
-  vector<vector<float>> offline_dr;
-  float pvsum[60] = {0};
-  float pvmax = 0;
-  int pvindex = -1;
-  if(mini_track){
-  for (auto tracks_iter = tracksH2->begin(); tracks_iter != tracksH2->end(); ++tracks_iter) {
-    if(tracks_iter->hasTrackDetails() == 0) continue;
-    if (tracks_iter->pt() < 0.5) continue;
-    if (abs(tracks_iter->eta()) >= 2.4 ) continue;
-    if (abs(tracks_iter->charge()) != 1 ) continue;
 
-    int pvbin = static_cast<int>(tracks_iter->vz());
-    if(pvbin > 30) { pvbin = 30;}
-    if(pvbin < -30) { pvbin = -30;}
-    pvbin = pvbin + 30;
-    pvsum[pvbin] += tracks_iter->pt() * tracks_iter->pt();
-  }
+    for(auto pfcandsoff_iter = pfcandsoffH->begin(); pfcandsoff_iter != pfcandsoffH->end(); ++pfcandsoff_iter ){ //fills PFcand track info
 
-  }else{
-  for (auto tracks_iter = tracksH1->begin(); tracks_iter != tracksH1->end(); ++tracks_iter) {
-    if (tracks_iter->pt() < 0.5) continue;
-    if (abs(tracks_iter->eta()) >= 2.4 ) continue;
-    if (abs(tracks_iter->charge()) != 1 ) continue;
+      if (pfcandsoff_iter->pt() < 0.5) continue;
+      if (abs(pfcandsoff_iter->eta()) >= 2.4 ) continue;
 
-    int pvbin = static_cast<int>(tracks_iter->vz());
-    if(pvbin > 30) { pvbin = 30;}
-    if(pvbin < -30) { pvbin = -30;}
-    pvbin = pvbin + 30;
-    pvsum[pvbin] += tracks_iter->pt() * tracks_iter->pt();
-  }
-  }
-  for(int i=0; i < 60; i++){
-    if( pvmax < pvsum[i]){
-      pvmax = pvsum[i];
-      pvindex = i;
-    }
-  }
-  if(mini_track){
-  for (auto tracks_iter = tracksH2->begin(); tracks_iter != tracksH2->end(); ++tracks_iter) {
-    if(tracks_iter->hasTrackDetails() == 0) continue;
-    if (tracks_iter->pt() < 0.5) continue;
-    if (abs(tracks_iter->eta()) >= 2.4 ) continue;
-    if (abs(tracks_iter->charge()) != 1 ) continue;
+      OffPFcand_pt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcandsoff_iter->pt())));
+      OffPFcand_eta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcandsoff_iter->eta())));
+      OffPFcand_phi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcandsoff_iter->phi())));
 
-    int pvbin = static_cast<int>(tracks_iter->vz());
-    if(pvbin > 30) { pvbin = 30;}
-    if(pvbin < -30) { pvbin = -30;}
-    pvbin = pvbin + 30;
-    if(pvbin == pvindex){
-      offlineTrack_quality.push_back(1);
-    }else{
-      offlineTrack_quality.push_back(0);
-    }
-
-    offlineTrack_event.push_back(event_);
-    offlineTrack_pt.push_back(tracks_iter->pt());
-    offlineTrack_eta.push_back(tracks_iter->eta());
-    offlineTrack_m.push_back(tracks_iter->mass());
-    offlineTrack_phi.push_back(tracks_iter->phi());
-    offlineTrack_vz.push_back(tracks_iter->vz());
-    offlineTrack_dzError.push_back(tracks_iter->dzError());
-    vector<float> offline_dr_row;
-    for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
-      if (pfcands_iter.pt() < 0.5) continue;
-      if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
-      auto dR = deltaR2(tracks_iter->eta(),tracks_iter->phi(),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.phi())));
-      offline_dr_row.push_back(dR);
-    }
-    offline_dr.push_back(offline_dr_row);
-  }
-  }else{
-  for (auto tracks_iter = tracksH1->begin(); tracks_iter != tracksH1->end(); ++tracks_iter) {
-    if (tracks_iter->pt() < 0.5) continue;
-    if (abs(tracks_iter->eta()) >= 2.4 ) continue;
-    if (abs(tracks_iter->charge()) != 1 ) continue;
-
-    int pvbin = static_cast<int>(tracks_iter->vz());
-    if(pvbin > 30) { pvbin = 30;}
-    if(pvbin < -30) { pvbin = -30;}
-    pvbin = pvbin + 30;
-    if(pvbin == pvindex){
-      offlineTrack_quality.push_back(1);
-    }else{
-      offlineTrack_quality.push_back(0);
-    }
-
-    offlineTrack_event.push_back(event_);
-    offlineTrack_pt.push_back(tracks_iter->pt());
-    offlineTrack_eta.push_back(tracks_iter->eta());
-    offlineTrack_m.push_back(tracks_iter->mass());
-    offlineTrack_phi.push_back(tracks_iter->phi());
-    offlineTrack_vz.push_back(tracks_iter->vz());
-    offlineTrack_dzError.push_back(tracks_iter->dzError());
-    vector<float> offline_dr_row;
-    for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
-      if (pfcands_iter.pt() < 0.5) continue;
-      if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
-      //if (getCharge(pfcands_iter.pdgId()) == 0 ) continue;
-      auto dR = deltaR2(tracks_iter->eta(),tracks_iter->phi(),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.phi())));
-      offline_dr_row.push_back(dR);
-    }
-    offline_dr.push_back(offline_dr_row);
-  }
-  }
-
-  if(runScouting){
-    std::vector<int> used_offline;
-    std::vector<int> used_online;
-    std::vector<float> odr_matched;
-    float min;
-    do{
-      min = std::numeric_limits<float>::max();
-      int row =0;
-      int minrow=-1;
-      int mincol=-1;
-      for( auto & v : offline_dr){ //loops over dR values for each PFcand
-        if(std::find(used_offline.begin(), used_offline.end(), row) != used_offline.end()){row++; continue;}// skip if this row is already a matched pf Candidates and increase the row counter
-        int col=0;
-        for( auto & e : v){ // loops over dR values for each gen associated with this PFCand
-          if(std::find(used_online.begin(), used_online.end(), col) != used_online.end()){col++; continue;}// skip if this col is already a matched gen and increase the col counter
-          if(e <= min){ //finds min dR value within matrix. sets the used col and row position for the minimum as well as the new min dR value.
-             mincol = col;
-             minrow = row;
-             min = e;
-          }
-          col++; // gen counter position increment
-        }
-        row++; // pfcand counter positsion increment
-      }// all dR values have been looped over and the min dR has been found with position in gen and pfcand
-      if(minrow != -1 && mincol != -1){ // if there is a dR match
-          used_offline.push_back(minrow);// index of Pf cand with match
-          used_online.push_back(mincol);// index of gen cand with match
-          odr_matched.push_back(min);// dR between pF cand and gen
+      if(abs(pfcandsoff_iter->pdgId()) == 13){
+      n_offpfMu ++;
       }
-    }while(min < 0.3); //cut off value for min dR
-  
-    for(int e = 0; e < static_cast<int>(offlineTrack_pt.size()); e++){//loop over pf cands again to set dR values in proper positions
-      auto it = find(used_offline.begin(), used_offline.end(), e); // see if PF cand has a match
-      if(it != used_offline.end()){
-        float dR = odr_matched.at(it-used_offline.begin());// get dR associated with this PF cand
-        int mincol = used_online.at(it-used_offline.begin());// get dR associated with this PF cand
-  
-        offlineTrack_dR.push_back(dR); //push back dR at that match positon into proper position.
-  
-        if (mincol < 0){
-          offlineTrack_PFcandID.push_back( -1);
-          offlineTrack_paired.push_back(false);
-        }else{
-          offlineTrack_paired.push_back(true);
-          offlineTrack_PFcandID.push_back(mincol);
-        }
+      if(abs(pfcandsoff_iter->pdgId()) == 11){
+      n_offpfEl ++;
       }
-      else{
-        offlineTrack_dR.push_back(0.3);//no match found set as fake value
-        offlineTrack_PFcandID.push_back( -1);
-        offlineTrack_paired.push_back(false);
-      }
+    
+      OffPFcand_m.push_back(pfcandsoff_iter->mass());
+      OffPFcand_pdgid.push_back(pfcandsoff_iter->pdgId());
+      OffPFcand_q.push_back(getCharge(pfcandsoff_iter->pdgId()));
+
+      // For clustering fat jets
+      PseudoJet temp_offjet = PseudoJet(0, 0, 0, 0);
+      temp_offjet.reset_PtYPhiM(pfcandsoff_iter->pt(), pfcandsoff_iter->eta(), pfcandsoff_iter->phi(), pfcandsoff_iter->mass());
+      temp_offjet.set_user_index(n_offpfcand);
+      off_fj_part.push_back(temp_offjet);
+
+      n_offpfcand++;
     }
-    for(int e = 0; e < static_cast<int>(PFcand_pt.size()); e++){//loop over pf cands again to set dR values in proper positions
-      auto it = find(used_online.begin(), used_online.end(), e); // see if PF cand has a match
-      if(it != used_online.end()){
-        float dR = odr_matched.at(it-used_online.begin());// get dR associated with this PF cand
-        int minrow = used_offline.at(it-used_online.begin());// get dR associated with this PF cand
-  
-        onlineTrack_dR.push_back(dR); //push back dR at that match positon into proper position.
-        if (minrow < 0){
-          onlineTrack_offlineID.push_back( -1);
-          onlineTrack_paired.push_back(false);
-        }else{
-          onlineTrack_offlineID.push_back(minrow);
-          onlineTrack_paired.push_back(true);
-        }
-      }
-      else{
-        onlineTrack_dR.push_back(0.3);//no match found set as fake value
-        onlineTrack_offlineID.push_back( -1);
-        onlineTrack_paired.push_back(false);
-      }
-    }
-  }
+
 }
-
 
   // 
   // Muons   
@@ -1290,7 +1164,7 @@ if(runOffline){
   if(runScouting){
   //if(not (isMC and era_16)){
   for (auto muons_iter = muonsH->begin(); muons_iter != muonsH->end(); ++muons_iter) {
- 	Muon_pt.push_back(muons_iter->pt()); 
+ 	  Muon_pt.push_back(muons_iter->pt()); 
    	Muon_eta.push_back(muons_iter->eta());
    	Muon_phi.push_back(muons_iter->phi());
    	Muon_m.push_back(muons_iter->m());
@@ -1323,9 +1197,12 @@ if(runOffline){
     Muon_isTrackerMuon.push_back(muons_iter->isTrackerMuon());
     n_mu++;
   }
-  }
+}
+
+
+
   // * 
-  // Jets 
+  // AK4 Jets 
   // * 
   Jet_pt.clear();
   Jet_eta.clear();
@@ -1374,117 +1251,107 @@ if(runOffline){
   OffJet_passId.clear();
   n_jet = 0;
   n_jetId = 0;
+  n_jetIdoff = 0;
+  n_jetoff = 0;
   ht = 0;
   htoff = 0;
   passJetId = false;
 
   if(runScouting){
-  //if(not (isMC and era_16)){
-  for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
+    for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
 
-    Jet_pt .push_back( pfjet->pt() );
-    Jet_eta.push_back( pfjet->eta());
-    Jet_phi.push_back( pfjet->phi());
-    Jet_m  .push_back( pfjet->m()  );
+      //store only if 
 
-    Jet_area.push_back( pfjet->jetArea());
+      Jet_pt .push_back( pfjet->pt() );
+      Jet_eta.push_back( pfjet->eta());
+      Jet_phi.push_back( pfjet->phi());
+      Jet_m  .push_back( pfjet->m()  );
 
-    Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
-    Jet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
-    Jet_photonEnergy       .push_back( pfjet->photonEnergy()       );
-    Jet_electronEnergy     .push_back( pfjet->electronEnergy()     );
-    Jet_muonEnergy         .push_back( pfjet->muonEnergy()     );
-    Jet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
-    Jet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
-    Jet_HOEnergy           .push_back( pfjet->HOEnergy()       );
-    
-    Jet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
-    Jet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
-    Jet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
-    Jet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
-    Jet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
-    Jet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
-    Jet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
+      Jet_area.push_back( pfjet->jetArea());
 
-    Jet_csv             .push_back( pfjet->csv() );
-    Jet_mvaDiscriminator.push_back( pfjet->mvaDiscriminator()    );
-    Jet_nConstituents   .push_back( pfjet->constituents().size() );
-    
-    n_jet++;
+      Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
+      Jet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
+      Jet_photonEnergy       .push_back( pfjet->photonEnergy()       );
+      Jet_electronEnergy     .push_back( pfjet->electronEnergy()     );
+      Jet_muonEnergy         .push_back( pfjet->muonEnergy()     );
+      Jet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
+      Jet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
+      Jet_HOEnergy           .push_back( pfjet->HOEnergy()       );
+      
+      Jet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
+      Jet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
+      Jet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
+      Jet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
+      Jet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
+      Jet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
+      Jet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
 
-    passJetId = jetID(*pfjet);
-    Jet_passId.push_back( passJetId );
+      Jet_csv             .push_back( pfjet->csv() );
+      Jet_mvaDiscriminator.push_back( pfjet->mvaDiscriminator()    );
+      Jet_nConstituents   .push_back( pfjet->constituents().size() );
+      
+      n_jet++;
 
-    // apply jet ID 
-    if ( passJetId == false ) continue; 
-    if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
-    ht += pfjet->pt() ; 
-    n_jetId++ ; 
+      passJetId = jetID(*pfjet);
+      Jet_passId.push_back( passJetId );
 
+      // apply jet ID 
+      if ( passJetId == false ) continue; 
+      if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
+      ht += pfjet->pt() ; 
+      n_jetId++ ; 
+
+    }
   }
+
+  if(runOffline){
+    for (auto pfjet = pfjetsoffH->begin(); pfjet != pfjetsoffH->end(); ++pfjet) {
+
+      OffJet_pt .push_back( pfjet->pt() );
+      OffJet_eta.push_back( pfjet->eta());
+      OffJet_phi.push_back( pfjet->phi());
+      OffJet_m  .push_back( pfjet->mass()  );
+
+      OffJet_area.push_back( pfjet->jetArea());
+
+      OffJet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
+      OffJet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
+      OffJet_photonEnergy       .push_back( pfjet->photonEnergy()       );
+      OffJet_electronEnergy     .push_back( pfjet->electronEnergy()     );
+      OffJet_muonEnergy         .push_back( pfjet->muonEnergy()     );
+      OffJet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
+      OffJet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
+      OffJet_HOEnergy           .push_back( pfjet->hoEnergy()       );
+      
+      OffJet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
+      OffJet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
+      OffJet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
+      OffJet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
+      OffJet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
+      OffJet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
+      OffJet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
+
+      n_jetoff++;
+
+      passJetId = jetIDoff(*pfjet);
+      OffJet_passId.push_back( passJetId );
+
+      //// apply jet ID 
+      if ( passJetId == false ) continue; 
+      if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
+      htoff += pfjet->pt() ; 
+      n_jetIdoff++ ;
+
+    }  
   }
-  if(runOffline and not mini_track){
-  for (auto pfjet = pfjetsoffH->begin(); pfjet != pfjetsoffH->end(); ++pfjet) {
-
-    OffJet_pt .push_back( pfjet->pt() );
-    OffJet_eta.push_back( pfjet->eta());
-    OffJet_phi.push_back( pfjet->phi());
-    OffJet_m  .push_back( pfjet->mass()  );
-
-    OffJet_area.push_back( pfjet->jetArea());
-
-    OffJet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
-    OffJet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
-    OffJet_photonEnergy       .push_back( pfjet->photonEnergy()       );
-    OffJet_electronEnergy     .push_back( pfjet->electronEnergy()     );
-    OffJet_muonEnergy         .push_back( pfjet->muonEnergy()     );
-    OffJet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
-    OffJet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
-    OffJet_HOEnergy           .push_back( pfjet->hoEnergy()       );
-    
-    OffJet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
-    OffJet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
-    OffJet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
-    OffJet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
-    OffJet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
-    OffJet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
-    OffJet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
-
-
-    passJetId = jetIDoff(*pfjet);
-    OffJet_passId.push_back( passJetId );
-
-    //// apply jet ID 
-    if ( passJetId == false ) continue; 
-    if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
-    htoff += pfjet->pt() ; 
-    //n_jetId++ ; 
-
-  }  
-  }
-  // loop through constituents & save
 
   // * 
   // FatJets 
   // *
-  FatJet_area.clear();
-  FatJet_eta .clear();
-  FatJet_phi .clear();
-  FatJet_pt  .clear();
-  FatJet_mass.clear();
-  FatJet_n2b1.clear();
-  FatJet_n3b1.clear();
-  FatJet_tau1.clear();
-  FatJet_tau2.clear();
-  FatJet_tau3.clear();
-  FatJet_tau4.clear();
-  FatJet_tau21.clear();
-  FatJet_tau32.clear();
-  FatJet_msoftdrop.clear();
-  FatJet_mtrim.clear();
-  FatJet_nconst.clear();
 
+  //here introduce AK definition
   JetDefinition ak8_def = JetDefinition(antikt_algorithm, 0.8);
+  double jet_pt_min = 100.0;
   double sd_z_cut = 0.10;
   double sd_beta = 0;
   SoftDrop sd_groomer = SoftDrop(sd_z_cut, sd_beta, 1.0);
@@ -1503,65 +1370,163 @@ if(runOffline){
   fastjet::GhostedAreaSpec area_spec(5.0,1,0.01);
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
-  ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
-  vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(30.0)); //pt min
+  //here add for scouting AK8 jets
+  FatJet_area.clear();
+  FatJet_eta .clear();
+  FatJet_phi .clear();
+  FatJet_pt  .clear();
+  FatJet_mass.clear();
+  FatJet_n2b1.clear();
+  FatJet_n3b1.clear();
+  FatJet_tau1.clear();
+  FatJet_tau2.clear();
+  FatJet_tau3.clear();
+  FatJet_tau4.clear();
+  FatJet_tau21.clear();
+  FatJet_tau32.clear();
+  FatJet_msoftdrop.clear();
+  FatJet_mtrim.clear();
+  FatJet_nconst.clear();
 
-  n_fatjet = 0;
-  for(auto &j: ak8_jets) {
-    FatJet_area.push_back(j.area());
-    FatJet_eta .push_back(j.pseudorapidity());
-    FatJet_phi .push_back(j.phi_std());
-    FatJet_pt  .push_back(j.pt());
-    FatJet_mass.push_back(j.m());
+  if(runScouting){
 
-    FatJet_nconst.push_back(j.constituents().size());
+    ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
+    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jet_pt_min)); //pt min
 
-    PseudoJet sd_ak8 = sd_groomer(j);
-    FatJet_msoftdrop.push_back(sd_ak8.m());
-    
-    PseudoJet trimmed_ak8 = trimmer(j);
-    FatJet_mtrim.push_back(trimmed_ak8.m());
-    
-    // Energy correlation
-    FatJet_n2b1.push_back(N2(sd_ak8));
-    FatJet_n3b1.push_back(N3(sd_ak8));
-    
-    // Nsubjettiness, tau 
-    FatJet_tau1.push_back(nSub1.result(j));
-    FatJet_tau2.push_back(nSub2.result(j));
-    FatJet_tau3.push_back(nSub3.result(j));
-    FatJet_tau4.push_back(nSub4.result(j));
-    FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
-    FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
+    n_fatjet = 0;
+    for(auto &j: ak8_jets) {
+      FatJet_area.push_back(j.area());
+      FatJet_eta .push_back(j.pseudorapidity());
+      FatJet_phi .push_back(j.phi_std());
+      FatJet_pt  .push_back(j.pt());
+      FatJet_mass.push_back(j.m());
 
-    n_fatjet++;
-  }
+      FatJet_nconst.push_back(j.constituents().size());
+
+      PseudoJet sd_ak8 = sd_groomer(j);
+      FatJet_msoftdrop.push_back(sd_ak8.m());
+      
+      PseudoJet trimmed_ak8 = trimmer(j);
+      FatJet_mtrim.push_back(trimmed_ak8.m());
+      
+      // Energy correlation
+      FatJet_n2b1.push_back(N2(sd_ak8));
+      FatJet_n3b1.push_back(N3(sd_ak8));
+      
+      // Nsubjettiness, tau 
+      FatJet_tau1.push_back(nSub1.result(j));
+      FatJet_tau2.push_back(nSub2.result(j));
+      FatJet_tau3.push_back(nSub3.result(j));
+      FatJet_tau4.push_back(nSub4.result(j));
+      FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
+      FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
+
+      n_fatjet++;
+    }
 
 
-
-  unsigned int n_pfcand_tot = 0;
-  for (auto & pfcands_iter : PFcands ) {
-    if (pfcands_iter.pt() < 1.) continue;
-    if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
-    int tmpidx = -1;
-    int ak8count = 0;
-    for (auto &j: ak8_jets) {
-      for (auto &k: j.constituents()){
-        if ((UInt_t)k.user_index() == n_pfcand_tot){
-          tmpidx = ak8count;
-          ak8count++;
+    unsigned int n_pfcand_tot = 0;
+    for (auto & pfcands_iter : PFcands ) {
+      if (pfcands_iter.pt() < 1.) continue;
+      if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
+      int tmpidx = -1;
+      int ak8count = 0;
+      for (auto &j: ak8_jets) {
+        for (auto &k: j.constituents()){
+          if ((UInt_t)k.user_index() == n_pfcand_tot){
+            tmpidx = ak8count;
+            ak8count++;
+            break;
+          }
+        }
+        if (tmpidx>-1){
+          FatJetPFCands_jetIdx.push_back(tmpidx);
+          FatJetPFCands_pFCandsIdx.push_back(n_pfcand_tot);
           break;
+        }else{
+          ak8count++;
         }
       }
-      if (tmpidx>-1){
-        FatJetPFCands_jetIdx.push_back(tmpidx);
-        FatJetPFCands_pFCandsIdx.push_back(n_pfcand_tot);
-        break;
-      }else
-        ak8count++;
+      n_pfcand_tot++;
     }
-    n_pfcand_tot++;
   }
+
+  //here add for offline AK8 jets
+  OfflineFatJet_area.clear();
+  OfflineFatJet_eta .clear();
+  OfflineFatJet_phi .clear();
+  OfflineFatJet_pt  .clear();
+  OfflineFatJet_mass.clear();
+  OfflineFatJet_n2b1.clear();
+  OfflineFatJet_n3b1.clear();
+  OfflineFatJet_tau1.clear();
+  OfflineFatJet_tau2.clear();
+  OfflineFatJet_tau3.clear();
+  OfflineFatJet_tau4.clear();
+  OfflineFatJet_tau21.clear();
+  OfflineFatJet_tau32.clear();
+  OfflineFatJet_msoftdrop.clear();
+  OfflineFatJet_mtrim.clear();
+  OfflineFatJet_nconst.clear();
+  
+  if (runOffline){
+
+    ClusterSequenceArea ak8_cs_offline(off_fj_part, ak8_def, area_def);
+    vector<PseudoJet> ak8_jets_offline = sorted_by_pt(ak8_cs_offline.inclusive_jets(jet_pt_min));
+
+    n_fatjet_off = 0;
+    
+    for(auto &j: ak8_jets_offline) {
+      OfflineFatJet_area.push_back(j.area());
+      OfflineFatJet_eta.push_back(j.pseudorapidity());
+      OfflineFatJet_mass.push_back(j.m());
+
+      OfflineFatJet_nconst.push_back(j.constituents().size());
+      
+      PseudoJet sd_ak8_off = sd_groomer(j);
+      OfflineFatJet_msoftdrop.push_back(sd_ak8_off.m());
+      
+      PseudoJet trimmed_ak8_off = trimmer(j);
+      OfflineFatJet_mtrim.push_back(trimmed_ak8_off.m());
+      
+      OfflineFatJet_n2b1.push_back(N2(sd_ak8_off));
+      OfflineFatJet_n3b1.push_back(N3(sd_ak8_off));
+      OfflineFatJet_phi.push_back(j.phi_std());
+      OfflineFatJet_pt.push_back(j.pt());
+      OfflineFatJet_tau1.push_back(nSub1.result(j));
+      OfflineFatJet_tau2.push_back(nSub2.result(j));
+      OfflineFatJet_tau3.push_back(nSub3.result(j));
+      OfflineFatJet_tau4.push_back(nSub4.result(j));
+
+      n_fatjet_off++;
+    }
+
+    unsigned int n_pfcand_off_tot = 0;
+    for(auto pfcandsoff_iter = pfcandsoffH->begin(); pfcandsoff_iter != pfcandsoffH->end(); ++pfcandsoff_iter ){
+      if (pfcandsoff_iter->pt() < 1.) continue;
+      if (abs(pfcandsoff_iter->eta()) >= 2.4 ) continue;    
+      int tmpidx_off = -1;
+      int ak8count_off = 0;
+      for (auto &j: ak8_jets_offline) {
+        for (auto &k: j.constituents()){
+          if ((UInt_t)k.user_index() == n_pfcand_off_tot){
+            tmpidx_off = ak8count_off;
+            ak8count_off++;
+            break;
+          }
+        }
+        if (tmpidx_off>-1){
+          OfflineFatJetPFCands_jetIdx.push_back(tmpidx_off);
+          OfflineFatJetPFCands_pFCandsIdx.push_back(n_pfcand_off_tot);
+          break;
+        }else{
+          ak8count_off++;
+        }
+      }
+      n_pfcand_off_tot++;
+    }
+
+}
 
 //  Handle<double> rhoH;
   Handle<double> rhoH2;
@@ -1584,11 +1549,6 @@ if(runOffline){
     prefiredown = *prefirewgtdown;
   }
 
- // done for all events, no need to reset?
- EventShapeVariables event_algo(event_tracks);
- event_isotropy    = event_algo.isotropy();
- event_sphericity  = event_algo.sphericity();
- event_circularity = event_algo.circularity();
 
  // * 
  // L1 info
@@ -1702,7 +1662,8 @@ int ScoutingNanoAOD::getCharge(int pdgId) {
   // 1 = HF hadron, where HF means forward calo
   // 2 = HF em particle, where HF means forward calo
 }
-bool ScoutingNanoAOD::jetIDoff(const reco::PFJet &pfjet){
+//bool ScoutingNanoAOD::jetIDoff(const reco::PFJet &pfjet){
+bool ScoutingNanoAOD::jetIDoff(const pat::Jet &pfjet){
 // https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2018
     //moved HT cut
     TLorentzVector jet; 

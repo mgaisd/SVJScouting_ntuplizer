@@ -223,7 +223,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     GetLumiInfoHeader=cms.InputTag("generator"),
 
     #scouting objects
-    muons             = cms.InputTag("hltScoutingMuonPacker"),
+    muons             = cms.InputTag("hltScoutingMuonPackerCalo"),
     electrons         = cms.InputTag("hltScoutingEgammaPacker"),
     photons           = cms.InputTag("hltScoutingEgammaPacker"),
     pfcands           = cms.InputTag("hltScoutingPFPacker"),

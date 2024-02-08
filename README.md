@@ -19,7 +19,7 @@ cmsenv
 scram b
 ```
 
-# Running the ntuplizer from MiniAOD to NanoAOD-lik format
+# Running the ntuplizer from MiniAOD to NanoAOD-like format
 To run on Signal :
 
 ```

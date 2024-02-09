@@ -37,6 +37,15 @@
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 
+//Added for offline electrons and muons
+#include "DataFormats/PatCandidates/interface/Electron.h"
+//#include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+
+//Adding Reco vertices
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
+
 // Other relevant CMSSW includes
 #include "CommonTools/UtilAlgos/interface/TFileService.h" 
 #include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
@@ -76,6 +85,9 @@
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 
 #include "DataFormats/Math/interface/libminifloat.h"
+
+#include "DataFormats/Common/interface/ValueMap.h"
+#include "DataFormats/Common/interface/View.h"
 
 // Root include files
 #include "TLorentzVector.h"
@@ -130,7 +142,6 @@ private:
   virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
   int getCharge(int pdgId);
   bool jetID(const ScoutingPFJet &pfjet);
-  //bool jetIDoff(const reco::PFJet &pfjet);
   bool jetIDoff(const pat::Jet &pfjet);
 
   //Scouting tokens
@@ -147,12 +158,12 @@ private:
 
 
   //Offline tokens
-  //const edm::EDGetTokenT<std::vector<reco::PFJet> >  		pfjetsoffToken;
-  //const edm::EDGetTokenT<std::vector<reco::PFCandidate >>  	offlineTracksToken;
-  //const edm::EDGetTokenT<std::vector<pat::PackedCandidate >>  	offlineTracksToken2;
+  const edm::EDGetTokenT<reco::VertexCollection>              recoverticeToken;
   const edm::EDGetTokenT<std::vector<pat::Jet>> recoJetToken;
+  const edm::EDGetTokenT<edm::View<pat::Electron> > recoElectronToken;
   const edm::EDGetTokenT<std::vector<pat::PackedCandidate>> recoPfCandidateToken;
   const edm::EDGetTokenT<std::vector<pat::MET>> recoMetToken;
+  edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
 
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
@@ -213,7 +224,7 @@ private:
   vector<Float16_t>            Photon_ecaliso;
   vector<Float16_t>	       Photon_hcaliso;
 
-  //Electron
+  //Scouting Electron
   UInt_t n_ele;
   vector<Float16_t> 	       Electron_pt;
   vector<Float16_t>            Electron_eta;
@@ -233,6 +244,32 @@ private:
   vector<Float16_t>            Electron_trkiso;
   vector<Float16_t>            Electron_combinediso;
   vector<bool>            Electron_ID;
+
+
+  //Offline Electron
+  UInt_t n_ele_off;
+  vector<Float16_t> 	       OffElectron_pt;
+  vector<Float16_t>            OffElectron_eta;
+  vector<Float16_t>            OffElectron_phi;
+  vector<Float16_t>	       OffElectron_m;
+  vector<Float16_t>            OffElectron_d0;
+  vector<Float16_t>	       OffElectron_dz;
+  vector<Float16_t>	       OffElectron_detain;
+  vector<Float16_t>	       OffElectron_dphiin;
+  vector<Float16_t>	       OffElectron_sigmaietaieta;
+  vector<Float16_t>	       OffElectron_HoE;
+  vector<Float16_t>	       OffElectron_ooEMOop;
+  vector<Float16_t>	       OffElectron_mHits;
+  vector<Float16_t>            OffElectron_charge;
+  vector<Float16_t>            OffElectron_ecaliso;
+  vector<Float16_t>	       OffElectron_hcaliso;
+  vector<Float16_t>            OffElectron_trkiso;
+  vector<Float16_t>            OffElectron_combinediso;
+  vector<bool>            OffElectron_ID;
+  Float_t isoChargedHadrons_;
+  Float_t isoNeutralHadrons_;
+  Float_t isoPhotons_;
+  Float_t isoChargedFromPU_;
 
   //Muon
   UInt_t n_mu;
@@ -269,6 +306,8 @@ private:
   vector<Float16_t>            Muon_trkdsz;
 
   UInt_t                       PU_num;
+
+
   //PFJets
   UInt_t                       n_jet;
   UInt_t                       n_jetId;
@@ -324,20 +363,6 @@ private:
   vector<Float16_t>	       OffJet_HFEMMultiplicity;
   vector<bool>             OffJet_passId;
   
-  //vector<Float16_t> offlineTrack_pt;
-  //vector<Float16_t> offlineTrack_m;
-  //vector<Float16_t> offlineTrack_dzError;
-  //vector<Float16_t> offlineTrack_quality;
-  //vector<Float16_t> offlineTrack_eta;
-  //vector<Int_t> offlineTrack_event;
-  //vector<Float16_t> offlineTrack_phi;
-  //vector<Float16_t> offlineTrack_dR;
-  //vector<Float16_t> offlineTrack_vz;
-  //vector<bool> offlineTrack_paired;
-  //vector<bool> onlineTrack_paired;
-  //vector<Int_t> offlineTrack_PFcandID;
-  //vector<Float16_t> onlineTrack_dR;
-  //vector<Int_t> onlineTrack_offlineID;
 
   //CZZ: to add OffPFCands
   UInt_t                       n_offpfcand;
@@ -426,6 +451,9 @@ private:
   // MET
   double met_pt, met_phi;
   double met_pt_reco, met_phi_reco;
+
+  //reco vertices
+  Int_t nPV_;        // number of reconsrtucted primary vertices
     
   // TTree carrying the event weight information
   TTree* tree;
@@ -450,10 +478,9 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   metPhiToken              (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPhi"))),
   
   //Offline tokens
-  //pfjetsoffToken           (consumes<std::vector<reco::PFJet> >              (iConfig.getParameter<edm::InputTag>("pfjetsoff"))), 
-  //offlineTracksToken       (consumes<std::vector<reco::PFCandidate>>         (iConfig.getParameter<edm::InputTag>("offlineTracks"))), 
-  //offlineTracksToken2       (consumes<std::vector<pat::PackedCandidate>>  (iConfig.getParameter<edm::InputTag>("offlineTracks2"))),
+  recoverticeToken    (consumes<reco::VertexCollection>                   (iConfig.getParameter<edm::InputTag>("verticesReco"))),
   recoJetToken         (consumes<std::vector<pat::Jet>>                    (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
+  recoElectronToken    (consumes<edm::View<pat::Electron>>               (iConfig.getParameter<edm::InputTag>("electronsReco"))),
   recoPfCandidateToken (consumes<std::vector<pat::PackedCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))), 
   recoMetToken         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
 
@@ -649,6 +676,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
 
   //Primary vertices 
   tree->Branch("nPVs"            	        ,&n_pvs                         ,"nPVs/i");	
+  tree->Branch("nOfflinePVs"            	        ,&nPV_                         ,"nOfflinePVs/i");	
   tree->Branch("PV_x"        	        ,&Vertex_x  		        );
   tree->Branch("PV_y"                       ,&Vertex_y   	                );
   tree->Branch("PV_z"                       ,&Vertex_z  		        );
@@ -663,7 +691,29 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("htoff"                             ,&htoff                            );
   tree->Branch("Pileup_nPU"            	        ,&PU_num                        ,"PU_num/i");
 
-  
+
+  //Offline Electrons
+  tree->Branch("nOfflineElectron"               	         ,&n_ele_off                        ,"nOfflineElectron/i");
+  tree->Branch("OfflineElectron_pt"                    ,&OffElectron_pt                   );
+  tree->Branch("OfflineElectron_eta"                   ,&OffElectron_eta 	                );
+  tree->Branch("OfflineElectron_phi"                   ,&OffElectron_phi                  );
+  tree->Branch("OfflineElectron_charge"                ,&OffElectron_charge               );
+  tree->Branch("OfflineElectron_mass"            	        ,&OffElectron_m                    );
+  tree->Branch("OfflineElectron_hoe"                   ,&OffElectron_HoE                  );
+  tree->Branch("OfflineElectron_sieie"           ,&OffElectron_sigmaietaieta        );
+  tree->Branch("OfflineElectron_dphiin"                ,&OffElectron_dphiin 	        );
+  tree->Branch("OfflineElectron_detain"                ,&OffElectron_detain 	        );
+  tree->Branch("OfflineElectron_mHits"                 ,&OffElectron_mHits 	        );
+  tree->Branch("OfflineElectron_ooEMOop"               ,&OffElectron_ooEMOop              );
+  tree->Branch("OfflineElectron_trkiso"                 ,&OffElectron_trkiso 	        );
+  tree->Branch("OfflineElectron_ecaliso"               ,&OffElectron_ecaliso              );
+  tree->Branch("OfflineElectron_hcaliso"               ,&OffElectron_hcaliso              );
+  tree->Branch("OfflineElectron_combinediso"               ,&OffElectron_combinediso   );
+  tree->Branch("OfflineElectron_ID"               ,&OffElectron_ID   );
+  tree->Branch("OfflineElectron_d0"               ,&OffElectron_d0              );
+  tree->Branch("OfflineElectron_dz"               ,&OffElectron_dz              );
+
+
   //Offline AK4 PFJets
   tree->Branch("nJet"            	        ,&n_jetoff                         ,"nOfflineJet/i");
   tree->Branch("nJetId"            	        ,&n_jetIdoff                       ,"nOfflineJetId/i");
@@ -690,7 +740,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("OfflineJet_passId"                     ,&OffJet_passId                    );
 
 
-  //CZZ: added Offline AK8 PFJets
+  //CZZ: added Offline AK8 PFJets (built AK8 from Offline PFCands using FastJet)
   tree->Branch("nOfflineFatJet"                       ,&n_fatjet                      ,"nOfflineFatJet/i");
   tree->Branch("OfflineFatJet_area"                    ,&OfflineFatJet_area                   );
   tree->Branch("OfflineFatJet_eta"                     ,&OfflineFatJet_eta                    );
@@ -745,8 +795,9 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   using namespace fastjet;
   using namespace fastjet::contrib;
     
-  //Handle<vector<reco::PFJet> > pfjetsoffH;
+  Handle<reco::VertexCollection> recoverticesH;
   Handle<std::vector<pat::Jet>> pfjetsoffH;
+  Handle<edm::View<pat::Electron>> electronsoffH;
 
   Handle<vector<ScoutingElectron> > electronsH;
   Handle<vector<ScoutingMuon> > muonsH;
@@ -755,24 +806,17 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<vector<ScoutingParticle> > pfcandsH;
   Handle<vector<ScoutingVertex> > verticesH;
   Handle<std::vector<pat::PackedCandidate>> pfcandsoffH;
-  //Handle<vector<reco::PFCandidate> > tracksH1;
-  //Handle<vector<pat::PackedCandidate> > tracksH2;
 
   Handle<std::vector<pat::MET>> metReco;
   Handle<double> metPt;
   Handle<double> metPhi;
 
-  //bool mini_track = false;
 
   if(auto handle = iEvent.getHandle(pfcandsToken)){
     runScouting = true;
   }
-  //if(auto handle = iEvent.getHandle(offlineTracksToken)){
-  //  runOffline = true;
-  //}
-  //if(auto handle = iEvent.getHandle(offlineTracksToken2)){
-  //  runOffline = true;
-  //}
+
+
   if(auto handle = iEvent.getHandle(recoPfCandidateToken)){
     runOffline = true;
   }
@@ -790,14 +834,9 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   }
   if(runOffline){
-    //if(auto handle = iEvent.getHandle(offlineTracksToken)){
-      //iEvent.getByToken(offlineTracksToken, tracksH1);
-      //iEvent.getByToken(pfjetsoffToken, pfjetsoffH);
-    //  }else{
-    //  iEvent.getByToken(offlineTracksToken2, tracksH2);
-    //  mini_track = true;
-    //  }
+    iEvent.getByToken(recoverticeToken  , recoverticesH  );
     iEvent.getByToken(recoPfCandidateToken, pfcandsoffH);
+    iEvent.getByToken(recoElectronToken, electronsoffH);
     iEvent.getByToken(recoJetToken, pfjetsoffH);
     iEvent.getByToken(recoMetToken, metReco);
   }
@@ -869,6 +908,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
      
   }
 
+
+  // *
+  // Electrons here
+  // *
+
   Electron_pt.clear();
   Electron_eta.clear();
   Electron_phi.clear();
@@ -894,7 +938,6 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 
   if(runScouting){
-  //if(not (isMC and era_16)){
     for (auto electrons_iter = electronsH->begin(); electrons_iter != electronsH->end(); ++electrons_iter) 
       {
         Electron_pt.push_back(electrons_iter->pt());
@@ -915,6 +958,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         Electron_dz.push_back(electrons_iter->dz());
         n_ele++;
 
+        //Notice: here pushing back the electrons in the PFcands vector (for scouting electromns are not stored as PFcands, but as a separate collection)
         ScoutingParticle tmp(electrons_iter->pt(),electrons_iter->eta(),electrons_iter->phi(),electrons_iter->m(),(-11)*electrons_iter->charge(),0);
         PFcands.push_back(tmp);
         TLorentzVector electron_p4 = TLorentzVector();
@@ -931,7 +975,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
           & (fabs(electrons_iter->d0()) < 0.02)
           & (fabs(electrons_iter->dz()) < 0.2)
           & (electrons_iter->ooEMOop() < 0.05)
-          & (combinediso/electrons_iter->pt() < 0.15);
+          & (combinediso < 0.15);
         }else{
         combinediso = (electrons_iter->trackIso() + electrons_iter->ecalIso()  + electrons_iter->hcalIso()) / electron_p4.Et();
           electronID = 
@@ -942,12 +986,129 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
           & (fabs(electrons_iter->d0()) < 0.02)
           & (fabs(electrons_iter->dz()) < 0.2)
           & (electrons_iter->ooEMOop() < 0.05)
-          & (combinediso/electrons_iter->pt() < 0.15);
+          & (combinediso < 0.15);
         }
         Electron_combinediso.push_back(combinediso);
         Electron_ID.push_back(electronID);
     }
   }
+
+
+  OffElectron_pt.clear();
+  OffElectron_eta.clear();
+  OffElectron_phi.clear();
+  OffElectron_m.clear();
+  OffElectron_d0.clear();
+  OffElectron_dz.clear();
+  OffElectron_detain.clear();
+  OffElectron_dphiin.clear();
+  OffElectron_sigmaietaieta.clear();
+  OffElectron_HoE.clear();
+  OffElectron_ooEMOop.clear();
+  OffElectron_mHits.clear();
+  OffElectron_charge.clear();
+  OffElectron_ecaliso.clear();
+  OffElectron_hcaliso.clear();
+  OffElectron_trkiso.clear();
+  OffElectron_combinediso.clear();
+  OffElectron_ID.clear();
+  n_ele_off = 0;
+
+  double ooEmooP_ = 1e30;
+  double relIso = 0.0;
+
+  if (runOffline){
+
+        if (recoverticesH->empty()) return; // skip the event if no PV found
+        //const reco::Vertex &pv = vertices->front();
+        
+        nPV_ = recoverticesH -> size();
+
+        VertexCollection::const_iterator firstGoodVertex = recoverticesH->end();
+        int firstGoodVertexIdx = 0;
+        for (VertexCollection::const_iterator vtx = recoverticesH->begin(); 
+            vtx != recoverticesH->end(); ++vtx, ++firstGoodVertexIdx) {
+          // The "good vertex" selection is borrowed from Giovanni Zevi Della Porta
+          // Replace isFake() for miniAOD because it requires tracks and miniAOD vertices don't have tracks:
+          // Vertex.h: bool isFake() const {return (chi2_==0 && ndof_==0 && tracks_.empty());}
+          if (  /*!vtx->isFake() &&*/ 
+            !(vtx->chi2()==0 && vtx->ndof()==0) 
+            &&  vtx->ndof()>=4. && vtx->position().Rho()<=2.0
+            && std::abs(vtx->position().Z())<=24.0) {
+                firstGoodVertex = vtx;
+                break;
+          }
+        }
+        
+        if ( firstGoodVertex==recoverticesH->end() )
+          return; // skip event if there are no good PVs
+    
+    
+        for (auto electronsoff_iter = electronsoffH->begin(); electronsoff_iter != electronsoffH->end(); ++electronsoff_iter) 
+          {
+            
+            OffElectron_pt.push_back(electronsoff_iter->pt());
+            OffElectron_eta.push_back(electronsoff_iter->eta());
+            OffElectron_phi.push_back(electronsoff_iter->phi());	
+            OffElectron_m.push_back(electronsoff_iter->mass());
+            OffElectron_charge.push_back(electronsoff_iter->charge());
+            OffElectron_detain.push_back(electronsoff_iter->deltaEtaSuperClusterTrackAtVtx());
+            OffElectron_dphiin.push_back(electronsoff_iter->deltaPhiSuperClusterTrackAtVtx());
+            OffElectron_sigmaietaieta.push_back(electronsoff_iter->full5x5_sigmaIetaIeta());
+            OffElectron_HoE.push_back(electronsoff_iter->hcalOverEcal());	
+          
+            if( electronsoff_iter -> ecalEnergy() == 0 ){
+              printf("Electron energy is zero!\n");
+              ooEmooP_ = 1e30;
+            }else if( !std::isfinite(electronsoff_iter -> ecalEnergy())){
+              printf("Electron energy is not finite!\n");
+              ooEmooP_ = 1e30;
+            }else{
+              ooEmooP_ = std::abs(1.0/electronsoff_iter -> ecalEnergy() - electronsoff_iter -> eSuperClusterOverP()/electronsoff_iter -> ecalEnergy() );
+            }
+
+            OffElectron_ooEMOop.push_back(ooEmooP_);
+            OffElectron_mHits.push_back(electronsoff_iter->gsfTrack()->hitPattern().numberOfAllHits(reco::HitPattern::MISSING_INNER_HITS));
+
+
+            // Isolation
+            relIso = (electronsoff_iter->chargedHadronIso() +  electronsoff_iter->neutralHadronIso() + electronsoff_iter->photonIso())/electronsoff_iter->pt();
+
+            OffElectron_d0.push_back((-1) * electronsoff_iter-> gsfTrack()->dxy(firstGoodVertex->position()));
+            OffElectron_dz.push_back(electronsoff_iter -> gsfTrack()->dz( firstGoodVertex->position() ));
+            n_ele_off++;
+
+            //Notice, applying tghe same ID as for the scouting electrons for comparison
+            TLorentzVector electronoff_p4 = TLorentzVector();
+            electronoff_p4.SetPtEtaPhiM(electronsoff_iter->pt(), electronsoff_iter->eta(), electronsoff_iter->phi(), electronsoff_iter->mass());
+            bool electronID_off = false;
+            if(abs(electronsoff_iter->eta())<1.479){
+              electronID_off = 
+              (fabs(electronsoff_iter->deltaEtaSuperClusterTrackAtVtx()) < 0.007)
+              & (fabs(electronsoff_iter->deltaPhiSuperClusterTrackAtVtx()) < 0.15)
+              & (electronsoff_iter->full5x5_sigmaIetaIeta() < 0.01)
+              & (electronsoff_iter->hcalOverEcal() < 0.12)
+              & (fabs((-1) * electronsoff_iter-> gsfTrack()->dxy(firstGoodVertex->position())) < 0.02)
+              & (fabs(electronsoff_iter -> gsfTrack()->dz( firstGoodVertex->position() )) < 0.2)
+              & (ooEmooP_ < 0.05)
+              & (relIso < 0.15);
+            }else{
+              electronID_off = 
+              (fabs(electronsoff_iter->deltaEtaSuperClusterTrackAtVtx()) < 0.009)
+              & (fabs(electronsoff_iter->deltaPhiSuperClusterTrackAtVtx()) < 0.10)
+              & (electronsoff_iter->full5x5_sigmaIetaIeta() < 0.03)
+              & (electronsoff_iter->hcalOverEcal() < 0.10)
+              & (fabs((-1) * electronsoff_iter-> gsfTrack()->dxy(firstGoodVertex->position())) < 0.02)
+              & (fabs(electronsoff_iter -> gsfTrack()->dz( firstGoodVertex->position() )) < 0.2)
+              & (ooEmooP_ < 0.05)
+              & (relIso < 0.15);
+            }
+            OffElectron_combinediso.push_back(relIso);
+            OffElectron_ID.push_back(electronID_off);
+        }
+
+  }
+
 
   // *
   // Photons here
@@ -963,19 +1124,19 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   n_pho = 0;
 
   if(runScouting){
-  //if(not (isMC and era_16)){
-  for (auto photons_iter = photonsH->begin(); photons_iter != photonsH->end(); ++photons_iter) {
-    Photon_pt.push_back(photons_iter->pt());
-    Photon_eta.push_back(photons_iter->eta());
-    Photon_phi.push_back(photons_iter->phi());
-    Photon_m.push_back(photons_iter->m());
-    Photon_sigmaietaieta.push_back(photons_iter->sigmaIetaIeta());
-    Photon_HoE.push_back(photons_iter->hOverE());
-    Photon_ecaliso.push_back(photons_iter->ecalIso());
-    Photon_hcaliso.push_back(photons_iter->hcalIso());
-    
-    n_pho++;
-  }}
+    for (auto photons_iter = photonsH->begin(); photons_iter != photonsH->end(); ++photons_iter) {
+      Photon_pt.push_back(photons_iter->pt());
+      Photon_eta.push_back(photons_iter->eta());
+      Photon_phi.push_back(photons_iter->phi());
+      Photon_m.push_back(photons_iter->m());
+      Photon_sigmaietaieta.push_back(photons_iter->sigmaIetaIeta());
+      Photon_HoE.push_back(photons_iter->hOverE());
+      Photon_ecaliso.push_back(photons_iter->ecalIso());
+      Photon_hcaliso.push_back(photons_iter->hcalIso());
+      
+      n_pho++;
+    }
+  }
 
   // *
   // Primary vertices

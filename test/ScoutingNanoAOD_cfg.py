@@ -234,13 +234,11 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
 
 
     #offline objects
-    #pfjetsoff         = cms.InputTag("ak4PFJets"),
-    #pfcandsReco=cms.InputTag("packedPFCandidates"),
-    #offlineTracks     = cms.InputTag("particleFlow"),
-    #offlineTracks2     = cms.InputTag("packedPFCandidates"),
     pfcandsReco=cms.InputTag("packedPFCandidates"),
     pfjetsReco=cms.InputTag("slimmedJets"),
-    metReco            = cms.InputTag("slimmedMETs"),
+    verticesReco=cms.InputTag('offlineSlimmedPrimaryVertices'),
+    electronsReco=cms.InputTag("slimmedElectrons"),
+    metReco=cms.InputTag("slimmedMETs"),
 
     #gen info and pileup
 
@@ -250,13 +248,6 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     gens_sig          = cms.InputTag("genParticles"),
     rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
     rho2              = cms.InputTag("hltScoutingPFPacker","rho"),
-
-
-
-    # offline objects
-    #pfcandsReco=cms.InputTag("packedPFCandidates"),
-    #pfjetsReco=cms.InputTag("slimmedJets"),
-    #metReco=cms.InputTag("slimmedMETs"),
 
     # for JEC corrections eventually
     #L1corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L1FastJet_AK4CaloHLT.txt'),
@@ -289,6 +280,6 @@ if(params.isMC):
   process.p = cms.Path(process.prefiringweight* process.mmtree)
 else:
   process.p = cms.Path(process.mmtree)
-#if(params.runScouting):
-#if(runRho):
-#  process.p.associate(process.myTask)
+
+
+

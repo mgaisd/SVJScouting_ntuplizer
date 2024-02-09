@@ -39,7 +39,7 @@
 
 //Added for offline electrons and muons
 #include "DataFormats/PatCandidates/interface/Electron.h"
-//#include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 
 //Adding Reco vertices
@@ -161,6 +161,7 @@ private:
   const edm::EDGetTokenT<reco::VertexCollection>              recoverticeToken;
   const edm::EDGetTokenT<std::vector<pat::Jet>> recoJetToken;
   const edm::EDGetTokenT<edm::View<pat::Electron> > recoElectronToken;
+  const edm::EDGetTokenT<edm::View<pat::Muon> > recoMuonToken;
   const edm::EDGetTokenT<std::vector<pat::PackedCandidate>> recoPfCandidateToken;
   const edm::EDGetTokenT<std::vector<pat::MET>> recoMetToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
@@ -304,6 +305,20 @@ private:
   vector<Float16_t>            Muon_trketaerror;
   vector<Float16_t>            Muon_trkdszerror;
   vector<Float16_t>            Muon_trkdsz;
+
+  //Offline Muon
+  UInt_t n_mu_off;
+  vector<Float16_t>            OffMuon_pt;
+  vector<Float16_t>            OffMuon_eta;
+  vector<Float16_t>            OffMuon_phi;
+  vector<Float16_t>            OffMuon_m;
+  vector<Float16_t>            OffMuon_ecaliso;
+  vector<Float16_t>            OffMuon_hcaliso;
+  vector<Float16_t>            OffMuon_trkiso;
+  vector<bool>                 OffMuon_isGlobalMuon;
+  vector<bool>                 OffMuon_isTrackerMuon;
+  vector<Float16_t>            OffMuon_charge;
+
 
   UInt_t                       PU_num;
 
@@ -481,6 +496,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   recoverticeToken    (consumes<reco::VertexCollection>                   (iConfig.getParameter<edm::InputTag>("verticesReco"))),
   recoJetToken         (consumes<std::vector<pat::Jet>>                    (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
   recoElectronToken    (consumes<edm::View<pat::Electron>>               (iConfig.getParameter<edm::InputTag>("electronsReco"))),
+  recoMuonToken        (consumes<edm::View<pat::Muon>>                   (iConfig.getParameter<edm::InputTag>("muonsReco"))),
   recoPfCandidateToken (consumes<std::vector<pat::PackedCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))), 
   recoMetToken         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
 
@@ -713,6 +729,19 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("OfflineElectron_d0"               ,&OffElectron_d0              );
   tree->Branch("OfflineElectron_dz"               ,&OffElectron_dz              );
 
+  //Offline muons
+  tree->Branch("nOfflineMuons"            	        ,&n_mu_off 	                        ,"nOfflineMuons/i");
+  tree->Branch("OfflineMuon_pt"                        ,&OffMuon_pt                       );
+  tree->Branch("OfflineMuon_eta"                       ,&OffMuon_eta                      );
+  tree->Branch("OfflineMuon_phi"                       ,&OffMuon_phi                      );
+  tree->Branch("OfflineMuon_mass"                         ,&OffMuon_m                        );
+  tree->Branch("OfflineMuon_ecaliso"                   ,&OffMuon_ecaliso                  );
+  tree->Branch("OfflineMuon_hcaliso"                   ,&OffMuon_hcaliso                  );
+  tree->Branch("OfflineMuon_tkIso"                    ,&OffMuon_trkiso                   );
+  tree->Branch("OfflineMuon_isGlobal"              ,&OffMuon_isGlobalMuon             );
+  tree->Branch("OfflineMuon_isTracker"             ,&OffMuon_isTrackerMuon            );
+  tree->Branch("OfflineMuon_charge"                    ,&OffMuon_charge	                  );
+
 
   //Offline AK4 PFJets
   tree->Branch("nJet"            	        ,&n_jetoff                         ,"nOfflineJet/i");
@@ -798,6 +827,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<reco::VertexCollection> recoverticesH;
   Handle<std::vector<pat::Jet>> pfjetsoffH;
   Handle<edm::View<pat::Electron>> electronsoffH;
+  Handle<edm::View<pat::Muon>> muonsoffH;
 
   Handle<vector<ScoutingElectron> > electronsH;
   Handle<vector<ScoutingMuon> > muonsH;
@@ -837,6 +867,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     iEvent.getByToken(recoverticeToken  , recoverticesH  );
     iEvent.getByToken(recoPfCandidateToken, pfcandsoffH);
     iEvent.getByToken(recoElectronToken, electronsoffH);
+    iEvent.getByToken(recoMuonToken, muonsoffH);
     iEvent.getByToken(recoJetToken, pfjetsoffH);
     iEvent.getByToken(recoMetToken, metReco);
   }
@@ -875,7 +906,6 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
         TPRegexp pattern4("HLT_Ele32_WPTight_Gsf_v*");
         TPRegexp pattern5("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v*");
         TPRegexp pattern6("HLT_PFHT1050_v*");
-        //std::cout<<"seed: "<<hltSeeds_[j]<<std::endl;
     for (unsigned int i = 0, n = triggerBits->size(); i < n; ++i) {                                                          
       const std::string& hltbitName = names.triggerName(i);
       std::string hltpathName = hltbitName;
@@ -1287,8 +1317,9 @@ if(runOffline){
 }
 
   // 
-  // Muons   
-  // 
+  // Scouting muons   
+  //
+
   Muon_pt.clear();
   Muon_eta.clear();
   Muon_phi.clear();
@@ -1323,7 +1354,6 @@ if(runOffline){
   n_mu=0;  
   
   if(runScouting){
-  //if(not (isMC and era_16)){
   for (auto muons_iter = muonsH->begin(); muons_iter != muonsH->end(); ++muons_iter) {
  	  Muon_pt.push_back(muons_iter->pt()); 
    	Muon_eta.push_back(muons_iter->eta());
@@ -1331,15 +1361,15 @@ if(runOffline){
    	Muon_m.push_back(muons_iter->m());
    	Muon_ecaliso.push_back(muons_iter->ecalIso());
    	Muon_hcaliso.push_back(muons_iter->hcalIso());
-   	Muon_trkiso.push_back(muons_iter->chi2());
-   	Muon_chi2.push_back(muons_iter->ndof());
-   	Muon_ndof.push_back(muons_iter->charge());
-   	Muon_charge.push_back(muons_iter->dxy());
-   	Muon_dxy.push_back(muons_iter->dz());
-   	Muon_dz.push_back(muons_iter->nValidMuonHits());
-   	Muon_nvalidmuon_hits.push_back(muons_iter->nValidPixelHits());
-   	Muon_nvalidpixelhits.push_back(muons_iter->nMatchedStations());
-   	Muon_nmatchedstations.push_back(muons_iter->nTrackerLayersWithMeasurement());
+   	Muon_trkiso.push_back(muons_iter->trackIso());
+   	Muon_chi2.push_back(muons_iter->chi2());
+   	Muon_ndof.push_back(muons_iter->ndof());
+   	Muon_charge.push_back(muons_iter->charge());
+   	Muon_dxy.push_back(muons_iter->dxy());
+   	Muon_dz.push_back(muons_iter->dz());
+   	Muon_nvalidmuon_hits.push_back(muons_iter->nValidMuonHits());
+   	Muon_nvalidpixelhits.push_back(muons_iter->nValidPixelHits());
+   	Muon_nmatchedstations.push_back(muons_iter->nMatchedStations());
     Muon_type.push_back(muons_iter->type());
     Muon_nvalidstriphits.push_back(muons_iter->nValidStripHits());
     Muon_trkqoverp.push_back(muons_iter->trk_qoverp());
@@ -1357,6 +1387,37 @@ if(runOffline){
     Muon_isGlobalMuon.push_back(muons_iter->isGlobalMuon());
     Muon_isTrackerMuon.push_back(muons_iter->isTrackerMuon());
     n_mu++;
+  }
+}
+
+  // 
+  // Offline muons   
+  //
+
+  OffMuon_pt.clear();
+  OffMuon_eta.clear();
+  OffMuon_phi.clear();
+  OffMuon_m.clear();
+  OffMuon_ecaliso.clear();
+  OffMuon_hcaliso.clear();
+  OffMuon_trkiso.clear();
+  OffMuon_isGlobalMuon.clear();
+  OffMuon_isTrackerMuon.clear();
+  OffMuon_charge.clear();
+  n_mu_off=0;  
+  
+  if(runOffline){
+  for (auto muonsoff_iter = muonsoffH->begin(); muonsoff_iter != muonsoffH->end(); ++muonsoff_iter) {
+ 	  OffMuon_pt.push_back(muonsoff_iter->pt()); 
+   	OffMuon_eta.push_back(muonsoff_iter->eta());
+   	OffMuon_phi.push_back(muonsoff_iter->phi());
+   	OffMuon_m.push_back(muonsoff_iter->mass());
+   	OffMuon_ecaliso.push_back(muonsoff_iter->ecalIso());
+   	OffMuon_hcaliso.push_back(muonsoff_iter->hcalIso());
+    OffMuon_trkiso.push_back(muonsoff_iter->trackIso());      
+    OffMuon_isGlobalMuon.push_back(muonsoff_iter->isGlobalMuon());
+    OffMuon_isTrackerMuon.push_back(muonsoff_iter->isTrackerMuon());
+    n_mu_off++;
   }
 }
 

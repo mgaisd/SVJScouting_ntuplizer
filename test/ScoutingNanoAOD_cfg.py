@@ -238,6 +238,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     pfjetsReco=cms.InputTag("slimmedJets"),
     verticesReco=cms.InputTag('offlineSlimmedPrimaryVertices'),
     electronsReco=cms.InputTag("slimmedElectrons"),
+    muonsReco=cms.InputTag("slimmedMuons"),
     metReco=cms.InputTag("slimmedMETs"),
 
     #gen info and pileup

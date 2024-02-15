@@ -507,7 +507,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   //Offline tokens
   recoverticeToken    (consumes<reco::VertexCollection>                   (iConfig.getParameter<edm::InputTag>("verticesReco"))),
   recoJetToken         (consumes<std::vector<reco::PFJet>>                             (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
-  recoElectronToken    (consumes<reco::GsfElectronCollection>               (iConfig.getParameter<edm::InputTag>("electronsReco"))),
+  recoElectronToken    (consumes<reco::GsfElectronCollection >               (iConfig.getParameter<edm::InputTag>("electronsReco"))),
   recoMuonToken        (consumes<edm::View<reco::Muon>>                   (iConfig.getParameter<edm::InputTag>("muonsReco"))),
   recoPfCandidateToken (consumes<std::vector<reco::PFCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
   recoMetToken         (consumes<std::vector<reco::PFMET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),

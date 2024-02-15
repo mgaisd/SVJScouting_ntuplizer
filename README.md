@@ -19,10 +19,16 @@ cmsenv
 scram b
 ```
 
-# Running the ntuplizer from MiniAOD to NanoAOD-like format
-To run on Signal :
+# Running the ntuplizer from MiniAOD or AODs to NanoAOD-like format
+To run from MiniAODs:
 
 ```
-cmsRun SVJScouting/test/ScoutingNanoAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year> signal=True
+cmsRun SVJScouting/test/ScoutingNanoAOD_fromMiniAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year> signal=True
+```
+
+To run from AODs:
+
+```
+cmsRun SVJScouting/test/ScoutingNanoAOD_fromAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year> signal=True
 ```
 

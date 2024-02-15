@@ -8,6 +8,9 @@
 <use name="HLTrigger/HLTcore"/>
 <use name="DataFormats/Math"/>
 <use name="DataFormats/Scouting"/>
+<use name="DataFormats/JetReco"/>
+<use name="DataFormats/METReco"/>
+<use name="DataFormats/EgammaCandidates"/>
 <use name="fastjet"/>
 <use name="fastjet-contrib"/>
 <use name="root"/>

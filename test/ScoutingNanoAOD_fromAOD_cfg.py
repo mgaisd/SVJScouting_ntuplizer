@@ -239,15 +239,16 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     pfjetsReco=cms.InputTag("ak4PFJets"),
     
     verticesReco=cms.InputTag('offlinePrimaryVertices'),
-    electronsReco=cms.InputTag("gedGsfElectrons","","ECALClustering"),
+    electronsReco=cms.InputTag("gedGsfElectrons"),
     muonsReco=cms.InputTag("muons"),
     metReco=cms.InputTag("pfMet"),
 
     #gen info and pileup
 
+    genjets           = cms.InputTag("ak8GenJetsNoNu"),
     pileupinfo        = cms.InputTag("addPileupInfo"),
     pileupinfo_sig    = cms.InputTag("slimmedAddPileupInfo"),
-    geneventinfo     = cms.InputTag("generator"),
+    geneventinfo      = cms.InputTag("generator"),
     gens_sig          = cms.InputTag("genParticles"),
     rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
     rho2              = cms.InputTag("hltScoutingPFPacker","rho"),

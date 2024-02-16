@@ -47,6 +47,8 @@
 #include "DataFormats/EgammaCandidates/interface/GsfElectronCore.h"
 #include "DataFormats/MuonReco/interface/Muon.h"
 
+// Adding Gen jets
+#include "DataFormats/JetReco/interface/GenJet.h"
 
 //Adding Reco vertices
 #include "DataFormats/VertexReco/interface/Vertex.h"
@@ -166,12 +168,15 @@ private:
   //Offline tokens
   const edm::EDGetTokenT<reco::VertexCollection>              recoverticeToken;
   const edm::EDGetTokenT<std::vector<reco::PFJet>> recoJetToken;
-  const edm::EDGetTokenT<reco::GsfElectronCollection> recoElectronToken;
+  const edm::EDGetTokenT<std::vector<reco::GsfElectron>> recoElectronToken;
   const edm::EDGetTokenT<edm::View<reco::Muon> > recoMuonToken;
   const edm::EDGetTokenT<std::vector<reco::PFCandidate>> recoPfCandidateToken;
   const edm::EDGetTokenT<std::vector<reco::PFMET>> recoMetToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
 
+
+  //Gen info
+  const edm::EDGetTokenT<std::vector<reco::GenJet> >            genjetsToken; 
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
@@ -390,6 +395,13 @@ private:
   vector<Float16_t>	       OffJet_HFEMMultiplicity;
   vector<bool>             OffJet_passId;
   
+  //GenJets
+  UInt_t                       n_genjet;
+  vector<Float16_t>            GenJet_pt;
+  vector<Float16_t>            GenJet_eta;
+  vector<Float16_t>            GenJet_phi;
+  vector<Float16_t>            GenJet_mass;
+
 
   //CZZ: to add OffPFCands
   UInt_t                       n_offpfcand;
@@ -507,11 +519,13 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   //Offline tokens
   recoverticeToken    (consumes<reco::VertexCollection>                   (iConfig.getParameter<edm::InputTag>("verticesReco"))),
   recoJetToken         (consumes<std::vector<reco::PFJet>>                             (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
-  recoElectronToken    (consumes<reco::GsfElectronCollection >               (iConfig.getParameter<edm::InputTag>("electronsReco"))),
+  recoElectronToken    (consumes<std::vector<reco::GsfElectron> >               (iConfig.getParameter<edm::InputTag>("electronsReco"))),
   recoMuonToken        (consumes<edm::View<reco::Muon>>                   (iConfig.getParameter<edm::InputTag>("muonsReco"))),
   recoPfCandidateToken (consumes<std::vector<reco::PFCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
   recoMetToken         (consumes<std::vector<reco::PFMET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
 
+  //Gen info
+  genjetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genjets"))),
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
@@ -686,6 +700,15 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
 
   tree->Branch("rho"                            ,&rho2                           );
 
+
+  //add gen info
+  tree->Branch("n_genjet"                          ,&n_genjet                         ,"nGenJets/i");
+  tree->Branch("GenFatJet_pt"                         ,&GenJet_pt                        );
+  tree->Branch("GenFatJet_eta"                        ,&GenJet_eta                       );
+  tree->Branch("GenFatJet_phi"                        ,&GenJet_phi                       );
+  tree->Branch("GenFatJet_mass"                       ,&GenJet_mass                      );
+
+
   //Scouting PF Candidates
   tree->Branch("nPFCands"            	        ,&n_pfcand 		        ,"nPFCands/i");	
   tree->Branch("nPFMuons"            	        ,&n_pfMu 		        ,"nPFMuons/i");	
@@ -854,6 +877,8 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
   Handle<vector<ScoutingVertex> > verticesH;
   Handle<std::vector<reco::PFCandidate>> pfcandsoffH;
 
+  Handle<vector<reco::GenJet> > genjetsH;
+
   Handle<std::vector<reco::PFMET>> metReco;
   Handle<double> metPt;
   Handle<double> metPhi;
@@ -881,6 +906,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
 
   }
   if(runOffline){
+    iEvent.getByToken(genjetsToken, genjetsH);
     iEvent.getByToken(recoverticeToken  , recoverticesH  );
     iEvent.getByToken(recoPfCandidateToken, pfcandsoffH);
     iEvent.getByToken(recoElectronToken, electronsoffH);
@@ -1785,6 +1811,28 @@ if(runOffline){
     Handle<double> prefirewgtdown;
     iEvent.getByToken(prefireTokendown, prefirewgtdown);
     prefiredown = *prefirewgtdown;
+  }
+
+
+  // * Gen jets // *
+
+  GenJet_pt.clear();
+  GenJet_eta.clear();
+  GenJet_phi.clear();
+  GenJet_mass.clear();
+    
+  n_genjet = 0;
+  if (runOffline){
+    for (auto genjet = genjetsH->begin(); genjet != genjetsH->end(); ++genjet) {
+      if (genjet->pt() > jet_pt_min){
+        if(abs(genjet->eta()) > 2.4) continue;
+        GenJet_pt .push_back( genjet->pt() );
+        GenJet_eta.push_back( genjet->eta());
+        GenJet_phi.push_back( genjet->phi());
+        GenJet_mass  .push_back( genjet->mass()  );
+        n_genjet++;
+      }
+    }
   }
 
 

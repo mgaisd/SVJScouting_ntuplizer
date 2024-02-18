@@ -223,6 +223,7 @@ private:
   vector<double>            PSweights;
 
   UInt_t scouting_trig; 
+  UInt_t scouting_trig_prescaled;
   UInt_t offline_trig; 
   UInt_t veto_trig;
   //Photon
@@ -324,21 +325,13 @@ private:
   vector<Float16_t>            OffMuon_phi;
   vector<Float16_t>            OffMuon_m;
   vector<Float16_t>            OffMuon_charge;
-  //vector<Float16_t>            OffMuon_isolationR03;
-  //vector<Float16_t>            OffMuon_isolationR05;
-  //vector<Float16_t>            OffMuon_pfIsolationR03;
-  //vector<Float16_t>            OffMuon_pfIsolationR04;
   vector<bool>                 OffMuon_isGlobalMuon;
   vector<bool>                 OffMuon_isTrackerMuon;
   vector<bool>                 OffMuon_isStandAloneMuon;
   vector<bool>                 OffMuon_isCaloMuon;
   vector<bool>                 OffMuon_isPFMuon;
 
-  
-
-
   UInt_t                       PU_num;
-
 
   //PFJets
   UInt_t                       n_jet;
@@ -578,6 +571,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
 
   
   //scouting, offline triggers
+  tree->Branch("scouting_trig_prescaled"            	        ,&scouting_trig_prescaled 			,"scouting_trig_prescaled/i");
   tree->Branch("scouting_trig"            	        ,&scouting_trig 			,"scounting_trig/i");
   tree->Branch("offline_trig"            	        ,&offline_trig 			,"offline_trig/i");
   tree->Branch("veto_trig"            	        ,&veto_trig 			,"veto_trig/i");
@@ -939,6 +933,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
 
   const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
   scouting_trig=0; 
+  scouting_trig_prescaled=0;
   offline_trig=0; 
   veto_trig=0; 
   for(size_t j = 0; j < hltSeeds_.size(); j++){
@@ -949,6 +944,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
         TPRegexp pattern4("HLT_Ele32_WPTight_Gsf_v*");
         TPRegexp pattern5("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v*");
         TPRegexp pattern6("HLT_PFHT1050_v*");
+        TPRegexp pattern7("DST_L1HTT_CaloScouting_PFScouting_v");
     for (unsigned int i = 0, n = triggerBits->size(); i < n; ++i) {                                                          
       const std::string& hltbitName = names.triggerName(i);
       std::string hltpathName = hltbitName;
@@ -957,6 +953,12 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
           TString(hltpathName).Contains(pattern1) and hltpassFinal)
           {
           scouting_trig=1;
+          }
+        //these are all events passing the prescaled trigger used to measure the reference trigger efficiency
+        if( 
+          TString(hltpathName).Contains(pattern7) and hltpassFinal)
+          {
+          scouting_trig_prescaled=1;
           }
         if( 
           TString(hltpathName).Contains(pattern6) and hltpassFinal)

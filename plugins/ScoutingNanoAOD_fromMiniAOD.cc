@@ -42,6 +42,9 @@
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 
+// Adding Gen jets
+#include "DataFormats/JetReco/interface/GenJet.h"
+
 //Adding Reco vertices
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
@@ -118,10 +121,7 @@
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 #include "PhysicsTools/CandUtils/interface/Thrust.h"
 
-
-
 using namespace std;
-
 
 class ScoutingNanoAOD_fromMiniAOD : public edm::one::EDAnalyzer<edm::one::SharedResources, edm::one::WatchRuns, edm::one::WatchLuminosityBlocks> {
 public:
@@ -166,6 +166,8 @@ private:
   const edm::EDGetTokenT<std::vector<pat::MET>> recoMetToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
 
+
+  const edm::EDGetTokenT<std::vector<reco::GenJet>> genjetsToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
@@ -447,6 +449,13 @@ private:
   vector<Float16_t>            OfflineFatJet_mtrim;
   vector<Float16_t>            OfflineFatJet_nconst;
 
+  //GenJets
+  UInt_t                       n_genjet;
+  vector<Float16_t>            GenJet_pt;
+  vector<Float16_t>            GenJet_eta;
+  vector<Float16_t>            GenJet_phi;
+  vector<Float16_t>            GenJet_mass;
+
   // Primary vertices
   UInt_t n_pvs;
   vector<Float16_t>            Vertex_x;
@@ -500,6 +509,9 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   recoPfCandidateToken (consumes<std::vector<pat::PackedCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))), 
   recoMetToken         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
 
+
+  //Gen tokens
+  genjetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genjets"))),
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
@@ -788,6 +800,13 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OfflineFatJet_mtrim"                   ,&OfflineFatJet_mtrim                  );
   tree->Branch("OfflineFatJet_nconst"                  ,&OfflineFatJet_nconst                 );
 
+   //add gen info
+  tree->Branch("n_genjet"                             ,&n_genjet                         ,"nGenJets/i");
+  tree->Branch("GenFatJet_pt"                         ,&GenJet_pt                        );
+  tree->Branch("GenFatJet_eta"                        ,&GenJet_eta                       );
+  tree->Branch("GenFatJet_phi"                        ,&GenJet_phi                       );
+  tree->Branch("GenFatJet_mass"                       ,&GenJet_mass                      );
+
 
   //offline PF Cands
   tree->Branch("nOfflinePFCands"            	        ,&n_offpfcand 		        ,"nOfflinePFCands/i");	
@@ -837,6 +856,8 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
   Handle<vector<ScoutingVertex> > verticesH;
   Handle<std::vector<pat::PackedCandidate>> pfcandsoffH;
 
+  Handle<vector<reco::GenJet> > genjetsH;
+
   Handle<std::vector<pat::MET>> metReco;
   Handle<double> metPt;
   Handle<double> metPhi;
@@ -864,6 +885,7 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
 
   }
   if(runOffline){
+    iEvent.getByToken(genjetsToken, genjetsH);
     iEvent.getByToken(recoverticeToken  , recoverticesH  );
     iEvent.getByToken(recoPfCandidateToken, pfcandsoffH);
     iEvent.getByToken(recoElectronToken, electronsoffH);
@@ -1412,6 +1434,7 @@ if(runOffline){
    	OffMuon_eta.push_back(muonsoff_iter->eta());
    	OffMuon_phi.push_back(muonsoff_iter->phi());
    	OffMuon_m.push_back(muonsoff_iter->mass());
+    OffMuon_charge.push_back(muonsoff_iter->charge());
    	OffMuon_ecaliso.push_back(muonsoff_iter->ecalIso());
    	OffMuon_hcaliso.push_back(muonsoff_iter->hcalIso());
     OffMuon_trkiso.push_back(muonsoff_iter->trackIso());      
@@ -1769,6 +1792,28 @@ if(runOffline){
     Handle<double> prefirewgtdown;
     iEvent.getByToken(prefireTokendown, prefirewgtdown);
     prefiredown = *prefirewgtdown;
+  }
+
+
+// * Gen jets // *
+
+  GenJet_pt.clear();
+  GenJet_eta.clear();
+  GenJet_phi.clear();
+  GenJet_mass.clear();
+    
+  n_genjet = 0;
+  if (runOffline){
+    for (auto genjet = genjetsH->begin(); genjet != genjetsH->end(); ++genjet) {
+      if (genjet->pt() > jet_pt_min){
+        if(abs(genjet->eta()) > 2.4) continue;
+        GenJet_pt .push_back( genjet->pt() );
+        GenJet_eta.push_back( genjet->eta());
+        GenJet_phi.push_back( genjet->phi());
+        GenJet_mass  .push_back( genjet->mass()  );
+        n_genjet++;
+      }
+    }
   }
 
 

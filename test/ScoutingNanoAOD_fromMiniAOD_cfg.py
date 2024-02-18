@@ -242,6 +242,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     metReco=cms.InputTag("slimmedMETs"),
 
     #gen info and pileup
+    genjets           = cms.InputTag("slimmedGenJetsAK8"),
     pileupinfo        = cms.InputTag("addPileupInfo"),
     pileupinfo_sig    = cms.InputTag("slimmedAddPileupInfo"),
     geneventinfo     = cms.InputTag("generator"),

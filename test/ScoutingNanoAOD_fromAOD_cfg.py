@@ -236,7 +236,8 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
 
     #offline objects
     pfcandsReco=cms.InputTag("particleFlow"),
-    pfjetsReco=cms.InputTag("ak4PFJets"),
+    #pfjetsReco=cms.InputTag("ak4PFJets"),
+    pfjetsReco=cms.InputTag("ak4PFJetsCHS"),
     
     verticesReco=cms.InputTag('offlinePrimaryVertices'),
     electronsReco=cms.InputTag("gedGsfElectrons"),

@@ -235,8 +235,12 @@ process.puppi.algos= cms.VPSet(
 
 
 #define a new jet collection
-from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJets
-process.ak8PuppiJets  = ak8PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
+#from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJets
+#process.ak8PuppiJets  = ak8PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
+
+from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJetsPuppi
+process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (jetPtMin = 2.)
+
 
 #and add the jet collection with
 from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
@@ -247,7 +251,6 @@ None'),pfCandidates = cms.InputTag('particleFlow'),
     muSource =cms.InputTag( 'muons'),
     elSource = cms.InputTag('gedGsfElectrons')
 )
-
 
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     doL1              = cms.bool(False),
@@ -295,6 +298,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     pfjetsReco=cms.InputTag("ak4PFJetsCHS"),
     
     #Puppi AK8 PF
+    #puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
     puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
 
     verticesReco=cms.InputTag('offlinePrimaryVertices'),
@@ -317,7 +321,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     #L3corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L3Absolute_AK4CaloHLT.txt'),
 )
 
-process.p = cms.Path(process.mmtree * process.ak8PuppiJets) 
+process.p = cms.Path(process.ak8PFJetsPuppi* process.mmtree) 
 
 
 if(params.isMC):
@@ -338,9 +342,9 @@ if(params.isMC):
   PrefiringRateSystematicUnctyECAL = cms.double(0.2),
   PrefiringRateSystematicUnctyMuon = cms.double(0.2)
   )
-  process.p = cms.Path(process.prefiringweight* process.mmtree)
+  process.p = cms.Path(process.ak8PFJetsPuppi* process.prefiringweight* process.mmtree)
 else:
-  process.p = cms.Path(process.mmtree)
+  process.p = cms.Path(process.ak8PFJetsPuppi* process.mmtree)
 
 
 

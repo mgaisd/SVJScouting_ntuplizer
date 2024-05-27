@@ -149,6 +149,9 @@ process.load("EventFilter.L1TRawToDigi.gtStage2Digis_cfi")
 process.gtStage2Digis.InputLabel = cms.InputTag( "hltFEDSelectorL1" )
 process.load('PhysicsTools.PatAlgos.producersLayer1.patCandidates_cff')
 
+#Load Puppi
+process.load('CommonTools/PileupAlgos/Puppi_cff')
+
 # Load the global tag
 from Configuration.AlCa.GlobalTag import GlobalTag
 if params.isMC : 
@@ -196,6 +199,56 @@ runSig = False
 if params.signal:
   runSig = True
 
+
+#offline puppi objects
+process.puppi.candName = cms.InputTag('particleFlow')
+process.puppi.vertexName = cms.InputTag('offlinePrimaryVertices')
+process.puppi.clonePackedCands   = cms.bool(True)
+process.puppi.useExistingWeights = cms.bool(True)
+
+#Defining puppi tune v12
+'''
+process.puppi.algos= cms.VPSet(
+    cms.PSet(
+                         etaMin = cms.vdouble(0.),
+                         etaMax = cms.vdouble(2.5),
+                         ptMin  = cms.vdouble(0.),
+                         MinNeutralPt   = cms.vdouble(0.2),
+                         MinNeutralPtSlope   = cms.vdouble(0.015),
+                         RMSEtaSF = cms.vdouble(1.0),
+                         MedEtaSF = cms.vdouble(1.0),
+                         EtaMaxExtrap = cms.double(2.0),
+                         puppiAlgos = process.puppiCentral
+                        ),
+                        cms.PSet(
+                         etaMin              = cms.vdouble( 2.5,  3.0),
+                         etaMax              = cms.vdouble( 3.0, 10.0),
+                         ptMin               = cms.vdouble( 0.0,  0.0),
+                         MinNeutralPt        = cms.vdouble( 2.0,  2.0), #v12
+                         MinNeutralPtSlope   = cms.vdouble(0.13, 0.13), #v12
+                         RMSEtaSF            = cms.vdouble(1.20, 0.95),
+                         MedEtaSF            = cms.vdouble(0.90, 0.75),
+                         EtaMaxExtrap        = cms.double( 2.0),
+                         puppiAlgos = process.puppiForward
+                        ))
+'''
+
+
+#define a new jet collection
+from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJets
+process.ak8PuppiJets  = ak8PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
+
+#and add the jet collection with
+from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
+addJetCollection(process,labelName = 'AK8PFPUPPI', jetSource = cms.InputTag('ak8PFJetsPuppi'), algo = 'AK', rParam=0.8, genJetCollection=cms.InputTag('ak8GenJetsNoNu'), jetCorrections = ('AK8PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute'], '\
+None'),pfCandidates = cms.InputTag('particleFlow'),
+    pvSource = cms.InputTag('offlinePrimaryVertices'),
+    svSource = cms.InputTag('offlineSecondaryVertices'),
+    muSource =cms.InputTag( 'muons'),
+    elSource = cms.InputTag('gedGsfElectrons')
+)
+
+
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     doL1              = cms.bool(False),
     doData            = cms.bool(not params.isMC and not params.signal),
@@ -236,16 +289,20 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
 
     #offline objects
     pfcandsReco=cms.InputTag("particleFlow"),
+    #Vanilla PF
     #pfjetsReco=cms.InputTag("ak4PFJets"),
+    #CHS PF
     pfjetsReco=cms.InputTag("ak4PFJetsCHS"),
     
+    #Puppi AK8 PF
+    puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
+
     verticesReco=cms.InputTag('offlinePrimaryVertices'),
     electronsReco=cms.InputTag("gedGsfElectrons"),
     muonsReco=cms.InputTag("muons"),
     metReco=cms.InputTag("pfMet"),
 
     #gen info and pileup
-
     genjets           = cms.InputTag("ak8GenJetsNoNu"),
     pileupinfo        = cms.InputTag("addPileupInfo"),
     pileupinfo_sig    = cms.InputTag("slimmedAddPileupInfo"),
@@ -260,8 +317,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     #L3corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L3Absolute_AK4CaloHLT.txt'),
 )
 
-
-process.p = cms.Path(process.mmtree) 
+process.p = cms.Path(process.mmtree * process.ak8PuppiJets) 
 
 
 if(params.isMC):

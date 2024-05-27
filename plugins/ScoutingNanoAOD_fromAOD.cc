@@ -168,6 +168,7 @@ private:
   //Offline tokens
   const edm::EDGetTokenT<reco::VertexCollection>              recoverticeToken;
   const edm::EDGetTokenT<std::vector<reco::PFJet>> recoJetToken;
+  const edm::EDGetTokenT<std::vector<reco::PFJet>> recoPuppiJetToken;
   const edm::EDGetTokenT<std::vector<reco::GsfElectron>> recoElectronToken;
   const edm::EDGetTokenT<edm::View<reco::Muon> > recoMuonToken;
   const edm::EDGetTokenT<std::vector<reco::PFCandidate>> recoPfCandidateToken;
@@ -226,6 +227,7 @@ private:
   UInt_t scouting_trig_prescaled;
   UInt_t offline_trig; 
   UInt_t veto_trig;
+
   //Photon
   UInt_t n_pho;
   vector<Float16_t> 	       Photon_pt;
@@ -333,7 +335,7 @@ private:
 
   UInt_t                       PU_num;
 
-  //PFJets
+  //Scouting PFJets
   UInt_t                       n_jet;
   UInt_t                       n_jetId;
   UInt_t                      n_jetoff;
@@ -366,6 +368,7 @@ private:
   vector<Float16_t>  	       Jet_nConstituents;
   vector<bool>                 Jet_passId;
 
+  //Offline PFJets
   vector<Float16_t> 	     OffJet_pt;
   vector<Float16_t>        OffJet_eta;
   vector<Float16_t>        OffJet_phi;
@@ -464,6 +467,32 @@ private:
   vector<Float16_t>            OfflineFatJet_mtrim;
   vector<Float16_t>            OfflineFatJet_nconst;
 
+  //Offline Puppi PFJets
+  vector<Float16_t> 	     OffPuppiFatJet_pt;
+  vector<Float16_t>        OffPuppiFatJet_eta;
+  vector<Float16_t>        OffPuppiFatJet_phi;
+  vector<Float16_t>	       OffPuppiFatJet_m;
+  vector<Float16_t>	       OffPuppiFatJet_area;
+  vector<Float16_t>	       OffPuppiFatJet_chargedHadronEnergy;
+  vector<Float16_t>        OffPuppiFatJet_neutralHadronEnergy;
+  vector<Float16_t>	       OffPuppiFatJet_photonEnergy;
+  vector<Float16_t>	       OffPuppiFatJet_electronEnergy;
+  vector<Float16_t>	       OffPuppiFatJet_muonEnergy;
+  vector<Float16_t>	       OffPuppiFatJet_HFHadronEnergy;
+  vector<Float16_t>	       OffPuppiFatJet_HFEMEnergy;
+  vector<Float16_t>	       OffPuppiFatJet_HOEnergy;
+  vector<Float16_t>	       OffPuppiFatJet_chargedHadronMultiplicity;
+  vector<Float16_t>        OffPuppiFatJet_neutralHadronMultiplicity;
+  vector<Float16_t>	       OffPuppiFatJet_photonMultiplicity;
+  vector<Float16_t>	       OffPuppiFatJet_electronMultiplicity;
+  vector<Float16_t>	       OffPuppiFatJet_muonMultiplicity;
+  vector<Float16_t>	       OffPuppiFatJet_HFHadronMultiplicity;
+  vector<Float16_t>	       OffPuppiFatJet_HFEMMultiplicity;
+  vector<bool>             OffPuppiFatJet_passId;
+  UInt_t                   n_fatjet_off_puppi;
+  UInt_t                   n_fatjetIdoffpuppi;
+  bool                     passOffPuppiFatJetId;
+
   // Primary vertices
   UInt_t n_pvs;
   vector<Float16_t>            Vertex_x;
@@ -512,6 +541,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   //Offline tokens
   recoverticeToken    (consumes<reco::VertexCollection>                   (iConfig.getParameter<edm::InputTag>("verticesReco"))),
   recoJetToken         (consumes<std::vector<reco::PFJet>>                             (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
+  recoPuppiJetToken    (consumes<std::vector<reco::PFJet>>                             (iConfig.getParameter<edm::InputTag>("puppi_pfjetsReco"))),
   recoElectronToken    (consumes<std::vector<reco::GsfElectron> >               (iConfig.getParameter<edm::InputTag>("electronsReco"))),
   recoMuonToken        (consumes<edm::View<reco::Muon>>                   (iConfig.getParameter<edm::InputTag>("muonsReco"))),
   recoPfCandidateToken (consumes<std::vector<reco::PFCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
@@ -821,6 +851,31 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("OfflineFatJet_mtrim"                   ,&OfflineFatJet_mtrim                  );
   tree->Branch("OfflineFatJet_nconst"                  ,&OfflineFatJet_nconst                 );
 
+  //Offline AK8 Puppi PFJets
+  tree->Branch("nOfflinePuppiFatJet"            	             ,&n_fatjet_off_puppi                         ,"nOfflinePuppiFatJet/i");
+  tree->Branch("nOfflinePuppiFatJetId"            	           ,&n_fatjetIdoffpuppi                         ,"nOfflinePuppiFatJetId/i");
+  tree->Branch("OfflinePuppiFatJet_pt"            	           ,&OffPuppiFatJet_pt                        );
+  tree->Branch("OfflinePuppiFatJet_eta"            	           ,&OffPuppiFatJet_eta                       );
+  tree->Branch("OfflinePuppiFatJet_phi"            	           ,&OffPuppiFatJet_phi                       );
+  tree->Branch("OfflinePuppiFatJet_mass"            	             ,&OffPuppiFatJet_m                     );
+  tree->Branch("OfflinePuppiFatJet_area"            	         ,&OffPuppiFatJet_area                      );
+  tree->Branch("OfflinePuppiFatJet_chargedHadronEnergy"        ,&OffPuppiFatJet_chargedHadronEnergy       );
+  tree->Branch("OfflinePuppiFatJet_neutralHadronEnergy"        ,&OffPuppiFatJet_neutralHadronEnergy       );
+  tree->Branch("OfflinePuppiFatJet_photonEnergy"               ,&OffPuppiFatJet_photonEnergy 	            );
+  tree->Branch("OfflinePuppiFatJet_electronEnergy"             ,&OffPuppiFatJet_electronEnergy            );
+  tree->Branch("OfflinePuppiJet_muonEnergy"    	           ,&OffPuppiFatJet_muonEnergy                );
+  tree->Branch("OfflinePuppiFatJet_HFHadronEnergy"             ,&OffPuppiFatJet_HFHadronEnergy            );
+  tree->Branch("OfflinePuppiFatJet_HFEMEnergy"                 ,&OffPuppiFatJet_HFEMEnergy                );
+  tree->Branch("OfflinePuppiFatJet_HOEnergy"                   ,&OffPuppiFatJet_HOEnergy                  );
+  tree->Branch("OfflinePuppiFatJet_chargedHadronMultiplicity"  ,&OffPuppiFatJet_chargedHadronMultiplicity );
+  tree->Branch("OfflinePuppiFatJet_neutralHadronMultiplicity"  ,&OffPuppiFatJet_neutralHadronMultiplicity );
+  tree->Branch("OfflinePuppiFatJet_photonMultiplicity"         ,&OffPuppiFatJet_photonMultiplicity        );
+  tree->Branch("OfflinePuppiFatJet_electronMultiplicity"       ,&OffPuppiFatJet_electronMultiplicity      );
+  tree->Branch("OfflinePuppiFatJet_muonMultiplicity"           ,&OffPuppiFatJet_muonMultiplicity          );
+  tree->Branch("OfflinePuppiFatJet_HFHadronMultiplicity"       ,&OffPuppiFatJet_HFHadronMultiplicity      );
+  tree->Branch("OfflinePuppiFatJet_HFEMMultiplicity"           ,&OffPuppiFatJet_HFEMMultiplicity          );
+  tree->Branch("OfflinePuppiFatJet_passId"                     ,&OffPuppiFatJet_passId                    );
+
 
   //offline PF Cands
   tree->Branch("nOfflinePFCands"            	        ,&n_offpfcand 		        ,"nOfflinePFCands/i");	
@@ -860,6 +915,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
 
   Handle<reco::VertexCollection> recoverticesH;
   Handle<std::vector<reco::PFJet>> pfjetsoffH;
+  Handle<std::vector<reco::PFJet>> puppi_pfjetsoffH;
   Handle<std::vector<reco::GsfElectron> > electronsoffH;
   Handle<edm::View<reco::Muon>> muonsoffH;
 
@@ -906,6 +962,8 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
     iEvent.getByToken(recoElectronToken, electronsoffH);
     iEvent.getByToken(recoMuonToken, muonsoffH);
     iEvent.getByToken(recoJetToken, pfjetsoffH);
+    iEvent.getByToken(recoPuppiJetToken, puppi_pfjetsoffH);
+    //iEvent.getByLabel("AK8PFPUPPI", puppi_pfjetsoffH);
     iEvent.getByToken(recoMetToken, metReco);
   }
 
@@ -1793,6 +1851,73 @@ if(runOffline){
     }
 
 }
+
+OffPuppiFatJet_pt.clear();
+OffPuppiFatJet_eta.clear();
+OffPuppiFatJet_phi.clear();
+OffPuppiFatJet_m.clear();
+OffPuppiFatJet_area.clear();
+OffPuppiFatJet_chargedHadronEnergy.clear();
+OffPuppiFatJet_neutralHadronEnergy.clear();
+OffPuppiFatJet_photonEnergy.clear();
+OffPuppiFatJet_electronEnergy.clear();
+OffPuppiFatJet_muonEnergy.clear();
+OffPuppiFatJet_HFHadronEnergy.clear();
+OffPuppiFatJet_HFEMEnergy.clear();
+OffPuppiFatJet_HOEnergy.clear();
+OffPuppiFatJet_chargedHadronMultiplicity.clear();
+OffPuppiFatJet_neutralHadronMultiplicity.clear();
+OffPuppiFatJet_photonMultiplicity.clear();
+OffPuppiFatJet_electronMultiplicity.clear();
+OffPuppiFatJet_muonMultiplicity.clear();
+OffPuppiFatJet_HFHadronMultiplicity.clear();
+OffPuppiFatJet_HFEMMultiplicity.clear();
+OffPuppiFatJet_passId.clear();
+n_fatjet_off_puppi = 0;
+n_fatjetIdoffpuppi = 0;
+passOffPuppiFatJetId = false;
+
+if(runScouting){
+    for (auto pfjet = puppi_pfjetsoffH->begin(); pfjet != puppi_pfjetsoffH->end(); ++pfjet) {
+
+      //store only if 
+
+      OffPuppiFatJet_pt .push_back( pfjet->pt() );
+      OffPuppiFatJet_eta.push_back( pfjet->eta());
+      OffPuppiFatJet_phi.push_back( pfjet->phi());
+      OffPuppiFatJet_m  .push_back( pfjet->mass()  );
+
+      OffPuppiFatJet_area.push_back( pfjet->jetArea());
+
+      OffPuppiFatJet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
+      OffPuppiFatJet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
+      OffPuppiFatJet_photonEnergy       .push_back( pfjet->photonEnergy()       );
+      OffPuppiFatJet_electronEnergy     .push_back( pfjet->electronEnergy()     );
+      OffPuppiFatJet_muonEnergy         .push_back( pfjet->muonEnergy()     );
+      OffPuppiFatJet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
+      OffPuppiFatJet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
+      OffPuppiFatJet_HOEnergy           .push_back( pfjet->hoEnergy()       );
+      
+      OffPuppiFatJet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
+      OffPuppiFatJet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
+      OffPuppiFatJet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
+      OffPuppiFatJet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
+      OffPuppiFatJet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
+      OffPuppiFatJet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
+      OffPuppiFatJet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
+      
+      n_fatjet_off_puppi++;
+
+      passOffPuppiFatJetId = jetIDoff(*pfjet);
+      OffPuppiFatJet_passId.push_back( passOffPuppiFatJetId );
+
+      // apply jet ID 
+      if ( passOffPuppiFatJetId == false ) continue; 
+      n_fatjetIdoffpuppi++ ; 
+
+    }
+  }
+
 
 //  Handle<double> rhoH;
   Handle<double> rhoH2;

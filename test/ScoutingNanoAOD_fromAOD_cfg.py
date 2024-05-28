@@ -199,14 +199,6 @@ runSig = False
 if params.signal:
   runSig = True
 
-
-# offline puppi objects
-# process.puppi.candName = cms.InputTag('particleFlow')
-# process.puppi.vertexName = cms.InputTag('offlinePrimaryVertices')
-# process.puppi.clonePackedCands   = cms.bool(True)
-# process.puppi.useExistingWeights = cms.bool(True)
-
-#
 # Load Puppi
 #
 process.load('CommonTools/PileupAlgos/Puppi_cff')
@@ -218,40 +210,9 @@ process.puppi.PtMaxNeutralsStartSlope = 20.
 process.puppi.NumOfPUVtxsForCharged = 2
 process.puppi.algos[0].etaMin = [-0.01]
 
-#Defining puppi tune v12
-'''
-process.puppi.algos= cms.VPSet(
-    cms.PSet(
-                         etaMin = cms.vdouble(0.),
-                         etaMax = cms.vdouble(2.5),
-                         ptMin  = cms.vdouble(0.),
-                         MinNeutralPt   = cms.vdouble(0.2),
-                         MinNeutralPtSlope   = cms.vdouble(0.015),
-                         RMSEtaSF = cms.vdouble(1.0),
-                         MedEtaSF = cms.vdouble(1.0),
-                         EtaMaxExtrap = cms.double(2.0),
-                         puppiAlgos = process.puppiCentral
-                        ),
-                        cms.PSet(
-                         etaMin              = cms.vdouble( 2.5,  3.0),
-                         etaMax              = cms.vdouble( 3.0, 10.0),
-                         ptMin               = cms.vdouble( 0.0,  0.0),
-                         MinNeutralPt        = cms.vdouble( 2.0,  2.0), #v12
-                         MinNeutralPtSlope   = cms.vdouble(0.13, 0.13), #v12
-                         RMSEtaSF            = cms.vdouble(1.20, 0.95),
-                         MedEtaSF            = cms.vdouble(0.90, 0.75),
-                         EtaMaxExtrap        = cms.double( 2.0),
-                         puppiAlgos = process.puppiForward
-                        ))
-'''
-
-
 #define a new jet collection
-#from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJets
-#process.ak8PuppiJets  = ak8PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
-
 from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJetsPuppi
-process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (jetPtMin = 2.)
+process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (jetPtMin = 100.)
 
 
 #and add the jet collection with
@@ -310,7 +271,6 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     pfjetsReco=cms.InputTag("ak4PFJetsCHS"),
     
     #Puppi AK8 PF
-    #puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
     puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
 
     verticesReco=cms.InputTag('offlinePrimaryVertices'),

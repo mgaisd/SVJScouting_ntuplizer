@@ -11,10 +11,10 @@
 <use name="DataFormats/JetReco"/>
 <use name="DataFormats/METReco"/>
 <use name="DataFormats/EgammaCandidates"/>
-<use   name="Geometry/EcalAlgo"/>
-<use   name="DataFormats/VertexReco"/>
-<use   name="RecoEcal/EgammaCoreTools"/>
-<use   name="DataFormats/CaloTowers"/>
+<use name="Geometry/EcalAlgo"/>
+<use name="DataFormats/VertexReco"/>
+<use name="RecoEcal/EgammaCoreTools"/>
+<use name="DataFormats/CaloTowers"/>
 <use name="fastjet"/>
 <use name="fastjet-contrib"/>
 <use name="root"/>

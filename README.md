@@ -8,8 +8,11 @@ For the production of Run2 scouting MiniAOD for SVJ signal look at the [reposito
 ```
 cmsrel CMSSW_10_6_26 #you can use CMSSW_11_1_0
 cd CMSSW_10_6_26/src
+git cms-init
 git clone -b mods https://github.com/cesarecazzaniga/SVJScouting.git PhysicsTools/SVJScouting
 git clone -b master https://github.com/tresreid/PatUtils.git PhysicsTools/PatUtils
+git cms-addpkg CommonTools/PileupAlgos
+git cms-addpkg PhysicsTools/PatAlogs
 ```
 
 # To setup and compile

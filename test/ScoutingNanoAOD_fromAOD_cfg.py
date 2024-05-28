@@ -58,7 +58,8 @@ params.register(
 
 params.register(
     'GlobalTagMC', 
-    '102X_upgrade2018_realistic_v15', 
+    # '102X_upgrade2018_realistic_v15', 
+    '106X_upgrade2018_realistic_v11_L1v1', 
     VarParsing.multiplicity.singleton,VarParsing.varType.string,
     'Process name for the HLT paths'
 )# check this
@@ -149,8 +150,7 @@ process.load("EventFilter.L1TRawToDigi.gtStage2Digis_cfi")
 process.gtStage2Digis.InputLabel = cms.InputTag( "hltFEDSelectorL1" )
 process.load('PhysicsTools.PatAlgos.producersLayer1.patCandidates_cff')
 
-#Load Puppi
-process.load('CommonTools/PileupAlgos/Puppi_cff')
+
 
 # Load the global tag
 from Configuration.AlCa.GlobalTag import GlobalTag
@@ -200,11 +200,23 @@ if params.signal:
   runSig = True
 
 
-#offline puppi objects
-process.puppi.candName = cms.InputTag('particleFlow')
-process.puppi.vertexName = cms.InputTag('offlinePrimaryVertices')
-process.puppi.clonePackedCands   = cms.bool(True)
-process.puppi.useExistingWeights = cms.bool(True)
+# offline puppi objects
+# process.puppi.candName = cms.InputTag('particleFlow')
+# process.puppi.vertexName = cms.InputTag('offlinePrimaryVertices')
+# process.puppi.clonePackedCands   = cms.bool(True)
+# process.puppi.useExistingWeights = cms.bool(True)
+
+#
+# Load Puppi
+#
+process.load('CommonTools/PileupAlgos/Puppi_cff')
+# The following modification ensures that tune V15 is setup for puppi
+# https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/CommonTools/PileupAlgos/python/Puppi_cff.py#L123-L130
+process.puppi.EtaMinUseDeltaZ = 2.4
+process.puppi.PtMaxCharged = 20.
+process.puppi.PtMaxNeutralsStartSlope = 20.
+process.puppi.NumOfPUVtxsForCharged = 2
+process.puppi.algos[0].etaMin = [-0.01]
 
 #Defining puppi tune v12
 '''
@@ -321,7 +333,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     #L3corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L3Absolute_AK4CaloHLT.txt'),
 )
 
-process.p = cms.Path(process.ak8PFJetsPuppi* process.mmtree) 
+process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.mmtree) 
 
 
 if(params.isMC):
@@ -342,9 +354,9 @@ if(params.isMC):
   PrefiringRateSystematicUnctyECAL = cms.double(0.2),
   PrefiringRateSystematicUnctyMuon = cms.double(0.2)
   )
-  process.p = cms.Path(process.ak8PFJetsPuppi* process.prefiringweight* process.mmtree)
+  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.prefiringweight* process.mmtree)
 else:
-  process.p = cms.Path(process.ak8PFJetsPuppi* process.mmtree)
+  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.mmtree)
 
 
 

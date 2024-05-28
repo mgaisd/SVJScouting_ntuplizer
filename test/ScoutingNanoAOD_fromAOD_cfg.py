@@ -251,7 +251,7 @@ process.puppi.algos= cms.VPSet(
 #process.ak8PuppiJets  = ak8PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
 
 from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJetsPuppi
-process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (jetPtMin = 2.)
+process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (doAreaFastjet = True, useExplicitGhosts = cms.bool(True), jetPtMin = 2.)
 
 
 #and add the jet collection with
@@ -263,6 +263,79 @@ None'),pfCandidates = cms.InputTag('particleFlow'),
     muSource =cms.InputTag( 'muons'),
     elSource = cms.InputTag('gedGsfElectrons')
 )
+
+############################################################
+#
+# Setup JECs for AK4 Puppi jets
+#
+############################################################
+# L1 corrections for AK4CHS
+process.ak4PFCHSL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
+    level       = cms.string('L1FastJet'),
+    algorithm   = cms.string('AK4PFchs'),
+    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
+)
+# MC-truth corrections for AK8 Puppi jets
+process.ak4PFCHSL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
+    level     = cms.string('L2Relative'),
+    algorithm = cms.string('AK4PFchs')
+)
+# Dummy setup. L2L3Residual JEC is 1 for MC
+process.ak4PFCHSL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
+    level     = cms.string('L2L3Residual'),
+    algorithm = cms.string('AK4PFchs')
+)
+process.ak4PFCHSL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
+    correctors = cms.VInputTag(
+        'ak8PFPuppiL1FastjetCorrector',
+        'ak8PFPuppiL2RelativeCorrector',
+        'ak8PFPuppiL2L3ResidualCorrector',
+    )
+)
+process.ak4PFCHSL2L3CorrectorTask = cms.Task(
+    process.ak4PFCHSL1FastjetCorrector,
+    process.ak4PFCHSL2RelativeCorrector,
+    process.ak4PFCHSL2L3ResidualCorrector,
+    process.ak4PFCHSL2L3Corrector,
+)
+process.ak4PFCHSL2L3CorrectorSeq = cms.Sequence(process.ak4PFCHSL2L3CorrectorTask)
+
+############################################################
+#
+# Setup JECs for AK8 Puppi jets
+#
+############################################################
+# Dummy setup. L1FastJet JEC is 1 for AK8 Puppi jets
+process.ak8PFPuppiL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
+    level       = cms.string('L1FastJet'),
+    algorithm   = cms.string('AK8PFPuppi'),
+    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
+)
+# MC-truth corrections  for AK8 Puppi jets
+process.ak8PFPuppiL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
+    level     = cms.string('L2Relative'),
+    algorithm = cms.string('AK8PFPuppi')
+)
+# Dummy setup. L2L3Residual JEC is 1 for MC
+process.ak8PFPuppiL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
+    level     = cms.string('L2L3Residual'),
+    algorithm = cms.string('AK8PFPuppi')
+)
+process.ak8PFPuppiL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
+    correctors = cms.VInputTag(
+        'ak8PFPuppiL1FastjetCorrector',
+        'ak8PFPuppiL2RelativeCorrector',
+        'ak8PFPuppiL2L3ResidualCorrector',
+    )
+)
+process.ak8PFPuppiL2L3CorrectorTask = cms.Task(
+    process.ak8PFPuppiL1FastjetCorrector,
+    process.ak8PFPuppiL2RelativeCorrector,
+    process.ak8PFPuppiL2L3ResidualCorrector,
+    process.ak8PFPuppiL2L3Corrector,
+)
+process.ak8PFPuppiL2L3CorrectorSeq = cms.Sequence(process.ak8PFPuppiL2L3CorrectorTask)
+
 
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     doL1              = cms.bool(False),
@@ -306,12 +379,19 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     pfcandsReco=cms.InputTag("particleFlow"),
     #Vanilla PF
     #pfjetsReco=cms.InputTag("ak4PFJets"),
+
     #CHS PF
     pfjetsReco=cms.InputTag("ak4PFJetsCHS"),
-    
+    applyJECForAK4=cms.bool(True),
+    jetCorrectorAK4=cms.InputTag("ak4PFCHSL2L3Corrector"),
+    jetAK4PtMin=cms.double(10),
+
     #Puppi AK8 PF
     #puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
     puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
+    applyJECForAK8=cms.bool(True),
+    jetCorrectorAK8=cms.InputTag("ak8PFPuppiL2L3Corrector"),
+    jetAK8PtMin=cms.double(20),
 
     verticesReco=cms.InputTag('offlinePrimaryVertices'),
     electronsReco=cms.InputTag("gedGsfElectrons"),
@@ -333,7 +413,9 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     #L3corrAK4_DATA    = cms.FileInPath('CMSDIJET/DijetScoutingRootTreeMaker/data/80X_dataRun2_HLT_v12/80X_dataRun2_HLT_v12_L3Absolute_AK4CaloHLT.txt'),
 )
 
-process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.mmtree) 
+
+
+process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.ak4PFCHSL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.mmtree) 
 
 
 if(params.isMC):
@@ -354,9 +436,9 @@ if(params.isMC):
   PrefiringRateSystematicUnctyECAL = cms.double(0.2),
   PrefiringRateSystematicUnctyMuon = cms.double(0.2)
   )
-  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.prefiringweight* process.mmtree)
+  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.ak4PFCHSL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.prefiringweight* process.mmtree)
 else:
-  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.mmtree)
+  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.ak4PFCHSL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.mmtree)
 
 
 

@@ -32,7 +32,7 @@
 //Added for offline jets
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/JetReco/interface/PFJetCollection.h"
-
+#include "JetMETCorrections/JetCorrector/interface/JetCorrector.h"
 
 //Added for MET
 #include "DataFormats/METReco/interface/PFMET.h"
@@ -130,6 +130,40 @@
 
 using namespace std;
 
+//
+// Inspired from https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/Calibration/HcalCalibAlgos/test/DiJetAnalyzer.h#L61-L85
+//
+class JetWithJECPair : protected std::pair<const reco::PFJet*, double> {
+public:
+  JetWithJECPair() {
+    first = 0;
+    second = 1.0;
+  }
+  JetWithJECPair(const reco::PFJet* j, double s) {
+    first = j;
+    second = s;
+  }
+  ~JetWithJECPair() {}
+
+  inline const reco::PFJet* jet(void) const { return first; }
+  inline void jet(const reco::PFJet* j) {
+    first = j;
+    return;
+  }
+  inline double corr(void) const { return second; }
+  inline void corr(double d) {
+    second = d;
+    return;
+  }
+
+private:
+};
+
+struct JetWithJECPairComp {
+  inline bool operator()(const JetWithJECPair& a, const JetWithJECPair& b) const {
+    return (a.jet()->pt() * a.corr()) > (b.jet()->pt() * b.corr());
+  }
+};
 
 class ScoutingNanoAOD_fromAOD : public edm::one::EDAnalyzer<edm::one::SharedResources, edm::one::WatchRuns, edm::one::WatchLuminosityBlocks> {
 public:
@@ -175,6 +209,13 @@ private:
   const edm::EDGetTokenT<std::vector<reco::PFMET>> recoMetToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
 
+  bool applyJECForAK4;
+  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorAK4Token;
+  double jetAK4PtMin = 0.;
+
+  bool applyJECForAK8;
+  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorAK8Token;
+  double jetAK8PtMin = 0.;
 
   //Gen info
   const edm::EDGetTokenT<std::vector<reco::GenJet> >            genjetsToken; 
@@ -373,6 +414,7 @@ private:
   vector<Float16_t>        OffJet_eta;
   vector<Float16_t>        OffJet_phi;
   vector<Float16_t>	       OffJet_m;
+  vector<Float16_t>        OffJet_rawFactor;
   vector<Float16_t>	       OffJet_area;
   vector<Float16_t>	       OffJet_chargedHadronEnergy;
   vector<Float16_t>        OffJet_neutralHadronEnergy;
@@ -472,6 +514,7 @@ private:
   vector<Float16_t>        OffPuppiFatJet_eta;
   vector<Float16_t>        OffPuppiFatJet_phi;
   vector<Float16_t>	       OffPuppiFatJet_m;
+  vector<Float16_t>        OffPuppiFatJet_rawFactor;
   vector<Float16_t>	       OffPuppiFatJet_area;
   vector<Float16_t>	       OffPuppiFatJet_chargedHadronEnergy;
   vector<Float16_t>        OffPuppiFatJet_neutralHadronEnergy;
@@ -520,6 +563,8 @@ private:
   float                        prefireup;
   float                        prefiredown;
 
+
+
   // MET
   double met_pt, met_phi;
   double met_pt_reco, met_phi_reco;
@@ -550,13 +595,19 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   metPhiToken              (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPhi"))),
   
   //Offline tokens
-  recoverticeToken    (consumes<reco::VertexCollection>                   (iConfig.getParameter<edm::InputTag>("verticesReco"))),
-  recoJetToken         (consumes<std::vector<reco::PFJet>>                             (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
-  recoPuppiJetToken    (consumes<std::vector<reco::PFJet>>                             (iConfig.getParameter<edm::InputTag>("puppi_pfjetsReco"))),
-  recoElectronToken    (consumes<std::vector<reco::GsfElectron> >               (iConfig.getParameter<edm::InputTag>("electronsReco"))),
-  recoMuonToken        (consumes<edm::View<reco::Muon>>                   (iConfig.getParameter<edm::InputTag>("muonsReco"))),
-  recoPfCandidateToken (consumes<std::vector<reco::PFCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
-  recoMetToken         (consumes<std::vector<reco::PFMET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
+  recoverticeToken     (consumes<reco::VertexCollection>           (iConfig.getParameter<edm::InputTag>("verticesReco"))),
+  recoJetToken         (consumes<std::vector<reco::PFJet>>        (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
+  recoPuppiJetToken    (consumes<std::vector<reco::PFJet>>        (iConfig.getParameter<edm::InputTag>("puppi_pfjetsReco"))),
+  recoElectronToken    (consumes<std::vector<reco::GsfElectron> > (iConfig.getParameter<edm::InputTag>("electronsReco"))),
+  recoMuonToken        (consumes<edm::View<reco::Muon>>           (iConfig.getParameter<edm::InputTag>("muonsReco"))),
+  recoPfCandidateToken (consumes<std::vector<reco::PFCandidate>>  (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
+  recoMetToken         (consumes<std::vector<reco::PFMET>>        (iConfig.getParameter<edm::InputTag>("metReco"))),
+  applyJECForAK4       (iConfig.getParameter<bool>("applyJECForAK4")),
+  jetCorrectorAK4Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK4"))),
+  jetAK4PtMin          (iConfig.getParameter<double>("jetAK4PtMin")),
+  applyJECForAK8       (iConfig.getParameter<bool>("applyJECForAK8")),
+  jetCorrectorAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK8"))),
+  jetAK8PtMin          (iConfig.getParameter<double>("jetAK8PtMin")),
 
   //Gen info
   genjetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genjets"))),
@@ -823,7 +874,8 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("OfflineJet_pt"            	           ,&OffJet_pt                        );
   tree->Branch("OfflineJet_eta"            	           ,&OffJet_eta                       );
   tree->Branch("OfflineJet_phi"            	           ,&OffJet_phi                       );
-  tree->Branch("OfflineJet_mass"            	             ,&OffJet_m                     );
+  tree->Branch("OfflineJet_mass"            	         ,&OffJet_m                         );
+  tree->Branch("OfflineJet_rawFactor"                  ,&OffJet_rawFactor                 );
   tree->Branch("OfflineJet_area"            	         ,&OffJet_area                      );
   tree->Branch("OfflineJet_chargedHadronEnergy"        ,&OffJet_chargedHadronEnergy       );
   tree->Branch("OfflineJet_neutralHadronEnergy"        ,&OffJet_neutralHadronEnergy       );
@@ -869,6 +921,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("OfflinePuppiFatJet_eta"            	           ,&OffPuppiFatJet_eta                       );
   tree->Branch("OfflinePuppiFatJet_phi"            	           ,&OffPuppiFatJet_phi                       );
   tree->Branch("OfflinePuppiFatJet_mass"            	         ,&OffPuppiFatJet_m                         );
+  tree->Branch("OfflinePuppiFatJet_rawFactor"                  ,&OffPuppiFatJet_rawFactor                 );
   tree->Branch("OfflinePuppiFatJet_area"            	         ,&OffPuppiFatJet_area                      );
   tree->Branch("OfflinePuppiFatJet_chargedHadronEnergy"        ,&OffPuppiFatJet_chargedHadronEnergy       );
   tree->Branch("OfflinePuppiFatJet_neutralHadronEnergy"        ,&OffPuppiFatJet_neutralHadronEnergy       );
@@ -1026,7 +1079,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
         TPRegexp pattern5("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v*");
         TPRegexp pattern6("HLT_PFHT1050_v*");
         TPRegexp pattern7("DST_L1HTT_CaloScouting_PFScouting_v");
-    for (unsigned int i = 0, n = triggerBits->size(); i < n; ++i) {                                                          
+    for (unsigned int i = 0, n = triggerBits->size(); i < n; ++i) {
       const std::string& hltbitName = names.triggerName(i);
       std::string hltpathName = hltbitName;
       bool hltpassFinal = triggerBits->accept(i);
@@ -1580,6 +1633,7 @@ if(runOffline){
   OffJet_phi.clear();
   OffJet_m.clear();
   OffJet_area.clear();
+  OffJet_rawFactor.clear();
   OffJet_chargedHadronEnergy.clear();
   OffJet_neutralHadronEnergy.clear();
   OffJet_photonEnergy.clear();
@@ -1652,12 +1706,35 @@ if(runOffline){
   }
 
   if(runOffline){
-    for (auto pfjet = pfjetsoffH->begin(); pfjet != pfjetsoffH->end(); ++pfjet) {
+    edm::Handle<reco::JetCorrector> jetCorrectorAK4;
+    iEvent.getByToken(jetCorrectorAK4Token, jetCorrectorAK4);
 
-      OffJet_pt .push_back( pfjet->pt() );
+    //
+    // Retrieve JEC and use it to sort jets by JEC-applied pt
+    //
+    std::set<JetWithJECPair, JetWithJECPairComp> jetwithjecpairsetAK4;
+    for (auto it = pfjetsoffH->begin(); it != pfjetsoffH->end(); ++it) {
+      const reco::PFJet* jet = &(*it);
+      double jec = 1.0;
+      if (applyJECForAK4)
+        jec = jetCorrectorAK4->correction(*it);
+      jetwithjecpairsetAK4.insert(JetWithJECPair(jet, jec));
+    }
+
+    for (auto jetwithjecpair = jetwithjecpairsetAK4.begin(); jetwithjecpair != jetwithjecpairsetAK4.end(); ++jetwithjecpair) {
+      auto pfjet = (*jetwithjecpair).jet();
+      auto corr  = (*jetwithjecpair).corr();
+
+      auto pfjet_pt_corr   = corr * pfjet->pt();
+      auto pfjet_mass_corr = corr * pfjet->pt();
+
+      if (pfjet_pt_corr < jetAK4PtMin) continue;
+
+      OffJet_pt .push_back( pfjet_pt_corr );
       OffJet_eta.push_back( pfjet->eta());
       OffJet_phi.push_back( pfjet->phi());
-      OffJet_m  .push_back( pfjet->mass()  );
+      OffJet_m  .push_back( pfjet_mass_corr );
+      OffJet_rawFactor.push_back(1.f - (pfjet->pt()/pfjet_pt_corr) );
 
       OffJet_area.push_back( pfjet->jetArea());
 
@@ -1685,7 +1762,7 @@ if(runOffline){
 
       //// apply jet ID 
       if ( passJetId == false ) continue; 
-      if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
+      if (pfjet_pt_corr < 30){continue;}//raise pt threshold for HT calculation 
       htoff += pfjet->pt() ; 
       n_jetIdoff++ ;
 
@@ -1734,6 +1811,8 @@ if(runOffline){
   FatJet_msoftdrop.clear();
   FatJet_mtrim.clear();
   FatJet_nconst.clear();
+
+
 
   if(runScouting){
 
@@ -1850,6 +1929,7 @@ if(runOffline){
 
     unsigned int n_pfcand_off_tot = 0;
     for(auto pfcandsoff_iter = pfcandsoffH->begin(); pfcandsoff_iter != pfcandsoffH->end(); ++pfcandsoff_iter ){
+
       if (pfcandsoff_iter->pt() < 1.) continue;
       if (abs(pfcandsoff_iter->eta()) >= 2.4 ) continue;    
       int tmpidx_off = -1;
@@ -1879,6 +1959,7 @@ OffPuppiFatJet_pt.clear();
 OffPuppiFatJet_eta.clear();
 OffPuppiFatJet_phi.clear();
 OffPuppiFatJet_m.clear();
+OffPuppiFatJet_rawFactor.clear();
 OffPuppiFatJet_area.clear();
 OffPuppiFatJet_chargedHadronEnergy.clear();
 OffPuppiFatJet_neutralHadronEnergy.clear();
@@ -1903,14 +1984,44 @@ passOffPuppiFatJetId = false;
 vector<vector<reco::CandidatePtr>> OffPFcandsAK8Puppi;
 
 if(runOffline){
+  
+    edm::Handle<reco::JetCorrector> jetCorrectorAK8;
+    iEvent.getByToken(jetCorrectorAK8Token, jetCorrectorAK8);
+
+    //
+    // Retrieve JEC and use it to sort jets by JEC-applied pt
+    //
+    std::set<JetWithJECPair, JetWithJECPairComp> jetwithjecpairsetAK8;
+    for (auto it = puppi_pfjetsoffH->begin(); it != puppi_pfjetsoffH->end(); ++it) {
+      const reco::PFJet* jet = &(*it);
+      double jec = 1.0;
+      if (applyJECForAK8)
+        jec = jetCorrectorAK8->correction(*it);
+      jetwithjecpairsetAK8.insert(JetWithJECPair(jet, jec));
+    }
+  
+  
+  
     for (auto pfjet = puppi_pfjetsoffH->begin(); pfjet != puppi_pfjetsoffH->end(); ++pfjet) {
 
-      //store only if 
 
-      OffPuppiFatJet_pt .push_back( pfjet->pt() );
+    //
+    // Loop over jets
+    //
+    for (auto jetwithjecpair = jetwithjecpairsetAK8.begin(); jetwithjecpair != jetwithjecpairsetAK8.end(); ++jetwithjecpair) {
+      auto pfjet = (*jetwithjecpair).jet();
+      auto corr  = (*jetwithjecpair).corr();
+
+      auto pfjet_pt_corr   = corr * pfjet->pt();
+      auto pfjet_mass_corr = corr * pfjet->pt();
+
+      if (pfjet_pt_corr < jetAK8PtMin) continue;
+
+      OffPuppiFatJet_pt .push_back( pfjet_pt_corr );
       OffPuppiFatJet_eta.push_back( pfjet->eta());
       OffPuppiFatJet_phi.push_back( pfjet->phi());
-      OffPuppiFatJet_m  .push_back( pfjet->mass()  );
+      OffPuppiFatJet_m  .push_back( pfjet_mass_corr );
+      OffPuppiFatJet_rawFactor.push_back(1.f - (pfjet->pt()/pfjet_pt_corr) );
 
       OffPuppiFatJet_area.push_back( pfjet->jetArea());
 
@@ -1922,7 +2033,7 @@ if(runOffline){
       OffPuppiFatJet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
       OffPuppiFatJet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
       OffPuppiFatJet_HOEnergy           .push_back( pfjet->hoEnergy()       );
-      
+
       OffPuppiFatJet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
       OffPuppiFatJet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
       OffPuppiFatJet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
@@ -1930,7 +2041,7 @@ if(runOffline){
       OffPuppiFatJet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
       OffPuppiFatJet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
       OffPuppiFatJet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
-      
+
       n_fatjet_off_puppi++;
 
       passOffPuppiFatJetId = jetIDoff(*pfjet);
@@ -1940,7 +2051,6 @@ if(runOffline){
       // apply jet ID 
       if ( passOffPuppiFatJetId == false ) continue; 
       n_fatjetIdoffpuppi++ ; 
-
     }
   }
 

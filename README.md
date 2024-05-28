@@ -13,6 +13,7 @@ git clone -b mods https://github.com/cesarecazzaniga/SVJScouting.git PhysicsTool
 git clone -b master https://github.com/tresreid/PatUtils.git PhysicsTools/PatUtils
 git cms-addpkg CommonTools/PileupAlgos
 git cms-addpkg PhysicsTools/PatAlogs
+git cms-addpkg JetMETCorrections
 ```
 
 # To setup and compile

@@ -195,6 +195,39 @@ runSig = False
 if params.signal:
   runSig = True
 
+
+# Load Puppi
+#
+process.load('CommonTools/PileupAlgos/Puppi_cff')
+# The following modification ensures that tune V15 is setup for puppi
+# https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/CommonTools/PileupAlgos/python/Puppi_cff.py#L123-L130
+process.puppi.EtaMinUseDeltaZ = 2.4
+process.puppi.PtMaxCharged = 20.
+process.puppi.PtMaxNeutralsStartSlope = 20.
+process.puppi.NumOfPUVtxsForCharged = 2
+process.puppi.algos[0].etaMin = [-0.01]
+
+process.puppi.candName = cms.InputTag('packedPFCandidates')
+process.puppi.vertexName = cms.InputTag('offlineSlimmedPrimaryVertices')
+process.puppi.clonePackedCands   = cms.bool(True)
+process.puppi.useExistingWeights = cms.bool(False)
+
+#define a new jet collection
+from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJetsPuppi
+process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (jetPtMin = 100.)
+
+
+#and add the jet collection with
+from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
+addJetCollection(process,labelName = 'AK8PFPUPPI', jetSource = cms.InputTag('ak8PFJetsPuppi'), algo = 'AK', rParam=0.8, genJetCollection=cms.InputTag('slimmedGenJetsAK8'),jetCorrections = ('AK8PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute'], '\
+None'),pfCandidates = cms.InputTag('packedPFCandidates'),
+    pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
+    svSource = cms.InputTag('slimmedSecondaryVertices'),
+    muSource =cms.InputTag( 'slimmedMuons'),
+    elSource = cms.InputTag('slimmedElectrons')
+)
+
+
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     doL1              = cms.bool(False),
     doData            = cms.bool(not params.isMC and not params.signal),
@@ -241,6 +274,9 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     muonsReco=cms.InputTag("slimmedMuons"),
     metReco=cms.InputTag("slimmedMETs"),
 
+    #Puppi AK8 PF
+    puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
+
     #gen info and pileup
     genjets           = cms.InputTag("slimmedGenJetsAK8"),
     pileupinfo        = cms.InputTag("addPileupInfo"),
@@ -257,7 +293,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
 )
 
 
-process.p = cms.Path(process.mmtree) 
+process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi *process.mmtree) 
 
 
 if(params.isMC):
@@ -278,9 +314,9 @@ if(params.isMC):
   PrefiringRateSystematicUnctyECAL = cms.double(0.2),
   PrefiringRateSystematicUnctyMuon = cms.double(0.2)
   )
-  process.p = cms.Path(process.prefiringweight* process.mmtree)
+  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.prefiringweight* process.mmtree)
 else:
-  process.p = cms.Path(process.mmtree)
+  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.mmtree)
 
 
 

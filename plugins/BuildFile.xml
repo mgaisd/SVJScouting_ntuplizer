@@ -5,6 +5,7 @@
 <use name="PhysicsTools/TensorFlow"/>
 <use name="FWCore/ServiceRegistry"/>
 <use name="JetMETCorrections/Algorithms"/>
+<use name="JetMETCorrections/JetCorrector"/>
 <use name="HLTrigger/HLTcore"/>
 <use name="DataFormats/Math"/>
 <use name="DataFormats/Scouting"/>

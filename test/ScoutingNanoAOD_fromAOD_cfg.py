@@ -251,7 +251,7 @@ process.puppi.algos= cms.VPSet(
 #process.ak8PuppiJets  = ak8PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
 
 from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJetsPuppi
-process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (doAreaFastjet = True, useExplicitGhosts = cms.bool(True), jetPtMin = 2.)
+process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (jetPtMin = 2.)
 
 
 #and add the jet collection with

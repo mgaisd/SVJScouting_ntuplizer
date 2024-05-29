@@ -189,20 +189,20 @@ private:
   //Scouting tokens
   const edm::InputTag triggerResultsTag;
   const edm::EDGetTokenT<edm::TriggerResults>             	triggerResultsToken;
-  const edm::EDGetTokenT<std::vector<ScoutingMuon> >            muonsToken;
+  const edm::EDGetTokenT<std::vector<ScoutingMuon> >        muonsToken;
   const edm::EDGetTokenT<std::vector<ScoutingElectron> >  	electronsToken;
-  const edm::EDGetTokenT<std::vector<ScoutingPhoton> >  	photonsToken;
+  const edm::EDGetTokenT<std::vector<ScoutingPhoton> >  	  photonsToken;
   const edm::EDGetTokenT<std::vector<ScoutingParticle> >  	pfcandsToken;
-  const edm::EDGetTokenT<std::vector<ScoutingPFJet> >  		pfjetsToken;
-  const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	verticesToken;
+  const edm::EDGetTokenT<std::vector<ScoutingPFJet> >  		  pfjetsToken;
+  const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	  verticesToken;
   const edm::EDGetTokenT<double> metPtToken;
   const edm::EDGetTokenT<double> metPhiToken;
 
 
   //Offline tokens
   const edm::EDGetTokenT<reco::VertexCollection>              recoverticeToken;
-  const edm::EDGetTokenT<std::vector<reco::PFJet>> recoJetToken;
-  const edm::EDGetTokenT<std::vector<reco::PFJet>> recoPuppiJetToken;
+  const edm::EDGetTokenT<std::vector<reco::PFJet>> recoak4PuppiJetToken;
+  const edm::EDGetTokenT<std::vector<reco::PFJet>> recoak8PuppiJetToken;
   const edm::EDGetTokenT<std::vector<reco::GsfElectron>> recoElectronToken;
   const edm::EDGetTokenT<edm::View<reco::Muon> > recoMuonToken;
   const edm::EDGetTokenT<std::vector<reco::PFCandidate>> recoPfCandidateToken;
@@ -218,7 +218,8 @@ private:
   double jetAK8PtMin = 0.;
 
   //Gen info
-  const edm::EDGetTokenT<std::vector<reco::GenJet> >            genjetsToken; 
+  const edm::EDGetTokenT<std::vector<reco::GenJet> >            genak4jetsToken; 
+  const edm::EDGetTokenT<std::vector<reco::GenJet> >            genak8jetsToken; 
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
@@ -433,12 +434,19 @@ private:
   vector<Float16_t>	       OffJet_HFEMMultiplicity;
   vector<bool>             OffJet_passId;
   
-  //GenJets
+  //GenJets Ak4
   UInt_t                       n_genjet;
   vector<Float16_t>            GenJet_pt;
   vector<Float16_t>            GenJet_eta;
   vector<Float16_t>            GenJet_phi;
   vector<Float16_t>            GenJet_mass;
+
+  //GenJets Ak8
+  UInt_t                       n_genfatjet;
+  vector<Float16_t>            GenFatJet_pt;
+  vector<Float16_t>            GenFatJet_eta;
+  vector<Float16_t>            GenFatJet_phi;
+  vector<Float16_t>            GenFatJet_mass;
 
 
   //CZZ: to add OffPFCands
@@ -591,13 +599,13 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   pfcandsToken             (consumes<std::vector<ScoutingParticle> >         (iConfig.getParameter<edm::InputTag>("pfcands"))), 
   pfjetsToken              (consumes<std::vector<ScoutingPFJet> >            (iConfig.getParameter<edm::InputTag>("pfjets"))), 
   verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
-  metPtToken               (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPt"))),
-  metPhiToken              (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPhi"))),
+  metPtToken               (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPt"))),
+  metPhiToken              (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPhi"))),
   
   //Offline tokens
-  recoverticeToken     (consumes<reco::VertexCollection>           (iConfig.getParameter<edm::InputTag>("verticesReco"))),
-  recoJetToken         (consumes<std::vector<reco::PFJet>>        (iConfig.getParameter<edm::InputTag>("pfjetsReco"))),
-  recoPuppiJetToken    (consumes<std::vector<reco::PFJet>>        (iConfig.getParameter<edm::InputTag>("puppi_pfjetsReco"))),
+  recoverticeToken     (consumes<reco::VertexCollection>          (iConfig.getParameter<edm::InputTag>("verticesReco"))),
+  recoak4PuppiJetToken (consumes<std::vector<reco::PFJet>>        (iConfig.getParameter<edm::InputTag>("ak4pfjetsReco"))),
+  recoak8PuppiJetToken (consumes<std::vector<reco::PFJet>>        (iConfig.getParameter<edm::InputTag>("ak8pfjetsReco"))),
   recoElectronToken    (consumes<std::vector<reco::GsfElectron> > (iConfig.getParameter<edm::InputTag>("electronsReco"))),
   recoMuonToken        (consumes<edm::View<reco::Muon>>           (iConfig.getParameter<edm::InputTag>("muonsReco"))),
   recoPfCandidateToken (consumes<std::vector<reco::PFCandidate>>  (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
@@ -610,7 +618,8 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   jetAK8PtMin          (iConfig.getParameter<double>("jetAK8PtMin")),
 
   //Gen info
-  genjetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genjets"))),
+  genak4jetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genak4jets"))),
+  genak8jetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genak8jets"))),
   pileupInfoToken          (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo"))),
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
@@ -703,17 +712,17 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("Photon_sieie"                   ,&Photon_sigmaietaieta	        );
 
   //Scouting muons
-  tree->Branch("nMuons"            	        ,&n_mu 	                        ,"nMuons/i");
+  tree->Branch("nMuons"            	            ,&n_mu 	                        ,"nMuons/i");
   tree->Branch("Muon_pt"                        ,&Muon_pt                       );
   tree->Branch("Muon_eta"                       ,&Muon_eta                      );
   tree->Branch("Muon_phi"                       ,&Muon_phi                      );
-  tree->Branch("Muon_mass"                         ,&Muon_m                        );
+  tree->Branch("Muon_mass"                      ,&Muon_m                        );
   tree->Branch("Muon_ecaliso"                   ,&Muon_ecaliso                  );
   tree->Branch("Muon_hcaliso"                   ,&Muon_hcaliso                  );
-  tree->Branch("Muon_tkIso"                    ,&Muon_trkiso                   );
+  tree->Branch("Muon_tkIso"                     ,&Muon_trkiso                   );
   tree->Branch("Muon_chi2"                      ,&Muon_chi2                     );
-  tree->Branch("Muon_isGlobal"              ,&Muon_isGlobalMuon             );
-  tree->Branch("Muon_isTracker"             ,&Muon_isTrackerMuon            );
+  tree->Branch("Muon_isGlobal"                  ,&Muon_isGlobalMuon             );
+  tree->Branch("Muon_isTracker"                 ,&Muon_isTrackerMuon            );
   tree->Branch("Muon_ndof"                      ,&Muon_ndof                     );
   tree->Branch("Muon_charge"                    ,&Muon_charge	                  );
   tree->Branch("Muon_dxy"                       ,&Muon_dxy                      );
@@ -789,11 +798,17 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
 
   //add gen info
   tree->Branch("n_genjet"                          ,&n_genjet                         ,"nGenJets/i");
-  tree->Branch("GenFatJet_pt"                         ,&GenJet_pt                        );
-  tree->Branch("GenFatJet_eta"                        ,&GenJet_eta                       );
-  tree->Branch("GenFatJet_phi"                        ,&GenJet_phi                       );
-  tree->Branch("GenFatJet_mass"                       ,&GenJet_mass                      );
+  tree->Branch("GenJet_pt"                         ,&GenJet_pt                        );
+  tree->Branch("GenJet_eta"                        ,&GenJet_eta                       );
+  tree->Branch("GenJet_phi"                        ,&GenJet_phi                       );
+  tree->Branch("GenJet_mass"                       ,&GenJet_mass                      );
 
+  //add gen info
+  tree->Branch("n_genfatjet"                          ,&n_genfatjet                         ,"nGenFatJets/i");
+  tree->Branch("GenFatJet_pt"                         ,&GenFatJet_pt                        );
+  tree->Branch("GenFatJet_eta"                        ,&GenFatJet_eta                       );
+  tree->Branch("GenFatJet_phi"                        ,&GenFatJet_phi                       );
+  tree->Branch("GenFatJet_mass"                       ,&GenFatJet_mass                      );
 
   //Scouting PF Candidates
   tree->Branch("nPFCands"            	        ,&n_pfcand 		        ,"nPFCands/i");	
@@ -862,10 +877,6 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("OfflineMuon_isStandAlone"                   ,&OffMuon_isStandAloneMuon                  );
   tree->Branch("OfflineMuon_isPF"                   ,&OffMuon_isPFMuon                  );
   tree->Branch("OfflineMuon_isCalo"                   ,&OffMuon_isCaloMuon                 );
-  //tree->Branch("OfflineMuon_isolationR03"                   ,&OffMuon_isolationR03                 );
-  //tree->Branch("OfflineMuon_isolationR05"                   ,&OffMuon_isolationR05                 );
-  //tree->Branch("OfflineMuon_pfIsolationR03"                   ,&OffMuon_pfIsolationR03                 );
-  //tree->Branch("OfflineMuon_pfIsolationR04"                   ,&OffMuon_pfIsolationR04                 );
   
 
   //Offline AK4 PFJets
@@ -991,8 +1002,8 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
     
 
   Handle<reco::VertexCollection> recoverticesH;
-  Handle<std::vector<reco::PFJet>> pfjetsoffH;
-  Handle<std::vector<reco::PFJet>> puppi_pfjetsoffH;
+  Handle<std::vector<reco::PFJet>> puppi_ak4_pfjetsoffH;
+  Handle<std::vector<reco::PFJet>> puppi_ak8_pfjetsoffH;
   Handle<std::vector<reco::GsfElectron> > electronsoffH;
   Handle<edm::View<reco::Muon>> muonsoffH;
 
@@ -1004,7 +1015,8 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
   Handle<vector<ScoutingVertex> > verticesH;
   Handle<std::vector<reco::PFCandidate>> pfcandsoffH;
 
-  Handle<vector<reco::GenJet> > genjetsH;
+  Handle<vector<reco::GenJet> > genak4jetsH;
+  Handle<vector<reco::GenJet> > genak8jetsH;
 
   Handle<std::vector<reco::PFMET>> metReco;
   Handle<double> metPt;
@@ -1033,13 +1045,14 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
 
   }
   if(runOffline){
-    iEvent.getByToken(genjetsToken, genjetsH);
+    iEvent.getByToken(genak4jetsToken, genak4jetsH);
+    iEvent.getByToken(genak8jetsToken, genak8jetsH);
     iEvent.getByToken(recoverticeToken  , recoverticesH  );
     iEvent.getByToken(recoPfCandidateToken, pfcandsoffH);
     iEvent.getByToken(recoElectronToken, electronsoffH);
     iEvent.getByToken(recoMuonToken, muonsoffH);
-    iEvent.getByToken(recoJetToken, pfjetsoffH);
-    iEvent.getByToken(recoPuppiJetToken, puppi_pfjetsoffH);
+    iEvent.getByToken(recoak4PuppiJetToken, puppi_ak4_pfjetsoffH);
+    iEvent.getByToken(recoak8PuppiJetToken, puppi_ak8_pfjetsoffH);
     iEvent.getByToken(recoMetToken, metReco);
   }
 
@@ -1713,7 +1726,7 @@ if(runOffline){
     // Retrieve JEC and use it to sort jets by JEC-applied pt
     //
     std::set<JetWithJECPair, JetWithJECPairComp> jetwithjecpairsetAK4;
-    for (auto it = pfjetsoffH->begin(); it != pfjetsoffH->end(); ++it) {
+    for (auto it = puppi_ak4_pfjetsoffH->begin(); it != puppi_ak4_pfjetsoffH->end(); ++it) {
       const reco::PFJet* jet = &(*it);
       double jec = 1.0;
       if (applyJECForAK4)
@@ -1775,7 +1788,8 @@ if(runOffline){
 
   //here introduce AK definition
   JetDefinition ak8_def = JetDefinition(antikt_algorithm, 0.8);
-  double jet_pt_min = 100.0;
+  double jet_pt_min = 10.0;
+  double fatjet_pt_min = 100.0;
   double sd_z_cut = 0.10;
   double sd_beta = 0;
   SoftDrop sd_groomer = SoftDrop(sd_z_cut, sd_beta, 1.0);
@@ -1817,7 +1831,7 @@ if(runOffline){
   if(runScouting){
 
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
-    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jet_pt_min)); //pt min
+    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(fatjet_pt_min)); //pt min
 
     n_fatjet = 0;
     for(auto &j: ak8_jets) {
@@ -1898,7 +1912,7 @@ if(runOffline){
   if (runOffline){
 
     ClusterSequenceArea ak8_cs_offline(off_fj_part, ak8_def, area_def);
-    vector<PseudoJet> ak8_jets_offline = sorted_by_pt(ak8_cs_offline.inclusive_jets(jet_pt_min));
+    vector<PseudoJet> ak8_jets_offline = sorted_by_pt(ak8_cs_offline.inclusive_jets(fatjet_pt_min));
 
     n_fatjet_off = 0;
     
@@ -1992,7 +2006,7 @@ if(runOffline){
     // Retrieve JEC and use it to sort jets by JEC-applied pt
     //
     std::set<JetWithJECPair, JetWithJECPairComp> jetwithjecpairsetAK8;
-    for (auto it = puppi_pfjetsoffH->begin(); it != puppi_pfjetsoffH->end(); ++it) {
+    for (auto it = puppi_ak8_pfjetsoffH->begin(); it != puppi_ak8_pfjetsoffH->end(); ++it) {
       const reco::PFJet* jet = &(*it);
       double jec = 1.0;
       if (applyJECForAK8)
@@ -2000,11 +2014,6 @@ if(runOffline){
       jetwithjecpairsetAK8.insert(JetWithJECPair(jet, jec));
     }
   
-  
-  
-    for (auto pfjet = puppi_pfjetsoffH->begin(); pfjet != puppi_pfjetsoffH->end(); ++pfjet) {
-
-
     //
     // Loop over jets
     //
@@ -2112,7 +2121,7 @@ if(runOffline){
   }
 
 
-  // * Gen jets // *
+  // * Gen jets Ak4 // *
 
   GenJet_pt.clear();
   GenJet_eta.clear();
@@ -2121,7 +2130,7 @@ if(runOffline){
     
   n_genjet = 0;
   if (runOffline){
-    for (auto genjet = genjetsH->begin(); genjet != genjetsH->end(); ++genjet) {
+    for (auto genjet = genak4jetsH->begin(); genjet != genak4jetsH->end(); ++genjet) {
       if (genjet->pt() > jet_pt_min){
         if(abs(genjet->eta()) > 2.4) continue;
         GenJet_pt .push_back( genjet->pt() );
@@ -2132,6 +2141,29 @@ if(runOffline){
       }
     }
   }
+
+
+  // * Gen jets AK8 // *
+
+  GenFatJet_pt.clear();
+  GenFatJet_eta.clear();
+  GenFatJet_phi.clear();
+  GenFatJet_mass.clear();
+    
+  n_genfatjet = 0;
+  if (runOffline){
+    for (auto genjet = genak8jetsH->begin(); genjet != genak8jetsH->end(); ++genjet) {
+      if (genjet->pt() > fatjet_pt_min){
+        if(abs(genjet->eta()) > 2.4) continue;
+        GenFatJet_pt .push_back( genjet->pt() );
+        GenFatJet_eta.push_back( genjet->eta());
+        GenFatJet_phi.push_back( genjet->phi());
+        GenFatJet_mass  .push_back( genjet->mass()  );
+        n_genfatjet++;
+      }
+    }
+  }
+
 
 
  // * 

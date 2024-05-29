@@ -305,7 +305,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
 
     #offline objects
     pfcandsReco=cms.InputTag("packedPFCandidates"),
-    pfjetsReco=cms.InputTag("slimmedJetsPuppi"),
+    ak4pfjetsReco=cms.InputTag("slimmedJetsPuppi"),
 
     verticesReco=cms.InputTag('offlineSlimmedPrimaryVertices'),
     electronsReco=cms.InputTag("slimmedElectrons"),
@@ -313,13 +313,14 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     metReco=cms.InputTag("slimmedMETs"),
 
     #Puppi AK8 PF
-    puppi_pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
+    ak8pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
     applyJECForAK8=cms.bool(True),
     jetCorrectorAK8=cms.InputTag("ak8PFPuppiL2L3Corrector"),
     jetAK8PtMin=cms.double(100),
 
     #gen info and pileup
-    genjets           = cms.InputTag("slimmedGenJetsAK8"),
+    genak4jets        = cms.InputTag("slimmedGenJets"),
+    genak8jets        = cms.InputTag("slimmedGenJetsAK8"),
     pileupinfo        = cms.InputTag("addPileupInfo"),
     pileupinfo_sig    = cms.InputTag("slimmedAddPileupInfo"),
     geneventinfo     = cms.InputTag("generator"),

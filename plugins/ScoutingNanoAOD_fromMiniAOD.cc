@@ -124,43 +124,6 @@
 
 using namespace std;
 
-//
-// Inspired from https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/Calibration/HcalCalibAlgos/test/DiJetAnalyzer.h#L61-L85
-//
-class JetWithJECPair : protected std::pair<const pat::Jet*, double> {
-public:
-  JetWithJECPair() {
-    first = 0;
-    second = 1.0;
-  }
-  JetWithJECPair(const pat::Jet* j, double s) {
-    first = j;
-    second = s;
-  }
-  ~JetWithJECPair() {}
-
-  inline const pat::Jet* jet(void) const { return first; }
-  inline void jet(const pat::Jet* j) {
-    first = j;
-    return;
-  }
-  inline double corr(void) const { return second; }
-  inline void corr(double d) {
-    second = d;
-    return;
-  }
-
-private:
-};
-
-struct JetWithJECPairComp {
-  inline bool operator()(const JetWithJECPair& a, const JetWithJECPair& b) const {
-    return (a.jet()->pt() * a.corr()) > (b.jet()->pt() * b.corr());
-  }
-};
-
-//////////////////////////////////
-
 class JetWithJECPairReco : protected std::pair<const reco::PFJet*, double> {
 public:
   JetWithJECPairReco() {
@@ -238,10 +201,6 @@ private:
   const edm::EDGetTokenT<std::vector<pat::PackedCandidate>> recoPfCandidateToken;
   const edm::EDGetTokenT<std::vector<pat::MET>> recoMetToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
-
-  bool applyJECForAK4;
-  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorAK4Token;
-  double jetAK4PtMin = 0.;
 
   bool applyJECForAK8;
   const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorAK8Token;
@@ -443,7 +402,6 @@ private:
   vector<Float16_t>        OffJet_eta;
   vector<Float16_t>        OffJet_phi;
   vector<Float16_t>	       OffJet_m;
-  vector<Float16_t>	       OffJet_rawFactor;
   vector<Float16_t>	       OffJet_area;
   vector<Float16_t>	       OffJet_chargedHadronEnergy;
   vector<Float16_t>        OffJet_neutralHadronEnergy;
@@ -630,9 +588,6 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   recoMuonToken        (consumes<edm::View<pat::Muon>>                     (iConfig.getParameter<edm::InputTag>("muonsReco"))),
   recoPfCandidateToken (consumes<std::vector<pat::PackedCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))), 
   recoMetToken         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
-  applyJECForAK4       (iConfig.getParameter<bool>("applyJECForAK4")),
-  jetCorrectorAK4Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK4"))),
-  jetAK4PtMin          (iConfig.getParameter<double>("jetAK4PtMin")),
   applyJECForAK8       (iConfig.getParameter<bool>("applyJECForAK8")),
   jetCorrectorAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK8"))),
   jetAK8PtMin          (iConfig.getParameter<double>("jetAK8PtMin")),
@@ -890,7 +845,6 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OfflineJet_eta"            	           ,&OffJet_eta                       );
   tree->Branch("OfflineJet_phi"            	           ,&OffJet_phi                       );
   tree->Branch("OfflineJet_mass"            	             ,&OffJet_m                     );
-  tree->Branch("OfflineJet_rawFactor"                  ,&OffJet_rawFactor                 );
   tree->Branch("OfflineJet_area"            	         ,&OffJet_area                      );
   tree->Branch("OfflineJet_chargedHadronEnergy"        ,&OffJet_chargedHadronEnergy       );
   tree->Branch("OfflineJet_neutralHadronEnergy"        ,&OffJet_neutralHadronEnergy       );
@@ -1657,7 +1611,6 @@ if(runOffline){
   OffJet_phi.clear();
   OffJet_m.clear();
   OffJet_area.clear();
-  OffJet_rawFactor.clear();
   OffJet_chargedHadronEnergy.clear();
   OffJet_neutralHadronEnergy.clear();
   OffJet_photonEnergy.clear();
@@ -1730,35 +1683,17 @@ if(runOffline){
   }
 
   if(runOffline){
-    edm::Handle<reco::JetCorrector> jetCorrectorAK4;
-    iEvent.getByToken(jetCorrectorAK4Token, jetCorrectorAK4);
 
     //
     // Retrieve JEC and use it to sort jets by JEC-applied pt
     //
-    std::set<JetWithJECPair, JetWithJECPairComp> jetwithjecpairsetAK4;
-    for (auto it = pfjetsoffH->begin(); it != pfjetsoffH->end(); ++it) {
-      const pat::Jet* jet = &(*it);
-      double jec = 1.0;
-      if (applyJECForAK4)
-        jec = jetCorrectorAK4->correction(*it);
-      jetwithjecpairsetAK4.insert(JetWithJECPair(jet, jec));
-    }
 
-    for (auto jetwithjecpair = jetwithjecpairsetAK4.begin(); jetwithjecpair != jetwithjecpairsetAK4.end(); ++jetwithjecpair) {
-      auto pfjet = (*jetwithjecpair).jet();
-      auto corr  = (*jetwithjecpair).corr();
+    for ( auto pfjet = pfjetsoffH->begin(); pfjet != pfjetsoffH->end(); ++pfjet){
 
-      auto pfjet_pt_corr   = corr * pfjet->pt();
-      auto pfjet_mass_corr = corr * pfjet->pt();
-
-      if (pfjet_pt_corr < jetAK4PtMin) continue;
-
-      OffJet_pt .push_back( pfjet_pt_corr );
+      OffJet_pt .push_back( pfjet->pt() );
       OffJet_eta.push_back( pfjet->eta());
       OffJet_phi.push_back( pfjet->phi());
-      OffJet_m  .push_back( pfjet_mass_corr );
-      OffJet_rawFactor.push_back(1.f - (pfjet->pt()/pfjet_pt_corr) );
+      OffJet_m  .push_back( pfjet->mass() );
 
       OffJet_area.push_back( pfjet->jetArea());
 
@@ -1786,7 +1721,7 @@ if(runOffline){
 
       //// apply jet ID 
       if ( passJetId == false ) continue; 
-      if (pfjet_pt_corr < 30){continue;}//raise pt threshold for HT calculation 
+      if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
       htoff += pfjet->pt() ; 
       n_jetIdoff++ ;
 

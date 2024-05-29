@@ -448,7 +448,7 @@ private:
   vector<Float16_t>            GenFatJet_phi;
   vector<Float16_t>            GenFatJet_mass;
 
-
+  /*
   //CZZ: to add OffPFCands
   UInt_t                       n_offpfcand;
   UInt_t                       n_offpfMu;
@@ -461,7 +461,7 @@ private:
   vector<Float16_t>            OffPFcand_q;
   vector<Float16_t>            OfflineFatJetPFCands_jetIdx;
   vector<Float16_t>            OfflineFatJetPFCands_pFCandsIdx;
-
+  */
 
 
   // Scouting PFCand
@@ -498,6 +498,7 @@ private:
   vector<Float16_t>            FatJet_mtrim;
   vector<Float16_t>            FatJet_nconst;
 
+  /*
   // Fatjets offline
   UInt_t                       n_fatjet_off;
   vector<Float16_t>            OfflineFatJet_area;
@@ -516,6 +517,8 @@ private:
   vector<Float16_t>            OfflineFatJet_msoftdrop;
   vector<Float16_t>            OfflineFatJet_mtrim;
   vector<Float16_t>            OfflineFatJet_nconst;
+  */
+
 
   //Offline Puppi PFJets
   vector<Float16_t> 	     OffPuppiFatJet_pt;
@@ -905,7 +908,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("OfflineJet_HFEMMultiplicity"           ,&OffJet_HFEMMultiplicity          );
   tree->Branch("OfflineJet_passId"                     ,&OffJet_passId                    );
 
-
+  /*
   //CZZ: added Offline AK8 PFJets (built AK8 from Offline PFCands using FastJet)
   tree->Branch("nOfflineFatJet"                       ,&n_fatjet                      ,"nOfflineFatJet/i");
   tree->Branch("OfflineFatJet_area"                    ,&OfflineFatJet_area                   );
@@ -924,34 +927,35 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("OfflineFatJet_msoftdrop"               ,&OfflineFatJet_msoftdrop              );
   tree->Branch("OfflineFatJet_mtrim"                   ,&OfflineFatJet_mtrim                  );
   tree->Branch("OfflineFatJet_nconst"                  ,&OfflineFatJet_nconst                 );
+  */
 
   //Offline AK8 Puppi PFJets
-  tree->Branch("nOfflinePuppiFatJet"            	             ,&n_fatjet_off_puppi                         ,"nOfflinePuppiFatJet/i");
-  tree->Branch("nOfflinePuppiFatJetId"            	           ,&n_fatjetIdoffpuppi                         ,"nOfflinePuppiFatJetId/i");
-  tree->Branch("OfflinePuppiFatJet_pt"            	           ,&OffPuppiFatJet_pt                        );
-  tree->Branch("OfflinePuppiFatJet_eta"            	           ,&OffPuppiFatJet_eta                       );
-  tree->Branch("OfflinePuppiFatJet_phi"            	           ,&OffPuppiFatJet_phi                       );
-  tree->Branch("OfflinePuppiFatJet_mass"            	         ,&OffPuppiFatJet_m                         );
-  tree->Branch("OfflinePuppiFatJet_rawFactor"                  ,&OffPuppiFatJet_rawFactor                 );
-  tree->Branch("OfflinePuppiFatJet_area"            	         ,&OffPuppiFatJet_area                      );
-  tree->Branch("OfflinePuppiFatJet_chargedHadronEnergy"        ,&OffPuppiFatJet_chargedHadronEnergy       );
-  tree->Branch("OfflinePuppiFatJet_neutralHadronEnergy"        ,&OffPuppiFatJet_neutralHadronEnergy       );
-  tree->Branch("OfflinePuppiFatJet_photonEnergy"               ,&OffPuppiFatJet_photonEnergy 	            );
-  tree->Branch("OfflinePuppiFatJet_electronEnergy"             ,&OffPuppiFatJet_electronEnergy            );
-  tree->Branch("OfflinePuppiFatJet_muonEnergy"    	           ,&OffPuppiFatJet_muonEnergy                );
-  tree->Branch("OfflinePuppiFatJet_HFHadronEnergy"             ,&OffPuppiFatJet_HFHadronEnergy            );
-  tree->Branch("OfflinePuppiFatJet_HFEMEnergy"                 ,&OffPuppiFatJet_HFEMEnergy                );
-  tree->Branch("OfflinePuppiFatJet_HOEnergy"                   ,&OffPuppiFatJet_HOEnergy                  );
-  tree->Branch("OfflinePuppiFatJet_chargedHadronMultiplicity"  ,&OffPuppiFatJet_chargedHadronMultiplicity );
-  tree->Branch("OfflinePuppiFatJet_neutralHadronMultiplicity"  ,&OffPuppiFatJet_neutralHadronMultiplicity );
-  tree->Branch("OfflinePuppiFatJet_photonMultiplicity"         ,&OffPuppiFatJet_photonMultiplicity        );
-  tree->Branch("OfflinePuppiFatJet_electronMultiplicity"       ,&OffPuppiFatJet_electronMultiplicity      );
-  tree->Branch("OfflinePuppiFatJet_muonMultiplicity"           ,&OffPuppiFatJet_muonMultiplicity          );
-  tree->Branch("OfflinePuppiFatJet_HFHadronMultiplicity"       ,&OffPuppiFatJet_HFHadronMultiplicity      );
-  tree->Branch("OfflinePuppiFatJet_HFEMMultiplicity"           ,&OffPuppiFatJet_HFEMMultiplicity          );
-  tree->Branch("OfflinePuppiFatJet_passId"                     ,&OffPuppiFatJet_passId                    );
+  tree->Branch("nOfflineFatJet"            	             ,&n_fatjet_off_puppi                         ,"nOfflineFatJet/i");
+  tree->Branch("nOfflineFatJetId"            	           ,&n_fatjetIdoffpuppi                         ,"nOfflineFatJetId/i");
+  tree->Branch("OfflineFatJet_pt"            	           ,&OffPuppiFatJet_pt                        );
+  tree->Branch("OfflineFatJet_eta"            	           ,&OffPuppiFatJet_eta                       );
+  tree->Branch("OfflineFatJet_phi"            	           ,&OffPuppiFatJet_phi                       );
+  tree->Branch("OfflineFatJet_mass"            	         ,&OffPuppiFatJet_m                         );
+  tree->Branch("OfflineFatJet_rawFactor"                  ,&OffPuppiFatJet_rawFactor                 );
+  tree->Branch("OfflineFatJet_area"            	         ,&OffPuppiFatJet_area                      );
+  tree->Branch("OfflineFatJet_chargedHadronEnergy"        ,&OffPuppiFatJet_chargedHadronEnergy       );
+  tree->Branch("OfflineFatJet_neutralHadronEnergy"        ,&OffPuppiFatJet_neutralHadronEnergy       );
+  tree->Branch("OfflineFatJet_photonEnergy"               ,&OffPuppiFatJet_photonEnergy 	            );
+  tree->Branch("OfflineFatJet_electronEnergy"             ,&OffPuppiFatJet_electronEnergy            );
+  tree->Branch("OfflineFatJet_muonEnergy"    	           ,&OffPuppiFatJet_muonEnergy                );
+  tree->Branch("OfflineFatJet_HFHadronEnergy"             ,&OffPuppiFatJet_HFHadronEnergy            );
+  tree->Branch("OfflineFatJet_HFEMEnergy"                 ,&OffPuppiFatJet_HFEMEnergy                );
+  tree->Branch("OfflineFatJet_HOEnergy"                   ,&OffPuppiFatJet_HOEnergy                  );
+  tree->Branch("OfflineFatJet_chargedHadronMultiplicity"  ,&OffPuppiFatJet_chargedHadronMultiplicity );
+  tree->Branch("OfflineFatJet_neutralHadronMultiplicity"  ,&OffPuppiFatJet_neutralHadronMultiplicity );
+  tree->Branch("OfflineFatJet_photonMultiplicity"         ,&OffPuppiFatJet_photonMultiplicity        );
+  tree->Branch("OfflineFatJet_electronMultiplicity"       ,&OffPuppiFatJet_electronMultiplicity      );
+  tree->Branch("OfflineFatJet_muonMultiplicity"           ,&OffPuppiFatJet_muonMultiplicity          );
+  tree->Branch("OfflineFatJet_HFHadronMultiplicity"       ,&OffPuppiFatJet_HFHadronMultiplicity      );
+  tree->Branch("OfflineFatJet_HFEMMultiplicity"           ,&OffPuppiFatJet_HFEMMultiplicity          );
+  tree->Branch("OfflineFatJet_passId"                     ,&OffPuppiFatJet_passId                    );
 
-
+  /*
   //offline PF Cands
   tree->Branch("nOfflinePFCands"            	        ,&n_offpfcand 		        ,"nOfflinePFCands/i");	
   tree->Branch("nOfflinePFMuons"            	        ,&n_offpfMu 		        ,"nOfflinePFMuons/i");	
@@ -966,19 +970,20 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   //CZZ: added jet indices for Offline PF candidates
   tree->Branch("OfflineFatJetPFCands_jetIdx"                   ,&OfflineFatJetPFCands_jetIdx 	                );
   tree->Branch("OfflineFatJetPFCands_pFCandsIdx"                   ,&OfflineFatJetPFCands_pFCandsIdx 	                );
+  */
 
   //offline Puppi PF Cands
-  tree->Branch("nOfflinePuppiPFCands"            	        ,&n_offpuppipfcand 		      ,"nOfflinePuppiPFCands/i");	
-  tree->Branch("OfflinePuppiPFCands_pt"                   ,&OffPuppiPFcand_pt                                  );
-  tree->Branch("OfflinePuppiPFCands_mass"                 ,&OffPuppiPFcand_m                                   );
-  tree->Branch("OfflinePuppiPFCands_eta"                  ,&OffPuppiPFcand_eta                                 );
-  tree->Branch("OfflinePuppiPFCands_phi"                  ,&OffPuppiPFcand_phi                                 );
-  tree->Branch("OfflinePuppiPFCands_pdgId"                ,&OffPuppiPFcand_pdgid                               );
-  tree->Branch("OfflinePuppiPFCands_charge"               ,&OffPuppiPFcand_q                                   );
+  tree->Branch("nOfflinePFCands"            	        ,&n_offpuppipfcand 		      ,"nOfflinePuppiPFCands/i");	
+  tree->Branch("OfflinePFCands_pt"                   ,&OffPuppiPFcand_pt                                  );
+  tree->Branch("OfflinePFCands_mass"                 ,&OffPuppiPFcand_m                                   );
+  tree->Branch("OfflinePFCands_eta"                  ,&OffPuppiPFcand_eta                                 );
+  tree->Branch("OfflinePFCands_phi"                  ,&OffPuppiPFcand_phi                                 );
+  tree->Branch("OfflinePFCands_pdgId"                ,&OffPuppiPFcand_pdgid                               );
+  tree->Branch("OfflinePFCands_charge"               ,&OffPuppiPFcand_q                                   );
 
   //CZZ: added jet indices for Offline Puppi PF candidates
-  tree->Branch("OfflinePuppiFatJetPFCands_jetIdx"                   ,&OfflinePuppiFatJetPFCands_jetIdx 	        );
-  tree->Branch("OfflinePuppiFatJetPFCands_pFCandsIdx"                   ,&OfflinePuppiFatJetPFCands_pFCandsIdx 	);
+  tree->Branch("OfflineFatJetPFCands_jetIdx"                   ,&OfflinePuppiFatJetPFCands_jetIdx 	        );
+  tree->Branch("OfflineFatJetPFCands_pFCandsIdx"                   ,&OfflinePuppiFatJetPFCands_pFCandsIdx 	);
 
   //CZZ: added MET collections
   tree->Branch("MET_pt",&met_pt);
@@ -1461,7 +1466,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
 
   }
 
-
+/*
 OffPFcand_pt.clear();
 OffPFcand_eta.clear();
 OffPFcand_phi.clear();
@@ -1472,6 +1477,7 @@ n_offpfcand = 0;
 n_offpfMu =0;
 n_offpfEl =0;
 vector<PseudoJet> off_fj_part;
+
 
 if(runOffline){
 
@@ -1505,6 +1511,7 @@ if(runOffline){
     }
 
 }
+*/
 
   // 
   // Scouting muons   
@@ -1891,6 +1898,7 @@ if(runOffline){
     }
   }
 
+  /*
   //here add for offline AK8 jets
   OfflineFatJet_area.clear();
   OfflineFatJet_eta .clear();
@@ -1968,6 +1976,7 @@ if(runOffline){
     }
 
 }
+*/
 
 OffPuppiFatJet_pt.clear();
 OffPuppiFatJet_eta.clear();

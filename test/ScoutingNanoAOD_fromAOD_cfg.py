@@ -315,6 +315,45 @@ process.ak8PFPuppiL2L3CorrectorTask = cms.Task(
 process.ak8PFPuppiL2L3CorrectorSeq = cms.Sequence(process.ak8PFPuppiL2L3CorrectorTask)
 
 
+############################################################
+#
+# Setup JECs for HLT AK8 PF jets
+#
+############################################################
+# Dummy setup. L1FastJet JEC is 1 for HLT AK8 PF jets
+process.ak8PFHLTL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
+    level       = cms.string('L1FastJet'),
+    algorithm   = cms.string('AK8PFHLT'),
+    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
+)
+# MC-truth corrections  for HLT AK8 PF jets
+process.ak8PFHLTL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
+    level     = cms.string('L2Relative'),
+    algorithm = cms.string('AK8PFHLT')
+)
+# Dummy setup. L2L3Residual JEC is 1 for MC
+process.ak8PFHLTL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
+    level     = cms.string('L2L3Residual'),
+    algorithm = cms.string('AK8PFHLT')
+)
+process.ak8PFHLTL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
+    correctors = cms.VInputTag(
+        'ak8PFHLTL1FastjetCorrector',
+        'ak8PFHLTL2RelativeCorrector',
+        'ak8PFHLTL2L3ResidualCorrector',
+    )
+)
+process.ak8PFHLTL2L3CorrectorTask = cms.Task(
+    process.ak8PFHLTL1FastjetCorrector,
+    process.ak8PFHLTL2RelativeCorrector,
+    process.ak8PFHLTL2L3ResidualCorrector,
+    process.ak8PFHLTL2L3Corrector,
+)
+process.ak8PFHLTL2L3CorrectorSeq = cms.Sequence(process.ak8PFHLTL2L3CorrectorTask)
+
+
+
+
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     doL1              = cms.bool(False),
     doData            = cms.bool(not params.isMC and not params.signal),
@@ -352,6 +391,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     metPt             = cms.InputTag("hltScoutingPFPacker", "pfMetPt"),
     metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
+    jetCorrectorHLTAK8=cms.InputTag("ak8PFHLTL2L3Corrector"),
 
     #offline objects
     pfcandsReco=cms.InputTag("particleFlow"),
@@ -372,7 +412,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     electronsReco=cms.InputTag("gedGsfElectrons"),
     muonsReco=cms.InputTag("muons"),
     metReco=cms.InputTag("pfMet"),
-
+    
     #gen info and pileup
     genak4jets        = cms.InputTag("ak4GenJetsNoNu"),
     genak8jets        = cms.InputTag("ak8GenJetsNoNu"),
@@ -391,7 +431,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
 
 
 
-process.p = cms.Path(process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.mmtree) 
+process.p = cms.Path(process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.mmtree) 
 
 
 if(params.isMC):

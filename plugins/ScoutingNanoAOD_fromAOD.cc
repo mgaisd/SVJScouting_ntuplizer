@@ -197,7 +197,8 @@ private:
   const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	  verticesToken;
   const edm::EDGetTokenT<double> metPtToken;
   const edm::EDGetTokenT<double> metPhiToken;
-
+  
+  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorHLTAK8Token;
 
   //Offline tokens
   const edm::EDGetTokenT<reco::VertexCollection>              recoverticeToken;
@@ -481,6 +482,7 @@ private:
 
   // Fatjets 
   UInt_t                       n_fatjet;
+  vector<Float16_t>            FatJet_jesc; 
   vector<Float16_t>            FatJet_area;
   vector<Float16_t>            FatJet_eta;
   vector<Float16_t>            FatJet_n2b1;
@@ -605,6 +607,8 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   metPtToken               (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPt"))),
   metPhiToken              (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPhi"))),
   
+  jetCorrectorHLTAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorHLTAK8"))),
+
   //Offline tokens
   recoverticeToken     (consumes<reco::VertexCollection>          (iConfig.getParameter<edm::InputTag>("verticesReco"))),
   recoak4PuppiJetToken (consumes<std::vector<reco::PFJet>>        (iConfig.getParameter<edm::InputTag>("ak4pfjetsReco"))),
@@ -779,6 +783,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                       ,&n_fatjet                      ,"nFatJet/i");
+  tree->Branch("FatJet_jesc"                    ,&FatJet_jesc                   );
   tree->Branch("FatJet_area"                    ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                     ,&FatJet_eta                    );
   tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
@@ -1816,6 +1821,7 @@ if(runOffline){
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
   //here add for scouting AK8 jets
+  FatJet_jesc.clear();
   FatJet_area.clear();
   FatJet_eta .clear();
   FatJet_phi .clear();
@@ -1836,12 +1842,22 @@ if(runOffline){
 
 
   if(runScouting){
+    edm::Handle<reco::JetCorrector> jetCorrectorHLTAK8;
+    iEvent.getByToken(jetCorrectorHLTAK8Token, jetCorrectorHLTAK8);
 
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
     vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(fatjet_pt_min)); //pt min
 
     n_fatjet = 0;
     for(auto &j: ak8_jets) {
+      // --- calculate the jet correction
+      // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
+      reco::PFJet dummy_pfJet;
+      reco::Particle::LorentzVector dummy_jetP4(j.px(), j.py(), j.pz(), j.E());
+      dummy_pfJet.setP4(dummy_jetP4);
+      // then from the corrector calculate the correction and fill the tree
+      FatJet_jesc.push_back(jetCorrectorHLTAK8->correction(dummy_pfJet));
+      
       FatJet_area.push_back(j.area());
       FatJet_eta .push_back(j.pseudorapidity());
       FatJet_phi .push_back(j.phi_std());

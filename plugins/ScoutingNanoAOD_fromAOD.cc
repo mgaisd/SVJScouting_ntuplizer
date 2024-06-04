@@ -1746,7 +1746,7 @@ if(runOffline){
       auto corr  = (*jetwithjecpair).corr();
 
       auto pfjet_pt_corr   = corr * pfjet->pt();
-      auto pfjet_mass_corr = corr * pfjet->pt();
+      auto pfjet_mass_corr = corr * pfjet->m();
 
       if (pfjet_pt_corr < jetAK4PtMin) continue;
 
@@ -2031,7 +2031,7 @@ if(runOffline){
       auto corr  = (*jetwithjecpair).corr();
 
       auto pfjet_pt_corr   = corr * pfjet->pt();
-      auto pfjet_mass_corr = corr * pfjet->pt();
+      auto pfjet_mass_corr = corr * pfjet->m();
 
       if (pfjet_pt_corr < jetAK8PtMin) continue;
 

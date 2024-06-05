@@ -1818,6 +1818,7 @@ if(runOffline){
   //FatJet_msoftdrop.clear();
   //FatJet_mtrim.clear();
   FatJet_nconst.clear();
+  n_fatjet = 0;
 
 
   if(runScouting){
@@ -2027,13 +2028,12 @@ if(runOffline){
   GenJet_eta.clear();
   GenJet_phi.clear();
   GenJet_mass.clear();
-
-  double jet_pt_ak4_min = 10.0;
     
   n_genjet = 0;
+  double jetAK4PtMin = 10.0;
   if (runOffline){
     for (auto genjet = genak4jetsH->begin(); genjet != genak4jetsH->end(); ++genjet) {
-      if (genjet->pt() > jet_pt_min){
+      if (genjet->pt() > jetAK4PtMin){
         if(abs(genjet->eta()) > 2.4) continue;
         GenJet_pt .push_back( genjet->pt() );
         GenJet_eta.push_back( genjet->eta());
@@ -2049,13 +2049,11 @@ if(runOffline){
   GenFatJet_eta.clear();
   GenFatJet_phi.clear();
   GenFatJet_mass.clear();
-
-  double jet_pt_min = 100.0;
     
   n_genfatjet = 0;
   if (runOffline){
     for (auto genjet = genak8jetsH->begin(); genjet != genak8jetsH->end(); ++genjet) {
-      if (genjet->pt() > jet_pt_min){
+      if (genjet->pt() > jetAK8PtMin){
         if(abs(genjet->eta()) > 2.4) continue;
         GenFatJet_pt .push_back( genjet->pt() );
         GenFatJet_eta.push_back( genjet->eta());

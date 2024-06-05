@@ -130,6 +130,7 @@
 
 using namespace std;
 
+/*
 //
 // Inspired from https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/Calibration/HcalCalibAlgos/test/DiJetAnalyzer.h#L61-L85
 //
@@ -164,6 +165,50 @@ struct JetWithJECPairComp {
     return (a.jet()->pt() * a.corr()) > (b.jet()->pt() * b.corr());
   }
 };
+*/
+
+///////////////////////////////////////
+//
+// Inspired from https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/Calibration/HcalCalibAlgos/test/DiJetAnalyzer.h#L61-L85
+//
+class JetWithJECPair {
+public:
+    // Existing constructors
+    JetWithJECPair() : first(nullptr), second(1.0), third(0) {}
+    
+    // Constructur with jet and correction factor
+    JetWithJECPair(const reco::PFJet* j, double s) : first(j), second(s), third(0) {}
+    
+    // Constructur with jet idx
+    JetWithJECPair(const reco::PFJet* j, double s, int idx) : first(j), second(s), third(idx) {}
+    
+    // Destructor remains unchanged
+    ~JetWithJECPair() = default;
+
+    // Getter and setter methods remain unchanged
+    inline const reco::PFJet* jet() const { return first; }
+    inline void jet(const reco::PFJet* j) { first = j; }
+    inline double corr() const { return second; }
+    inline void corr(double d) { second = d; }
+
+    // Getter and setter for the new parameter
+    inline int jet_idx() const { return third; }
+    inline void jet_idx(int i) { third = i; }
+
+private:
+    const reco::PFJet* first; // Pointer to PFJet object
+    double second; // Correction factor 
+    int third; //jet idx
+};
+
+
+
+struct JetWithJECPairComp {
+  inline bool operator()(const JetWithJECPair& a, const JetWithJECPair& b) const {
+    return (a.jet()->pt() * a.corr()) > (b.jet()->pt() * b.corr());
+  }
+};
+//////////////////////////////////////
 
 class ScoutingNanoAOD_fromAOD : public edm::one::EDAnalyzer<edm::one::SharedResources, edm::one::WatchRuns, edm::one::WatchLuminosityBlocks> {
 public:
@@ -197,9 +242,11 @@ private:
   const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	  verticesToken;
   const edm::EDGetTokenT<double> metPtToken;
   const edm::EDGetTokenT<double> metPhiToken;
-  
-  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorHLTAK8Token;
 
+  bool applyJECForAK8Scout;
+  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorHLTAK8Token;
+  double jetAK8ScoutPtMin = 0.;
+  
   //Offline tokens
   const edm::EDGetTokenT<reco::VertexCollection>              recoverticeToken;
   const edm::EDGetTokenT<std::vector<reco::PFJet>> recoak4PuppiJetToken;
@@ -217,6 +264,7 @@ private:
   bool applyJECForAK8;
   const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorAK8Token;
   double jetAK8PtMin = 0.;
+
 
   //Gen info
   const edm::EDGetTokenT<std::vector<reco::GenJet> >            genak4jetsToken; 
@@ -482,22 +530,23 @@ private:
 
   // Fatjets 
   UInt_t                       n_fatjet;
-  vector<Float16_t>            FatJet_jesc; 
-  vector<Float16_t>            FatJet_area;
+  vector<Float16_t>            FatJet_rawFactor;
+  //vector<Float16_t>            FatJet_jesc; 
+  //vector<Float16_t>            FatJet_area;
   vector<Float16_t>            FatJet_eta;
-  vector<Float16_t>            FatJet_n2b1;
-  vector<Float16_t>            FatJet_n3b1;
+  //vector<Float16_t>            FatJet_n2b1;
+  //vector<Float16_t>            FatJet_n3b1;
   vector<Float16_t>            FatJet_phi;
   vector<Float16_t>            FatJet_pt;
-  vector<Float16_t>            FatJet_tau1;
-  vector<Float16_t>            FatJet_tau2;
-  vector<Float16_t>            FatJet_tau3;
-  vector<Float16_t>            FatJet_tau4;
-  vector<Float16_t>            FatJet_tau21;
-  vector<Float16_t>            FatJet_tau32;
+  //vector<Float16_t>            FatJet_tau1;
+  //vector<Float16_t>            FatJet_tau2;
+  //vector<Float16_t>            FatJet_tau3;
+  //vector<Float16_t>            FatJet_tau4;
+  //vector<Float16_t>            FatJet_tau21;
+  //vector<Float16_t>            FatJet_tau32;
   vector<Float16_t>            FatJet_mass;
-  vector<Float16_t>            FatJet_msoftdrop;
-  vector<Float16_t>            FatJet_mtrim;
+  //vector<Float16_t>            FatJet_msoftdrop;
+  //vector<Float16_t>            FatJet_mtrim;
   vector<Float16_t>            FatJet_nconst;
 
   /*
@@ -606,8 +655,10 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
   metPtToken               (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPt"))),
   metPhiToken              (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPhi"))),
-  
+
+  applyJECForAK8Scout       (iConfig.getParameter<bool>("applyJECForAK8Scout")),
   jetCorrectorHLTAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorHLTAK8"))),
+  jetAK8ScoutPtMin          (iConfig.getParameter<double>("jetAK8ScoutPtMin")),
 
   //Offline tokens
   recoverticeToken     (consumes<reco::VertexCollection>          (iConfig.getParameter<edm::InputTag>("verticesReco"))),
@@ -617,9 +668,11 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   recoMuonToken        (consumes<edm::View<reco::Muon>>           (iConfig.getParameter<edm::InputTag>("muonsReco"))),
   recoPfCandidateToken (consumes<std::vector<reco::PFCandidate>>  (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
   recoMetToken         (consumes<std::vector<reco::PFMET>>        (iConfig.getParameter<edm::InputTag>("metReco"))),
+  
   applyJECForAK4       (iConfig.getParameter<bool>("applyJECForAK4")),
   jetCorrectorAK4Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK4"))),
   jetAK4PtMin          (iConfig.getParameter<double>("jetAK4PtMin")),
+  
   applyJECForAK8       (iConfig.getParameter<bool>("applyJECForAK8")),
   jetCorrectorAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK8"))),
   jetAK8PtMin          (iConfig.getParameter<double>("jetAK8PtMin")),
@@ -783,22 +836,22 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                       ,&n_fatjet                      ,"nFatJet/i");
-  tree->Branch("FatJet_jesc"                    ,&FatJet_jesc                   );
-  tree->Branch("FatJet_area"                    ,&FatJet_area                   );
+  tree->Branch("FatJet_rawFactor"                     ,&FatJet_rawFactor                    );
+  //tree->Branch("FatJet_area"                    ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                     ,&FatJet_eta                    );
-  tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
-  tree->Branch("FatJet_n3b1"                    ,&FatJet_n3b1                   );
+  //tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
+  //tree->Branch("FatJet_n3b1"                    ,&FatJet_n3b1                   );
   tree->Branch("FatJet_phi"                     ,&FatJet_phi                    );
   tree->Branch("FatJet_pt"                      ,&FatJet_pt                     );
-  tree->Branch("FatJet_tau1"                    ,&FatJet_tau1                   );
-  tree->Branch("FatJet_tau2"                    ,&FatJet_tau2                   );
-  tree->Branch("FatJet_tau3"                    ,&FatJet_tau3                   );
-  tree->Branch("FatJet_tau4"                    ,&FatJet_tau4                   );
-  tree->Branch("FatJet_tau21"                   ,&FatJet_tau21                  );
-  tree->Branch("FatJet_tau32"                   ,&FatJet_tau32                  );
+  //tree->Branch("FatJet_tau1"                    ,&FatJet_tau1                   );
+  //tree->Branch("FatJet_tau2"                    ,&FatJet_tau2                   );
+  //tree->Branch("FatJet_tau3"                    ,&FatJet_tau3                   );
+  //tree->Branch("FatJet_tau4"                    ,&FatJet_tau4                   );
+  //tree->Branch("FatJet_tau21"                   ,&FatJet_tau21                  );
+  //tree->Branch("FatJet_tau32"                   ,&FatJet_tau32                  );
   tree->Branch("FatJet_mass"                    ,&FatJet_mass                   );
-  tree->Branch("FatJet_msoftdrop"               ,&FatJet_msoftdrop              );
-  tree->Branch("FatJet_mtrim"                   ,&FatJet_mtrim                  );
+  //tree->Branch("FatJet_msoftdrop"               ,&FatJet_msoftdrop              );
+  //tree->Branch("FatJet_mtrim"                   ,&FatJet_mtrim                  );
   tree->Branch("FatJet_nconst"                  ,&FatJet_nconst                 );
 
   tree->Branch("rho"                            ,&rho2                           );
@@ -1751,7 +1804,7 @@ if(runOffline){
       auto corr  = (*jetwithjecpair).corr();
 
       auto pfjet_pt_corr   = corr * pfjet->pt();
-      auto pfjet_mass_corr = corr * pfjet->m();
+      auto pfjet_mass_corr = corr * pfjet->mass();
 
       if (pfjet_pt_corr < jetAK4PtMin) continue;
 
@@ -1800,45 +1853,46 @@ if(runOffline){
 
   //here introduce AK definition
   JetDefinition ak8_def = JetDefinition(antikt_algorithm, 0.8);
-  double jet_pt_min = 10.0;
-  double fatjet_pt_min = 100.0;
-  double sd_z_cut = 0.10;
-  double sd_beta = 0;
-  SoftDrop sd_groomer = SoftDrop(sd_z_cut, sd_beta, 1.0);
-  Filter trimmer = Filter(JetDefinition(kt_algorithm, 0.2), SelectorPtFractionMin(0.03));
+  //double jet_pt_min = 10.0;
+  //double fatjet_pt_min = 100.0;
+  //double sd_z_cut = 0.10;
+  //double sd_beta = 0;
+  //SoftDrop sd_groomer = SoftDrop(sd_z_cut, sd_beta, 1.0);
+  //Filter trimmer = Filter(JetDefinition(kt_algorithm, 0.2), SelectorPtFractionMin(0.03));
 
-  double beta = 1.0;
-  Nsubjettiness nSub1 = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
-  Nsubjettiness nSub2 = Nsubjettiness(2, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
-  Nsubjettiness nSub3 = Nsubjettiness(3, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
-  Nsubjettiness nSub4 = Nsubjettiness(4, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
-  Nsubjettiness nSub5 = Nsubjettiness(5, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //double beta = 1.0;
+  //Nsubjettiness nSub1 = Nsubjettiness(1, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //Nsubjettiness nSub2 = Nsubjettiness(2, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //Nsubjettiness nSub3 = Nsubjettiness(3, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //Nsubjettiness nSub4 = Nsubjettiness(4, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
+  //Nsubjettiness nSub5 = Nsubjettiness(5, OnePass_WTA_KT_Axes(), UnnormalizedMeasure(beta));
 
-  EnergyCorrelatorN2 N2=EnergyCorrelatorN2(1.0);
-  EnergyCorrelatorN3 N3=EnergyCorrelatorN3(1.0);
-
+  //EnergyCorrelatorN2 N2=EnergyCorrelatorN2(1.0);
+  //EnergyCorrelatorN3 N3=EnergyCorrelatorN3(1.0);
+  
+  
   fastjet::GhostedAreaSpec area_spec(5.0,1,0.01);
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
   //here add for scouting AK8 jets
-  FatJet_jesc.clear();
-  FatJet_area.clear();
+  FatJet_rawFactor.clear();
+  //FatJet_area.clear();
   FatJet_eta .clear();
   FatJet_phi .clear();
   FatJet_pt  .clear();
   FatJet_mass.clear();
-  FatJet_n2b1.clear();
-  FatJet_n3b1.clear();
-  FatJet_tau1.clear();
-  FatJet_tau2.clear();
-  FatJet_tau3.clear();
-  FatJet_tau4.clear();
-  FatJet_tau21.clear();
-  FatJet_tau32.clear();
-  FatJet_msoftdrop.clear();
-  FatJet_mtrim.clear();
+  //FatJet_n2b1.clear();
+  //FatJet_n3b1.clear();
+  //FatJet_tau1.clear();
+  //FatJet_tau2.clear();
+  //FatJet_tau3.clear();
+  //FatJet_tau4.clear();
+  //FatJet_tau21.clear();
+  //FatJet_tau32.clear();
+  //FatJet_msoftdrop.clear();
+  //FatJet_mtrim.clear();
   FatJet_nconst.clear();
-
+  n_fatjet = 0;
 
 
   if(runScouting){
@@ -1846,56 +1900,81 @@ if(runOffline){
     iEvent.getByToken(jetCorrectorHLTAK8Token, jetCorrectorHLTAK8);
 
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
-    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(fatjet_pt_min)); //pt min
+    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jetAK8ScoutPtMin)); //pt min
 
-    n_fatjet = 0;
-    for(auto &j: ak8_jets) {
+    //
+    // Retrieve JEC and use it to sort automatically jets by JEC-applied pt
+    //
+    std::set<JetWithJECPair, JetWithJECPairComp> jetwithjecidxpairsetAK8Scout;
+    int n_fatjet_counter = 0;
+    for (auto &j: ak8_jets) {
       // --- calculate the jet correction
       // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
       reco::PFJet dummy_pfJet;
       reco::Particle::LorentzVector dummy_jetP4(j.px(), j.py(), j.pz(), j.E());
       dummy_pfJet.setP4(dummy_jetP4);
-      // then from the corrector calculate the correction and fill the tree
-      FatJet_jesc.push_back(jetCorrectorHLTAK8->correction(dummy_pfJet));
-      
-      FatJet_area.push_back(j.area());
-      FatJet_eta .push_back(j.pseudorapidity());
-      FatJet_phi .push_back(j.phi_std());
-      FatJet_pt  .push_back(j.pt());
-      FatJet_mass.push_back(j.m());
-
-      FatJet_nconst.push_back(j.constituents().size());
-
-      PseudoJet sd_ak8 = sd_groomer(j);
-      FatJet_msoftdrop.push_back(sd_ak8.m());
-      
-      PseudoJet trimmed_ak8 = trimmer(j);
-      FatJet_mtrim.push_back(trimmed_ak8.m());
-      
-      // Energy correlation
-      FatJet_n2b1.push_back(N2(sd_ak8));
-      FatJet_n3b1.push_back(N3(sd_ak8));
-      
-      // Nsubjettiness, tau 
-      FatJet_tau1.push_back(nSub1.result(j));
-      FatJet_tau2.push_back(nSub2.result(j));
-      FatJet_tau3.push_back(nSub3.result(j));
-      FatJet_tau4.push_back(nSub4.result(j));
-      FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
-      FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
-
-      n_fatjet++;
+      double jec = 1.0;
+      if (applyJECForAK8Scout)
+        jec = jetCorrectorHLTAK8->correction(dummy_pfJet);
+      jetwithjecidxpairsetAK8Scout.insert(JetWithJECPair(&dummy_pfJet, jec, n_fatjet_counter));
+      //pair jet and n_fatjet_counter
+      n_fatjet_counter ++;
     }
 
+for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair) {
+      
 
+      auto pfjet = (*jetwithjecidxpair).jet();
+      auto corr  = (*jetwithjecidxpair).corr();
+      auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
+
+      auto pfjet_pt_corr   = corr * pfjet->pt();
+      auto pfjet_mass_corr = corr * pfjet->mass();
+
+      if (pfjet_pt_corr < jetAK8ScoutPtMin) continue;
+
+      //FatJet_area.push_back(j.area());
+      FatJet_rawFactor.push_back(1.f - (1.f/corr) );
+      FatJet_eta.push_back(pfjet->eta());
+      FatJet_phi.push_back(pfjet->phi());
+      FatJet_pt .push_back(pfjet_pt_corr);
+      FatJet_mass.push_back(pfjet_mass_corr);
+      FatJet_nconst.push_back((ak8_jets[jec_sorted_jet_idx].constituents()).size());
+
+      //PseudoJet sd_ak8 = sd_groomer(j);
+      //FatJet_msoftdrop.push_back(sd_ak8.m());
+      
+      //PseudoJet trimmed_ak8 = trimmer(j);
+      //FatJet_mtrim.push_back(trimmed_ak8.m());
+      
+      // Energy correlation
+      //FatJet_n2b1.push_back(N2(sd_ak8));
+      //FatJet_n3b1.push_back(N3(sd_ak8));
+      
+      // Nsubjettiness, tau 
+      //FatJet_tau1.push_back(nSub1.result(j));
+      //FatJet_tau2.push_back(nSub2.result(j));
+      //FatJet_tau3.push_back(nSub3.result(j));
+      //FatJet_tau4.push_back(nSub4.result(j));
+      //FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
+      //FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
+
+      n_fatjet++; 
+
+    }  
+
+    
     unsigned int n_pfcand_tot = 0;
     for (auto & pfcands_iter : PFcands ) {
       if (pfcands_iter.pt() < 1.) continue;
       if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
       int tmpidx = -1;
       int ak8count = 0;
-      for (auto &j: ak8_jets) {
-        for (auto &k: j.constituents()){
+      for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair){
+        //get jet idx
+        auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
+        //based on jec_sorted_jet_idx, select the jet from ak8_jets
+        for (auto &k: ak8_jets[jec_sorted_jet_idx].constituents()){
           if ((UInt_t)k.user_index() == n_pfcand_tot){
             tmpidx = ak8count;
             ak8count++;
@@ -1913,6 +1992,7 @@ if(runOffline){
       n_pfcand_tot++;
     }
   }
+    
 
   /*
   //here add for offline AK8 jets
@@ -2047,7 +2127,7 @@ if(runOffline){
       auto corr  = (*jetwithjecpair).corr();
 
       auto pfjet_pt_corr   = corr * pfjet->pt();
-      auto pfjet_mass_corr = corr * pfjet->m();
+      auto pfjet_mass_corr = corr * pfjet->mass();
 
       if (pfjet_pt_corr < jetAK8PtMin) continue;
 
@@ -2152,11 +2232,12 @@ if(runOffline){
   GenJet_eta.clear();
   GenJet_phi.clear();
   GenJet_mass.clear();
-    
+  
+  double jetAK4PtMin = 10.0;
   n_genjet = 0;
   if (runOffline){
     for (auto genjet = genak4jetsH->begin(); genjet != genak4jetsH->end(); ++genjet) {
-      if (genjet->pt() > jet_pt_min){
+      if (genjet->pt() > jetAK4PtMin){
         if(abs(genjet->eta()) > 2.4) continue;
         GenJet_pt .push_back( genjet->pt() );
         GenJet_eta.push_back( genjet->eta());
@@ -2178,7 +2259,7 @@ if(runOffline){
   n_genfatjet = 0;
   if (runOffline){
     for (auto genjet = genak8jetsH->begin(); genjet != genak8jetsH->end(); ++genjet) {
-      if (genjet->pt() > fatjet_pt_min){
+      if (genjet->pt() > jetAK8PtMin){
         if(abs(genjet->eta()) > 2.4) continue;
         GenFatJet_pt .push_back( genjet->pt() );
         GenFatJet_eta.push_back( genjet->eta());

@@ -391,12 +391,15 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     metPt             = cms.InputTag("hltScoutingPFPacker", "pfMetPt"),
     metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
+    #HLT AK8 PF jets
+    applyJECForAK8Scout=cms.bool(True),
     jetCorrectorHLTAK8=cms.InputTag("ak8PFHLTL2L3Corrector"),
+    jetAK8ScoutPtMin=cms.double(100),
 
     #offline objects
     pfcandsReco=cms.InputTag("particleFlow"),
 
-    #CHS PF
+    #Puppi PF
     ak4pfjetsReco=cms.InputTag("ak4PFJetsPuppi"),
     applyJECForAK4=cms.bool(True),
     jetCorrectorAK4=cms.InputTag("ak4PFPuppiL2L3Corrector"),
@@ -406,7 +409,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     ak8pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
     applyJECForAK8=cms.bool(True),
     jetCorrectorAK8=cms.InputTag("ak8PFPuppiL2L3Corrector"),
-    jetAK8PtMin=cms.double(20),
+    jetAK8PtMin=cms.double(100),
 
     verticesReco=cms.InputTag('offlinePrimaryVertices'),
     electronsReco=cms.InputTag("gedGsfElectrons"),

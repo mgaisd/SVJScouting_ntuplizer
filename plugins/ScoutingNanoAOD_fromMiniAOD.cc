@@ -1834,64 +1834,67 @@ if(runOffline){
     // Retrieve JEC and use it to sort automatically jets by JEC-applied pt
     //
     std::set<JetWithJECPairReco, JetWithJECPairRecoComp> jetwithjecidxpairsetAK8Scout;
+    
     int n_fatjet_counter = 0;
-    for (auto &j: ak8_jets) {
-      // --- calculate the jet correction
-      // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
-      reco::PFJet dummy_pfJet;
-      reco::Particle::LorentzVector dummy_jetP4(j.px(), j.py(), j.pz(), j.E());
-      dummy_pfJet.setP4(dummy_jetP4);
-      double jec = 1.0;
-      if (applyJECForAK8Scout)
+    double jec = 1.0;
+
+
+    if (applyJECForAK8Scout){
+
+      for (auto &j: ak8_jets) {
+        // --- calculate the jet correction
+        // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
+        reco::PFJet dummy_pfJet;
+        reco::Particle::LorentzVector dummy_jetP4(j.px(), j.py(), j.pz(), j.E());
+        dummy_pfJet.setP4(dummy_jetP4);
         jec = jetCorrectorHLTAK8->correction(dummy_pfJet);
-      jetwithjecidxpairsetAK8Scout.insert(JetWithJECPairReco(&dummy_pfJet, jec, n_fatjet_counter));
-      //pair jet and n_fatjet_counter
-      n_fatjet_counter ++;
-    }
+        jetwithjecidxpairsetAK8Scout.insert(JetWithJECPairReco(&dummy_pfJet, jec, n_fatjet_counter));
+        
+        //pair jet and n_fatjet_counter
+        n_fatjet_counter ++;
+      }
 
-    for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair) {
+      for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair) {
       
-
-      auto pfjet = (*jetwithjecidxpair).jet();
-      auto corr  = (*jetwithjecidxpair).corr();
-      auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
-
-      auto pfjet_pt_corr   = corr * pfjet->pt();
-      auto pfjet_mass_corr = corr * pfjet->mass();
-
-      if (pfjet_pt_corr < jetAK8ScoutPtMin) continue;
-
-      //FatJet_area.push_back(j.area());
-      FatJet_rawFactor.push_back(1.f - (1.f/corr) );
-      FatJet_eta.push_back(pfjet->eta());
-      FatJet_phi.push_back(pfjet->phi());
-      FatJet_pt .push_back(pfjet_pt_corr);
-      FatJet_mass.push_back(pfjet_mass_corr);
-      FatJet_nconst.push_back((ak8_jets[jec_sorted_jet_idx].constituents()).size());
-
-      //PseudoJet sd_ak8 = sd_groomer(j);
-      //FatJet_msoftdrop.push_back(sd_ak8.m());
+        auto pfjet = (*jetwithjecidxpair).jet();
+        auto corr  = (*jetwithjecidxpair).corr();
+        auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
       
-      //PseudoJet trimmed_ak8 = trimmer(j);
-      //FatJet_mtrim.push_back(trimmed_ak8.m());
-      
-      // Energy correlation
-      //FatJet_n2b1.push_back(N2(sd_ak8));
-      //FatJet_n3b1.push_back(N3(sd_ak8));
-      
-      // Nsubjettiness, tau 
-      //FatJet_tau1.push_back(nSub1.result(j));
-      //FatJet_tau2.push_back(nSub2.result(j));
-      //FatJet_tau3.push_back(nSub3.result(j));
-      //FatJet_tau4.push_back(nSub4.result(j));
-      //FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
-      //FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
+        auto pfjet_pt_corr   = corr * pfjet->pt();
+        auto pfjet_mass_corr = corr * pfjet->mass();
 
-      n_fatjet++; 
+        if (pfjet_pt_corr < jetAK8ScoutPtMin) continue;
+
+        //FatJet_area.push_back(j.area());
+        FatJet_rawFactor.push_back(1.f - (1.f/corr) );
+        FatJet_eta.push_back(pfjet->eta());
+        FatJet_phi.push_back(pfjet->phi());
+        FatJet_pt .push_back(pfjet_pt_corr);
+        FatJet_mass.push_back(pfjet_mass_corr);
+        FatJet_nconst.push_back((ak8_jets[jec_sorted_jet_idx].constituents()).size());
+
+        //PseudoJet sd_ak8 = sd_groomer(j);
+        //FatJet_msoftdrop.push_back(sd_ak8.m());
+        
+        //PseudoJet trimmed_ak8 = trimmer(j);
+        //FatJet_mtrim.push_back(trimmed_ak8.m());
+        
+        // Energy correlation
+        //FatJet_n2b1.push_back(N2(sd_ak8));
+        //FatJet_n3b1.push_back(N3(sd_ak8));
+        
+        // Nsubjettiness, tau 
+        //FatJet_tau1.push_back(nSub1.result(j));
+        //FatJet_tau2.push_back(nSub2.result(j));
+        //FatJet_tau3.push_back(nSub3.result(j));
+        //FatJet_tau4.push_back(nSub4.result(j));
+        //FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
+        //FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
+
+        n_fatjet++; 
 
     }  
 
-    
     unsigned int n_pfcand_tot = 0;
     for (auto & pfcands_iter : PFcands ) {
       if (pfcands_iter.pt() < 1.) continue;
@@ -1919,6 +1922,46 @@ if(runOffline){
       }
       n_pfcand_tot++;
     }
+
+    }else{
+
+      for (auto &j: ak8_jets) {
+        FatJet_rawFactor.push_back(0);
+        FatJet_eta.push_back(j.eta());
+        FatJet_phi.push_back(j.phi());
+        FatJet_pt .push_back(j.pt());
+        FatJet_mass.push_back(j.m());
+        FatJet_nconst.push_back(j.constituents().size());
+        n_fatjet++;
+      }
+
+      unsigned int n_pfcand_tot = 0;
+      for (auto & pfcands_iter : PFcands ) {
+        if (pfcands_iter.pt() < 1.) continue;
+        if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
+        int tmpidx = -1;
+        int ak8count = 0;
+        for (auto &j: ak8_jets) {
+          for (auto &k: j.constituents()){
+            if ((UInt_t)k.user_index() == n_pfcand_tot){
+              tmpidx = ak8count;
+              ak8count++;
+              break;
+            }
+          }
+          if (tmpidx>-1){
+            FatJetPFCands_jetIdx.push_back(tmpidx);
+            FatJetPFCands_pFCandsIdx.push_back(n_pfcand_tot);
+            break;
+          }else{
+            ak8count++;
+          }
+        }
+        n_pfcand_tot++;
+      }
+    
+    }
+
   }
 
 

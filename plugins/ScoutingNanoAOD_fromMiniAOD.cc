@@ -46,6 +46,9 @@
 // Adding Gen jets
 #include "DataFormats/JetReco/interface/GenJet.h"
 
+//Accessing Gen particles
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+
 //Adding Reco vertices
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
@@ -78,6 +81,7 @@
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/TriggerObjectStandAlone.h"
 #include "DataFormats/PatCandidates/interface/PackedTriggerPrescales.h"
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "L1Trigger/L1TGlobal/interface/L1TGlobalUtil.h"
 #include "DataFormats/L1TGlobal/interface/GlobalAlgBlk.h"
 #include "HLTrigger/HLTcore/interface/TriggerExpressionData.h"
@@ -223,9 +227,9 @@ private:
   const edm::EDGetTokenT<std::vector<reco::GenJet> >            genak8jetsToken; 
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
-  const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
-  const edm::EDGetTokenT<GenLumiInfoHeader>  	genLumiInfoHeadTag_;
-
+  const edm::EDGetTokenT<GenEventInfoProduct>                   genEvtInfoToken;
+  const edm::EDGetTokenT<GenLumiInfoHeader>  	                  genLumiInfoHeadTag_;
+  const edm::EDGetTokenT<std::vector<reco::GenParticle>>       gensToken;
 
   const edm::EDGetTokenT<double>  	rhoToken2;
   const edm::EDGetTokenT<double>  	prefireToken;
@@ -249,6 +253,7 @@ private:
   bool era_16;
   bool runScouting = false;
   bool runOffline =false;
+  bool runGen = false;
   std::string label;
 
   HLTPrescaleProvider hltPSProv_;
@@ -570,6 +575,13 @@ private:
   vector<Float16_t>            Vertex_ndof;
   vector<Float16_t>            Vertex_isValidVtx;
 
+    //add GenParticle info
+  vector<Float16_t> MatrixElementGenParticle_pt;  
+  vector<Float16_t> MatrixElementGenParticle_eta;              
+  vector<Float16_t> MatrixElementGenParticle_phi;  
+  vector<Float16_t> MatrixElementGenParticle_mass; 
+  vector<Float16_t> MatrixElementGenParticle_pdgId; 
+
   //prefire
   float                        rho2;
   float                        prefire;
@@ -629,6 +641,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
   genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),   
+  gensToken                (consumes<std::vector<reco::GenParticle>>               (iConfig.getParameter<edm::InputTag>("gens"))),
   
   rhoToken2                (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("rho2"))),
   prefireToken             (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProb"))),
@@ -949,12 +962,19 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("GenJet_phi"                        ,&GenJet_phi                       );
   tree->Branch("GenJet_mass"                       ,&GenJet_mass                      );
 
-  //add gen info
+  //add GenFatJet info
   tree->Branch("n_genfatjet"                           ,&n_genfatjet                         ,"nGenFatJets/i");
   tree->Branch("GenFatJet_pt"                         ,&GenFatJet_pt                        );
   tree->Branch("GenFatJet_eta"                        ,&GenFatJet_eta                       );
   tree->Branch("GenFatJet_phi"                        ,&GenFatJet_phi                       );
   tree->Branch("GenFatJet_mass"                       ,&GenFatJet_mass                      );
+
+  //add GenParticle info
+  tree->Branch("MatrixElementGenParticle_pt"                    ,&MatrixElementGenParticle_pt                 );  
+  tree->Branch("MatrixElementGenParticle_eta"                   ,&MatrixElementGenParticle_eta                );  
+  tree->Branch("MatrixElementGenParticle_phi"                   ,&MatrixElementGenParticle_phi                );  
+  tree->Branch("MatrixElementGenParticle_mass"                  ,&MatrixElementGenParticle_mass               ); 
+  tree->Branch("MatrixElementGenParticle_pdgId"                 ,&MatrixElementGenParticle_pdgId              ); 
 
   /*
   //offline PF Cands
@@ -1039,6 +1059,10 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
 
   if(auto handle = iEvent.getHandle(recoPfCandidateToken)){
     runOffline = true;
+  }
+
+  if(auto handle = iEvent.getHandle(genak4jetsToken)){
+    runGen = true;
   }
 
 
@@ -1838,8 +1862,7 @@ if(runOffline){
     int n_fatjet_counter = 0;
     double jec = 1.0;
 
-
-    if (applyJECForAK8Scout){
+    if (applyJECForAK8Scout) {
 
       for (auto &j: ak8_jets) {
         // --- calculate the jet correction
@@ -2074,7 +2097,7 @@ if(runOffline){
     
   n_genjet = 0;
   double jetAK4PtMin = 10.0;
-  if (runOffline){
+  if (runGen){
     for (auto genjet = genak4jetsH->begin(); genjet != genak4jetsH->end(); ++genjet) {
       if (genjet->pt() > jetAK4PtMin){
         if(abs(genjet->eta()) > 2.4) continue;
@@ -2242,6 +2265,39 @@ if(runOffline){
 
 }
 
+  
+  //Genparticles genp
+
+  if (runGen){
+
+    Handle<GenParticleCollection> genP_iter;
+    iEvent.getByToken(gensToken, genP_iter);
+
+    int n_genp = 0;
+
+    MatrixElementGenParticle_pt.clear();
+    MatrixElementGenParticle_eta.clear();
+    MatrixElementGenParticle_phi.clear();
+    MatrixElementGenParticle_mass.clear();
+    MatrixElementGenParticle_pdgId.clear();
+
+    for(size_t i = 0; i < genP_iter->size(); ++ i) { 
+      const GenParticle & genP = (*genP_iter)[i];
+
+      if (genP.status() != 23) continue;
+      
+      if (genP.pt() < 0.5) continue;
+
+      MatrixElementGenParticle_pt.push_back(genP.pt());
+      MatrixElementGenParticle_eta.push_back(genP.eta());
+      MatrixElementGenParticle_phi.push_back(genP.phi());
+      MatrixElementGenParticle_mass.push_back(genP.mass());
+      MatrixElementGenParticle_pdgId.push_back(genP.pdgId());
+
+      n_genp++;
+    }
+
+}
 
  // * 
  // L1 info

@@ -337,7 +337,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
     #HLT AK8 PF jets
-    applyJECForAK8Scout=cms.bool(True),
+    applyJECForAK8Scout=cms.bool(False),
     jetCorrectorHLTAK8=cms.InputTag("ak8PFHLTL2L3Corrector"),
     jetAK8ScoutPtMin=cms.double(100),
 
@@ -362,7 +362,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     pileupinfo        = cms.InputTag("addPileupInfo"),
     pileupinfo_sig    = cms.InputTag("slimmedAddPileupInfo"),
     geneventinfo     = cms.InputTag("generator"),
-    gens_sig          = cms.InputTag("genParticles"),
+    gens             = cms.InputTag("prunedGenParticles"),
     rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
     rho2              = cms.InputTag("hltScoutingPFPacker","rho"),
 

@@ -213,6 +213,7 @@ private:
   const edm::EDGetTokenT<edm::View<pat::Muon> > recoMuonToken;
   const edm::EDGetTokenT<std::vector<pat::PackedCandidate>> recoPfCandidateToken;
   const edm::EDGetTokenT<std::vector<pat::MET>> recoMetToken;
+  const edm::EDGetTokenT<std::vector<pat::MET>> recoPuppiMetToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
 
   bool applyJECForAK8;
@@ -591,6 +592,7 @@ private:
   // MET
   double met_pt, met_phi;
   double met_pt_reco, met_phi_reco;
+  double puppi_met_reco_pt, puppi_met_reco_phi;
 
   //reco vertices
   Int_t nPV_;        // number of reconsrtucted primary vertices
@@ -625,6 +627,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   recoMuonToken        (consumes<edm::View<pat::Muon>>                     (iConfig.getParameter<edm::InputTag>("muonsReco"))),
   recoPfCandidateToken (consumes<std::vector<pat::PackedCandidate>>        (iConfig.getParameter<edm::InputTag>("pfcandsReco"))), 
   recoMetToken         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
+  recoPuppiMetToken    (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("PuppimetReco"))),
 
   applyJECForAK8       (iConfig.getParameter<bool>("applyJECForAK8")),
   jetCorrectorAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK8"))),
@@ -1012,6 +1015,8 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("MET_phi",&met_phi);
   tree->Branch("OfflineMET_pt",&met_pt_reco);
   tree->Branch("OfflineMET_phi",&met_phi_reco);
+  tree->Branch("OfflinePuppiMET_pt",&puppi_met_reco_pt);
+  tree->Branch("OfflinePuppiMET_phi",&puppi_met_reco_phi);
 
 
 }
@@ -1048,6 +1053,7 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
   Handle<vector<reco::GenJet> > genak8jetsH;
 
   Handle<std::vector<pat::MET>> metReco;
+  Handle<std::vector<pat::MET>> PuppimetReco;
   Handle<double> metPt;
   Handle<double> metPhi;
 
@@ -1087,6 +1093,7 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
     iEvent.getByToken(recoak4PuppiJetToken, puppi_ak4_pfjetsoffH);
     iEvent.getByToken(recoak8PuppiJetToken, puppi_ak8_pfjetsoffH);
     iEvent.getByToken(recoMetToken, metReco);
+    iEvent.getByToken(recoPuppiMetToken, PuppimetReco);
   }
 
 
@@ -2342,6 +2349,8 @@ if(runOffline){
  met_phi = -1;
  met_pt_reco = -1;
  met_phi_reco = -1;
+ puppi_met_reco_pt = -1;
+ puppi_met_reco_phi = -1;
 
  if (runScouting){
   met_pt = *metPt;
@@ -2351,6 +2360,9 @@ if(runOffline){
  if (runOffline){
     met_pt_reco = metReco->front().pt();
     met_phi_reco = metReco->front().phi();
+
+    puppi_met_reco_pt = PuppimetReco->front().pt();
+    puppi_met_reco_phi = PuppimetReco->front().phi();
  }
   
  tree->Fill();	

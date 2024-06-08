@@ -349,6 +349,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     electronsReco=cms.InputTag("slimmedElectrons"),
     muonsReco=cms.InputTag("slimmedMuons"),
     metReco=cms.InputTag("slimmedMETs"),
+    PuppimetReco=cms.InputTag("slimmedMETsPuppi"),
 
     #Puppi AK8 PF
     ak8pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),

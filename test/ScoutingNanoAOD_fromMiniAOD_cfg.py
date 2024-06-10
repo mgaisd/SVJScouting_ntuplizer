@@ -336,6 +336,7 @@ process.ak8PFHLTL2L3CorrectorTask = cms.Task(
 )
 process.ak8PFHLTL2L3CorrectorSeq = cms.Sequence(process.ak8PFHLTL2L3CorrectorTask)
 
+
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     doL1              = cms.bool(False),
     doData            = cms.bool(not params.isMC and not params.signal),

@@ -127,6 +127,35 @@
 #include "PhysicsTools/CandUtils/interface/Thrust.h"
 
 using namespace std;
+using namespace fastjet;
+using namespace fastjet::contrib;
+
+
+//------------------------------------------------------------------------
+ // the user information
+ // 
+ // To associate extra information to a PseudoJet, one first has to
+ // create a class, derived from UserInfoBase, that contains
+ // that information.
+ //
+ // In our simple example, we shall use 2 informations
+ //  - the PDG id associated with the particle
+ //  - the "vertex number" associated with the particle
+ class PdgIdInfo : public PseudoJet::UserInfoBase{
+ public:
+   // default ctor
+   //  - pdg_id        the PDG id of the particle
+   PdgIdInfo(const int & pdg_id_in) :
+     _pdg_id(pdg_id_in){}
+  
+   /// access to the PDG id
+   int pdg_id() const { return _pdg_id;}
+   
+ protected:
+   int _pdg_id;         // the associated pdg id
+ };
+
+//------------------------------------------------------------------------
 
 
 //
@@ -605,6 +634,7 @@ private:
   //Scouting MET
   double met_pt, met_phi;
   double rec_met_pt, rec_met_phi;
+  double corr_scout_met_pt , corr_scout_met_phi;
   
   //Offline MET
   double met_pt_reco, met_phi_reco;
@@ -1039,6 +1069,8 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OfflineMET_phi",&met_phi_reco);
   tree->Branch("OfflinePuppiMET_pt",&puppi_met_reco_pt);
   tree->Branch("OfflinePuppiMET_phi",&puppi_met_reco_phi);
+  tree->Branch("CorrectedScoutMET_pt",&corr_scout_met_pt);
+  tree->Branch("CorrectedScoutMET_phi",&corr_scout_met_phi);
 
 }
 
@@ -1050,8 +1082,6 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
   using namespace edm;
   using namespace std;
   using namespace reco;
-  using namespace fastjet;
-  using namespace fastjet::contrib;
     
   Handle<reco::VertexCollection> recoverticesH;
   Handle<std::vector<pat::Jet>> puppi_ak4_pfjetsoffH;
@@ -1077,6 +1107,13 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
   Handle<std::vector<pat::MET>> PuppimetReco;
   Handle<double> metPt;
   Handle<double> metPhi;
+
+  //define particles
+  vector<double> neutralHadrons_ids = {111,130,310,2112};
+  vector<double> chargedHadrons_ids = {211,321,999211,2212};
+  vector<double> photons_ids = {22};
+  vector<double> electrons_ids = {11};
+  vector<double> muons_ids = {13};
 
 
   if(auto handle = iEvent.getHandle(pfcandsToken)){
@@ -1517,6 +1554,7 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
       PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
       temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
       temp_jet.set_user_index(n_pfcand);
+      temp_jet.set_user_info(new PdgIdInfo(pfcands_iter.pdgId()));
       fj_part.push_back(temp_jet);
       
       n_pfcand++;
@@ -1768,7 +1806,7 @@ if(runOffline){
         auto corr = jetwithinfo.corr();
         auto scoutingpfjet = jetwithinfo.scout_jet();
 
-        if ((scoutingpfjet->pt() * jec) < jetAK4ScoutPtMin) continue;
+        if ((scoutingpfjet->pt() * corr) < jetAK4ScoutPtMin) continue;
 
         Jet_rawFactor.push_back(1.f - (1.f/corr) );
         Jet_pt .push_back( scoutingpfjet->pt() * corr );
@@ -1801,12 +1839,14 @@ if(runOffline){
         
         n_jet++;
 
-        //passJetId = jetID(*scoutingpfjet);
-        //Jet_passId.push_back( passJetId );
+        passJetId = jetID(*scoutingpfjet);
+        Jet_passId.push_back( passJetId );
 
         // apply jet ID 
-        //if ( passJetId == false ) continue;
-
+        if ( passJetId == false ) continue;
+        if (scoutingpfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
+        ht += scoutingpfjet->pt() ; 
+        n_jetId++ ; 
 
       }
 
@@ -1814,13 +1854,11 @@ if(runOffline){
 
        for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
 
-        //store only if 
 
         Jet_pt .push_back( pfjet->pt() );
         Jet_eta.push_back( pfjet->eta());
         Jet_phi.push_back( pfjet->phi());
         Jet_m  .push_back( pfjet->m()  );
-
         Jet_area.push_back( pfjet->jetArea());
 
         Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
@@ -2465,9 +2503,130 @@ if(runOffline){
     puppi_met_reco_phi = PuppimetReco->front().phi();
  }
   
- tree->Fill();	
-	
+
+//propagate HLT JECs for scouting AK4 to PFMET 
+Float16_t sum_jets_px;
+Float16_t sum_jets_py;
+sum_jets_px = 0;
+sum_jets_py = 0;
+corr_scout_met_pt = 0;
+corr_scout_met_phi = 0;
+
+if (runScouting & applyJECForAK4Scout){
+
+  JetDefinition ak04_def = JetDefinition(antikt_algorithm, 0.4);
+
+  ClusterSequenceArea ak04_cs(fj_part, ak04_def, area_def);
+  vector<PseudoJet> ak04_jets = sorted_by_pt(ak04_cs.inclusive_jets(0.)); 
+
+
+  //define corrector for scouting AK4 jets
+  edm::Handle<reco::JetCorrector> jetCorrectorHLTAK4Rec;
+  iEvent.getByToken(jetCorrectorHLTAK4Token, jetCorrectorHLTAK4Rec);
+
+
+  for (auto &j: ak04_jets) {
+
+    // --- calculate the jet correction
+    // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
+    reco::PFJet dummy_pfJet;
+    reco::Particle::LorentzVector dummy_jetP4(j.pt(), j.eta(), j.phi(), j.m());
+    dummy_pfJet.setP4(dummy_jetP4);
+
+    //loop over constituents of the jet and compute the fractions of photons, electrons, muons, charged hadrons, neutral hadrons 
+    double sum_photon = 0;
+    double sum_electron = 0;
+    double sum_charged_hadron = 0;
+    double sum_neutral_hadron = 0;
+    double sum_muon = 0;
+    int sum_charged_hadron_multiplicity = 0;
+    int sum_neutral_hadron_multiplicity = 0;
+    int sum_photon_multiplicity = 0;
+    int sum_electron_multiplicity = 0;
+    int sum_muon_multiplicity = 0;
+
+
+    for (auto &k: j.constituents()) {
+      //check if the particle is a photon using the pdgid in the user info and comparing it with photons_ids
+      auto found_photon = std::find(photons_ids.begin(), photons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_photon!= photons_ids.end()) {
+          sum_photon += k.pt();
+          sum_photon_multiplicity++;
+      }
+
+      //check if the particle is an electron using the pdgid in the user info and comparing it with electrons_ids
+      auto found_electron = std::find(electrons_ids.begin(), electrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_electron!= electrons_ids.end()) {
+          sum_electron += k.pt();
+          sum_electron_multiplicity++;
+      }
+      
+      
+      //check if the particle is a muon using the pdgid in the user info and comparing it with muons_ids
+      auto found_muon = std::find(muons_ids.begin(), muons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_muon!= muons_ids.end()) {
+          sum_muon += k.pt();
+          sum_muon_multiplicity++;
+      }
+
+
+      //check if the particle is a charged hadron using the pdgid in the user info and comparing it with charged_hadrons_ids
+      auto found_charged_hadron = std::find(chargedHadrons_ids.begin(), chargedHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_charged_hadron!= chargedHadrons_ids.end()) {
+          sum_charged_hadron += k.pt();
+          sum_charged_hadron_multiplicity++;
+      }
+
+
+      //check if the particle is a neutral hadron using the pdgid in the user info and comparing it with neutral_hadrons_ids
+      auto found_neutral_hadron = std::find(neutralHadrons_ids.begin(), neutralHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_neutral_hadron!= neutralHadrons_ids.end()) {
+          sum_neutral_hadron += k.pt();
+          sum_neutral_hadron_multiplicity++;
+      }
+      
+    }
+
+    //define variables for jetID
+    //define the fraction of electrons
+    double jet_charged_em_fraction = (sum_electron) / j.pt();
+    //define the fraction of photons
+    double jet_neutral_em_fraction = (sum_photon) / j.pt();
+    //define the fraction of muons
+    double jet_muon_fraction = sum_muon / j.pt();
+    //define the fraction of charged hadrons
+    double jet_charged_hadron_fraction = sum_charged_hadron / j.pt();
+    //define the fraction of neutral hadrons
+    double jet_neutral_hadron_fraction = sum_neutral_hadron / j.pt();
+    //define multiplicity of charged hadrons, neutral hadrons, photons, electrons, muons
+    double NumConst = sum_charged_hadron_multiplicity + sum_neutral_hadron_multiplicity + sum_photon_multiplicity + sum_electron_multiplicity + sum_muon_multiplicity;
+    double CHM =  sum_muon_multiplicity + sum_electron_multiplicity + sum_charged_hadron_multiplicity;
+    //define the id
+    bool passID = (abs(j.eta())<=2.4 && jet_charged_em_fraction < 0.8 && jet_neutral_em_fraction < 0.9 && jet_muon_fraction < 0.8 && jet_neutral_hadron_fraction < 0.9 && jet_charged_hadron_fraction > 0 && NumConst > 1 && CHM > 0);
+
+  
+    //check if jet pT is larger then 15 GeV, and jet pass requirements for jetID
+    double jec = 1.0;
+    if (dummy_pfJet.pt() > 15.0 &&  passID )
+      jec = jetCorrectorHLTAK4Rec->correction(dummy_pfJet);
+
+    sum_jets_px += j.px() * jec;
+    sum_jets_py += j.py() * jec;
+
+  }
+
+  TLorentzVector miss = TLorentzVector(sum_jets_px, sum_jets_py, 0, 0); //(-pi,pi)
+  corr_scout_met_pt = miss.Pt();
+  corr_scout_met_phi = miss.Phi();
+
 }
+
+
+tree->Fill();	
+
+}
+
+
 
 
 void ScoutingNanoAOD_fromMiniAOD::beginJob() {

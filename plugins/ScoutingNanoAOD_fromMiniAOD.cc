@@ -2429,8 +2429,22 @@ if(runOffline){
     for(size_t i = 0; i < genP_iter->size(); ++ i) { 
       const GenParticle & genP = (*genP_iter)[i];
 
-      if (genP.status() != 23) continue;
-      
+      //require particle wirth status 23 or -43 
+      if (genP.status() != 23 && genP.status() != -43) continue;
+
+      //if particle has status -43, and pdgId is 21 (gluon from ISR), and mother is up quark, or down quark with status -41, then keep it
+      bool is_isr_gluon = false;
+      if (genP.status() == -43){
+        if (genP.pdgId() == 21){
+          if ((abs(genP.mother()->pdgId()) == 2 || abs(genP.mother()->pdgId()) == 1) && genP.mother()->status() == -41){
+            is_isr_gluon = true;
+          } else is_isr_gluon = false;
+        } else is_isr_gluon = false;
+      }
+
+      //if pdg is 21 and is ISR gluon, keep it
+      if (genP.pdgId() == 21 && is_isr_gluon == false) continue;
+
       if (genP.pt() < 0.5) continue;
 
       MatrixElementGenParticle_pt.push_back(genP.pt());
@@ -2550,14 +2564,14 @@ if (runScouting & applyJECForAK4Scout){
       //check if the particle is a photon using the pdgid in the user info and comparing it with photons_ids
       auto found_photon = std::find(photons_ids.begin(), photons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
       if (found_photon!= photons_ids.end()) {
-          sum_photon += k.pt();
+          sum_photon += k.E();
           sum_photon_multiplicity++;
       }
 
       //check if the particle is an electron using the pdgid in the user info and comparing it with electrons_ids
       auto found_electron = std::find(electrons_ids.begin(), electrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
       if (found_electron!= electrons_ids.end()) {
-          sum_electron += k.pt();
+          sum_electron += k.E();
           sum_electron_multiplicity++;
       }
       
@@ -2565,7 +2579,7 @@ if (runScouting & applyJECForAK4Scout){
       //check if the particle is a muon using the pdgid in the user info and comparing it with muons_ids
       auto found_muon = std::find(muons_ids.begin(), muons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
       if (found_muon!= muons_ids.end()) {
-          sum_muon += k.pt();
+          sum_muon += k.E();
           sum_muon_multiplicity++;
       }
 
@@ -2573,7 +2587,7 @@ if (runScouting & applyJECForAK4Scout){
       //check if the particle is a charged hadron using the pdgid in the user info and comparing it with charged_hadrons_ids
       auto found_charged_hadron = std::find(chargedHadrons_ids.begin(), chargedHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
       if (found_charged_hadron!= chargedHadrons_ids.end()) {
-          sum_charged_hadron += k.pt();
+          sum_charged_hadron += k.E();
           sum_charged_hadron_multiplicity++;
       }
 
@@ -2581,7 +2595,7 @@ if (runScouting & applyJECForAK4Scout){
       //check if the particle is a neutral hadron using the pdgid in the user info and comparing it with neutral_hadrons_ids
       auto found_neutral_hadron = std::find(neutralHadrons_ids.begin(), neutralHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
       if (found_neutral_hadron!= neutralHadrons_ids.end()) {
-          sum_neutral_hadron += k.pt();
+          sum_neutral_hadron += k.E();
           sum_neutral_hadron_multiplicity++;
       }
       
@@ -2589,15 +2603,15 @@ if (runScouting & applyJECForAK4Scout){
 
     //define variables for jetID
     //define the fraction of electrons
-    double jet_charged_em_fraction = (sum_electron) / j.pt();
+    double jet_charged_em_fraction = (sum_electron) / j.E();
     //define the fraction of photons
-    double jet_neutral_em_fraction = (sum_photon) / j.pt();
+    double jet_neutral_em_fraction = (sum_photon) / j.E();
     //define the fraction of muons
-    double jet_muon_fraction = sum_muon / j.pt();
+    double jet_muon_fraction = sum_muon / j.E();
     //define the fraction of charged hadrons
-    double jet_charged_hadron_fraction = sum_charged_hadron / j.pt();
+    double jet_charged_hadron_fraction = sum_charged_hadron / j.E();
     //define the fraction of neutral hadrons
-    double jet_neutral_hadron_fraction = sum_neutral_hadron / j.pt();
+    double jet_neutral_hadron_fraction = sum_neutral_hadron / j.E();
     //define multiplicity of charged hadrons, neutral hadrons, photons, electrons, muons
     double NumConst = sum_charged_hadron_multiplicity + sum_neutral_hadron_multiplicity + sum_photon_multiplicity + sum_electron_multiplicity + sum_muon_multiplicity;
     double CHM =  sum_muon_multiplicity + sum_electron_multiplicity + sum_charged_hadron_multiplicity;

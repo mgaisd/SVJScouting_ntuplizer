@@ -247,7 +247,7 @@ None'),pfCandidates = cms.InputTag('particleFlow'),
 # Setup JECs for AK4 Puppi jets
 #
 ############################################################
-# L1 corrections for AK4CHS
+# L1 corrections for AK4Puppi
 process.ak4PFPuppiL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
     level       = cms.string('L1FastJet'),
     algorithm   = cms.string('AK4PFPuppi'),
@@ -314,6 +314,41 @@ process.ak8PFPuppiL2L3CorrectorTask = cms.Task(
 )
 process.ak8PFPuppiL2L3CorrectorSeq = cms.Sequence(process.ak8PFPuppiL2L3CorrectorTask)
 
+############################################################
+#
+# Setup JECs for HLT AK4 PF jets
+#
+############################################################
+# Dummy setup. L1FastJet JEC is 1 for HLT AK4 PF jets
+process.ak4PFHLTL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
+    level       = cms.string('L1FastJet'),
+    algorithm   = cms.string('AK4PFHLT'),
+    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
+)
+# MC-truth corrections  for HLT AK8 PF jets
+process.ak4PFHLTL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
+    level     = cms.string('L2Relative'),
+    algorithm = cms.string('AK4PFHLT')
+)
+# Dummy setup. L2L3Residual JEC is 1 for MC
+process.ak4PFHLTL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
+    level     = cms.string('L2L3Residual'),
+    algorithm = cms.string('AK4PFHLT')
+)
+process.ak4PFHLTL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
+    correctors = cms.VInputTag(
+        'ak4PFHLTL1FastjetCorrector',
+        'ak4PFHLTL2RelativeCorrector',
+        'ak4PFHLTL2L3ResidualCorrector',
+    )
+)
+process.ak4PFHLTL2L3CorrectorTask = cms.Task(
+    process.ak4PFHLTL1FastjetCorrector,
+    process.ak4PFHLTL2RelativeCorrector,
+    process.ak4PFHLTL2L3ResidualCorrector,
+    process.ak4PFHLTL2L3Corrector,
+)
+process.ak4PFHLTL2L3CorrectorSeq = cms.Sequence(process.ak4PFHLTL2L3CorrectorTask)
 
 ############################################################
 #
@@ -391,6 +426,11 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     metPt             = cms.InputTag("hltScoutingPFPacker", "pfMetPt"),
     metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
+    #HLT AK4 PF jets
+    applyJECForAK4Scout=cms.bool(True),
+    jetCorrectorHLTAK4=cms.InputTag("ak4PFHLTL2L3Corrector"),
+    jetAK4ScoutPtMin=cms.double(20),
+    
     #HLT AK8 PF jets
     applyJECForAK8Scout=cms.bool(True),
     jetCorrectorHLTAK8=cms.InputTag("ak8PFHLTL2L3Corrector"),
@@ -430,7 +470,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
 
 
 
-process.p = cms.Path(process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.mmtree) 
+process.p = cms.Path(process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.mmtree) 
 
 
 if(params.isMC):
@@ -451,9 +491,9 @@ if(params.isMC):
   PrefiringRateSystematicUnctyECAL = cms.double(0.2),
   PrefiringRateSystematicUnctyMuon = cms.double(0.2)
   )
-  process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.prefiringweight* process.mmtree)
+  process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.prefiringweight* process.mmtree)
 else:
-  process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.mmtree)
+  process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.mmtree)
 
 
 

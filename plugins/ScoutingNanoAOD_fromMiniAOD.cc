@@ -2429,14 +2429,14 @@ if(runOffline){
     for(size_t i = 0; i < genP_iter->size(); ++ i) { 
       const GenParticle & genP = (*genP_iter)[i];
 
-      //require particle wirth status 23 or -43 
-      if (genP.status() != 23 && genP.status() != -43) continue;
+      //require particle wirth status 23 or 43 
+      if (abs(genP.status()) != 23 && abs(genP.status()) != 43) continue;
 
-      //if particle has status -43, and pdgId is 21 (gluon from ISR), and mother is up quark, or down quark with status -41, then keep it
+      //if particle has status 43, and pdgId is 21 (gluon from ISR), and mother is up quark, or down quark with status 41, then keep it
       bool is_isr_gluon = false;
-      if (genP.status() == -43){
+      if (abs(genP.status()) == 43){
         if (genP.pdgId() == 21){
-          if ((abs(genP.mother()->pdgId()) == 2 || abs(genP.mother()->pdgId()) == 1) && genP.mother()->status() == -41){
+          if ((abs(genP.mother()->pdgId()) == 2 || abs(genP.mother()->pdgId()) == 1) && abs(genP.mother()->status()) == 41){
             is_isr_gluon = true;
           } else is_isr_gluon = false;
         } else is_isr_gluon = false;

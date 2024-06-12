@@ -618,12 +618,21 @@ private:
   vector<Float16_t>            Vertex_ndof;
   vector<Float16_t>            Vertex_isValidVtx;
 
-    //add GenParticle info
+  //add GenParticle info
   vector<Float16_t> MatrixElementGenParticle_pt;  
   vector<Float16_t> MatrixElementGenParticle_eta;              
   vector<Float16_t> MatrixElementGenParticle_phi;  
   vector<Float16_t> MatrixElementGenParticle_mass; 
   vector<Float16_t> MatrixElementGenParticle_pdgId; 
+  vector<Float16_t> MatrixElementGenParticle_status;
+
+  //
+  vector<Float16_t> ISRGluonGenParticle_pt;  
+  vector<Float16_t> ISRGluonGenParticle_eta;  
+  vector<Float16_t> ISRGluonGenParticle_phi;  
+  vector<Float16_t> ISRGluonGenParticle_mass; 
+  vector<Float16_t> ISRGluonGenParticle_pdgId;
+  vector<Float16_t> ISRGluonGenParticle_status;
 
   //prefire
   float                        rho2;
@@ -1030,6 +1039,15 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("MatrixElementGenParticle_phi"                   ,&MatrixElementGenParticle_phi                );  
   tree->Branch("MatrixElementGenParticle_mass"                  ,&MatrixElementGenParticle_mass               ); 
   tree->Branch("MatrixElementGenParticle_pdgId"                 ,&MatrixElementGenParticle_pdgId              ); 
+  tree->Branch("MatrixElementGenParticle_status"                 ,&MatrixElementGenParticle_status              );
+
+  //add GenParticle info
+  tree->Branch("ISRGluonGenParticle_pt"                    ,&ISRGluonGenParticle_pt                 );  
+  tree->Branch("ISRGluonGenParticle_eta"                   ,&ISRGluonGenParticle_eta                );  
+  tree->Branch("ISRGluonGenParticle_phi"                   ,&ISRGluonGenParticle_phi                );  
+  tree->Branch("ISRGluonGenParticle_mass"                  ,&ISRGluonGenParticle_mass               ); 
+  tree->Branch("ISRGluonGenParticle_pdgId"                 ,&ISRGluonGenParticle_pdgId              );
+  tree->Branch("ISRGluonGenParticle_status"                 ,&ISRGluonGenParticle_status              );
 
   /*
   //offline PF Cands
@@ -2410,21 +2428,28 @@ if(runOffline){
 
 }
 
-  
-  //Genparticles genp
-
-  if (runGen){
+if (runGen){
+    //Genparticles genp
 
     Handle<GenParticleCollection> genP_iter;
     iEvent.getByToken(gensToken, genP_iter);
 
     int n_genp = 0;
+    int n_genp_ISR = 0;
 
     MatrixElementGenParticle_pt.clear();
     MatrixElementGenParticle_eta.clear();
     MatrixElementGenParticle_phi.clear();
     MatrixElementGenParticle_mass.clear();
     MatrixElementGenParticle_pdgId.clear();
+    MatrixElementGenParticle_status.clear();
+
+    ISRGluonGenParticle_pt.clear();
+    ISRGluonGenParticle_eta.clear();
+    ISRGluonGenParticle_phi.clear();
+    ISRGluonGenParticle_mass.clear();
+    ISRGluonGenParticle_pdgId.clear();
+    ISRGluonGenParticle_status.clear();
 
     for(size_t i = 0; i < genP_iter->size(); ++ i) { 
       const GenParticle & genP = (*genP_iter)[i];
@@ -2435,9 +2460,10 @@ if(runOffline){
       //if particle has status 43, and pdgId is 21 (gluon from ISR), and mother is up quark, or down quark with status 41, then keep it
       bool is_isr_gluon = false;
       if (abs(genP.status()) == 43){
-        if (genP.pdgId() == 21){
-          if ((abs(genP.mother()->pdgId()) == 2 || abs(genP.mother()->pdgId()) == 1) && abs(genP.mother()->status()) == 41){
+        if ((genP.pdgId() == 21) && (n_genp_ISR == 0) ){
+          if ((abs(genP.mother()->pdgId()) == 2212) && abs(genP.mother()->status()) == 4){
             is_isr_gluon = true;
+            n_genp_ISR++;
           } else is_isr_gluon = false;
         } else is_isr_gluon = false;
       }
@@ -2446,17 +2472,30 @@ if(runOffline){
       if (genP.pdgId() == 21 && is_isr_gluon == false) continue;
 
       if (genP.pt() < 0.5) continue;
+    
+      if (genP.pdgId() == 21){
+        ISRGluonGenParticle_pt.push_back(genP.pt());
+        ISRGluonGenParticle_eta.push_back(genP.eta());
+        ISRGluonGenParticle_phi.push_back(genP.phi());
+        ISRGluonGenParticle_mass.push_back(genP.mass());
+        ISRGluonGenParticle_pdgId.push_back(genP.pdgId());
+        ISRGluonGenParticle_status.push_back(genP.status());
+      }
 
-      MatrixElementGenParticle_pt.push_back(genP.pt());
-      MatrixElementGenParticle_eta.push_back(genP.eta());
-      MatrixElementGenParticle_phi.push_back(genP.phi());
-      MatrixElementGenParticle_mass.push_back(genP.mass());
-      MatrixElementGenParticle_pdgId.push_back(genP.pdgId());
+      if (genP.status() == 23){
+        MatrixElementGenParticle_pt.push_back(genP.pt());
+        MatrixElementGenParticle_eta.push_back(genP.eta());
+        MatrixElementGenParticle_phi.push_back(genP.phi());
+        MatrixElementGenParticle_mass.push_back(genP.mass());
+        MatrixElementGenParticle_pdgId.push_back(genP.pdgId());
+        MatrixElementGenParticle_status.push_back(genP.status());
+      }
 
       n_genp++;
+  
     }
-
 }
+
 
  // * 
  // L1 info

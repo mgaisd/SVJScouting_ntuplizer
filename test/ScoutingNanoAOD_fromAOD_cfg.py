@@ -195,6 +195,7 @@ L1Info = [
     'L1_DoubleJet30er2p5_Mass_Min330_dEta_Max1p5',
     'L1_DoubleJet30er2p5_Mass_Min360_dEta_Max1p5',
     'L1_ETT2000']
+
 runSig = False
 if params.signal:
   runSig = True
@@ -385,8 +386,6 @@ process.ak8PFHLTL2L3CorrectorTask = cms.Task(
     process.ak8PFHLTL2L3Corrector,
 )
 process.ak8PFHLTL2L3CorrectorSeq = cms.Sequence(process.ak8PFHLTL2L3CorrectorTask)
-
-
 
 
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',

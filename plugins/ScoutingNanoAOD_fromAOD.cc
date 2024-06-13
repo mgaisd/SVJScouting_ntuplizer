@@ -318,6 +318,7 @@ private:
 
   UInt_t scouting_trig; 
   UInt_t scouting_trig_prescaled;
+  UInt_t scouting_trig_zero_bias;
   UInt_t offline_trig; 
   UInt_t veto_trig;
 
@@ -742,8 +743,9 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
 
   
   //scouting, offline triggers
-  tree->Branch("scouting_trig_prescaled"            	        ,&scouting_trig_prescaled 			,"scouting_trig_prescaled/i");
-  tree->Branch("scouting_trig"            	        ,&scouting_trig 			,"scounting_trig/i");
+  tree->Branch("scouting_trig_prescaled"            	         ,&scouting_trig_prescaled 			,"scouting_trig_prescaled/i");
+  tree->Branch("scouting_trig"            	                   ,&scouting_trig 			,"scounting_trig/i");
+  tree->Branch("scouting_trig_zero_bias"            	        ,&scouting_trig_zero_bias 			,"scounting_trig_zero_bias/i");
   tree->Branch("offline_trig"            	        ,&offline_trig 			,"offline_trig/i");
   tree->Branch("veto_trig"            	        ,&veto_trig 			,"veto_trig/i");
   tree->Branch("genModel"            	        ,&label 			);
@@ -1162,6 +1164,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
   const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
   scouting_trig=0; 
   scouting_trig_prescaled=0;
+  scouting_trig_zero_bias=0;
   offline_trig=0; 
   veto_trig=0; 
   for(size_t j = 0; j < hltSeeds_.size(); j++){
@@ -1173,6 +1176,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
         TPRegexp pattern5("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v*");
         TPRegexp pattern6("HLT_PFHT1050_v*");
         TPRegexp pattern7("DST_L1HTT_CaloScouting_PFScouting_v");
+        TPRegexp pattern8("DST_CaloJet40_CaloScouting_PFScouting_v*");
     for (unsigned int i = 0, n = triggerBits->size(); i < n; ++i) {
       const std::string& hltbitName = names.triggerName(i);
       std::string hltpathName = hltbitName;
@@ -1187,6 +1191,12 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
           TString(hltpathName).Contains(pattern7) and hltpassFinal)
           {
           scouting_trig_prescaled=1;
+          }
+        //these is a zero bias trigger to measure the L1 HT seed trigger efficiency
+        if(
+          TString(hltpathName).Contains(pattern8) and hltpassFinal)
+          {
+          scouting_trig_zero_bias=1;
           }
         if( 
           TString(hltpathName).Contains(pattern6) and hltpassFinal)

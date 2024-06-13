@@ -2387,6 +2387,7 @@ if(runOffline){
 }
 //offline PF Cands
 n_offpuppipfcand = 0;
+int n_offpuppipfcand_tot = 0;
 OffPuppiPFcand_pt.clear();
 OffPuppiPFcand_m.clear();
 OffPuppiPFcand_eta.clear();
@@ -2412,7 +2413,7 @@ if(runOffline){
       OffPuppiPFcand_pdgid.push_back(pfc->pdgId());
       OffPuppiPFcand_q.push_back(getCharge(pfc->pdgId()));
       // save indices 
-      OfflinePuppiFatJetPFCands_pFCandsIdx.push_back(ic);
+      OfflinePuppiFatJetPFCands_pFCandsIdx.push_back(n_offpuppipfcand_tot);
       OfflinePuppiFatJetPFCands_jetIdx.push_back(j);
     }
  }

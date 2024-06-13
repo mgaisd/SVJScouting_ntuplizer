@@ -12,7 +12,7 @@ git cms-init
 git clone -b mods https://github.com/cesarecazzaniga/SVJScouting.git PhysicsTools/SVJScouting
 git clone -b master https://github.com/tresreid/PatUtils.git PhysicsTools/PatUtils
 git cms-addpkg CommonTools/PileupAlgos
-git cms-addpkg PhysicsTools/PatAlogs
+git cms-addpkg PhysicsTools/PatAlgos
 git cms-addpkg JetMETCorrections
 ```
 

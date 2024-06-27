@@ -2306,7 +2306,6 @@ vector<vector<reco::CandidatePtr>> OffPFcandsAK8Puppi;
 
 if(runOffline){
 
-    if (applyJECForAK8){
       edm::Handle<reco::JetCorrector> jetCorrectorAK8;
       iEvent.getByToken(jetCorrectorAK8Token, jetCorrectorAK8);
 
@@ -2318,9 +2317,11 @@ if(runOffline){
       for (auto it = puppi_ak8_pfjetsoffH->begin(); it != puppi_ak8_pfjetsoffH->end(); ++it) {
         const reco::PFJet* jet = &(*it);
         double jec = 1.0;
-        jec = jetCorrectorAK8->correction(*it);
+        if (applyJECForAK8)
+          jec = jetCorrectorAK8->correction(*it);
         jetwithjecpairsetAK8.insert(JetWithJECPair(jet, jec));
       }
+
       //
       // Loop over jets
       //
@@ -2367,35 +2368,6 @@ if(runOffline){
         n_fatjetIdoffpuppi++ ; 
       }
 
-    } else{
-      
-      for (auto pfjet = puppi_ak8_pfjetsoffH->begin(); pfjet != puppi_ak8_pfjetsoffH->end(); ++pfjet) {
-
-        OffPuppiFatJet_pt .push_back( pfjet->pt() );
-        OffPuppiFatJet_eta.push_back( pfjet->eta());
-        OffPuppiFatJet_phi.push_back( pfjet->phi());
-        OffPuppiFatJet_m  .push_back( pfjet->mass()  );
-
-        OffPuppiFatJet_area.push_back( pfjet->jetArea());
-
-        OffPuppiFatJet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
-        OffPuppiFatJet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
-        OffPuppiFatJet_photonEnergy       .push_back( pfjet->photonEnergy()       );
-        OffPuppiFatJet_electronEnergy     .push_back( pfjet->electronEnergy()     );
-        OffPuppiFatJet_muonEnergy         .push_back( pfjet->muonEnergy()     );
-        OffPuppiFatJet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
-        OffPuppiFatJet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
-        OffPuppiFatJet_HOEnergy           .push_back( pfjet->hoEnergy()       );
-        
-        OffPuppiFatJet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
-        OffPuppiFatJet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
-        OffPuppiFatJet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
-        OffPuppiFatJet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
-        OffPuppiFatJet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
-        OffPuppiFatJet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
-        OffPuppiFatJet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()        );
-    }
-  }
 }
 //offline PF Cands
 n_offpuppipfcand = 0;
@@ -2427,10 +2399,11 @@ if(runOffline){
       // save indices 
       OfflinePuppiFatJetPFCands_pFCandsIdx.push_back(n_offpuppipfcand_tot);
       OfflinePuppiFatJetPFCands_jetIdx.push_back(j);
+      n_offpuppipfcand_tot++;
     }
- }
+  } 
 
- n_offpuppipfcand = OffPuppiPFcand_pt.size();  
+  n_offpuppipfcand = OffPuppiPFcand_pt.size(); 
 
 }
 

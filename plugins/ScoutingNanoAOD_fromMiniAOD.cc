@@ -2034,7 +2034,6 @@ if(runOffline){
     // Retrieve JEC and use it to sort automatically jets by JEC-applied pt
     //
     std::set<JetWithJECPairReco, JetWithJECPairRecoComp> jetwithjecidxpairsetAK8Scout;
-    //std::vector<JetWithJECPairReco*> jetwithjecidxpairsetAK8Scout;
     vector<reco::PFJet*> dummy_pfJets;
     vector<reco::Particle::LorentzVector> dummy_jetP4s;
     

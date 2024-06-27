@@ -1773,20 +1773,27 @@ if(runOffline){
       edm::Handle<reco::JetCorrector> jetCorrectorHLTAK4;
       iEvent.getByToken(jetCorrectorHLTAK4Token, jetCorrectorHLTAK4);
       std::set<JetWithJECPair, JetWithJECPairComp> jetwithinfosetAK4Scout;
+      vector<reco::PFJet*> dummy_pfJets;
+      vector<reco::Particle::LorentzVector> dummy_jetP4s;
+      vector<const ScoutingPFJet*> dummy_scout_pFJets;
+      reco::Particle::LorentzVector dummy_jetP4;
 
       int n_jet_counter = 0;
       double jec = 1.0;
 
+
       for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
 
-         // --- calculate the jet correction
-        // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
-        reco::PFJet dummy_pfJet;
-        reco::Particle::LorentzVector dummy_jetP4(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
-        dummy_pfJet.setP4(dummy_jetP4);
-        jec = jetCorrectorHLTAK4->correction(dummy_pfJet);
-        ScoutingPFJet scout_pfjet = *pfjet;
-        jetwithinfosetAK4Scout.insert(JetWithJECPair(&dummy_pfJet, jec, n_jet_counter, &scout_pfjet));
+        dummy_jetP4 = reco::Particle::LorentzVector(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
+        dummy_jetP4s.push_back(dummy_jetP4);
+        reco::PFJet * dummy_pfJet = new reco::PFJet();
+        dummy_pfJet->setP4(dummy_jetP4s[n_jet_counter]);
+        jec = jetCorrectorHLTAK4->correction(*dummy_pfJet);
+        dummy_pfJets.push_back(dummy_pfJet);
+        const ScoutingPFJet * scout_pfjet = &(*pfjet);
+        dummy_scout_pFJets.push_back(scout_pfjet);
+        JetWithJECPair * jetwithjecidxpair_j = new JetWithJECPair(dummy_pfJets[n_jet_counter], jec, n_jet_counter, dummy_scout_pFJets[n_jet_counter]);
+        jetwithinfosetAK4Scout.insert(*jetwithjecidxpair_j);
         
         //pair jet and n_fatjet_counter
         n_jet_counter ++;
@@ -1797,7 +1804,6 @@ if(runOffline){
         auto corr = jetwithinfo.corr();
         auto scoutingpfjet = jetwithinfo.scout_jet();
 
-        if ((scoutingpfjet->pt() * corr) < jetAK4ScoutPtMin) continue;
 
         Jet_rawFactor.push_back(1.f - (1.f/corr) );
         Jet_pt .push_back( scoutingpfjet->pt() * corr );
@@ -1914,8 +1920,6 @@ if(runOffline){
         auto pfjet_pt_corr   = corr * pfjet->pt();
         auto pfjet_mass_corr = corr * pfjet->mass();
 
-        if (pfjet_pt_corr < jetAK4PtMin) continue;
-
         OffJet_pt .push_back( pfjet_pt_corr );
         OffJet_eta.push_back( pfjet->eta());
         OffJet_phi.push_back( pfjet->phi());
@@ -1958,8 +1962,6 @@ if(runOffline){
 
         for (auto it = puppi_ak4_pfjetsoffH->begin(); it != puppi_ak4_pfjetsoffH->end(); ++it) {
           auto pfjet = *it;
-
-          if (pfjet.pt() < jetAK4PtMin) continue;
 
           OffJet_pt .push_back( pfjet.pt() );
           OffJet_eta.push_back( pfjet.eta());
@@ -2064,19 +2066,25 @@ if(runOffline){
       // Retrieve JEC and use it to sort automatically jets by JEC-applied pt
       //
       std::set<JetWithJECPair, JetWithJECPairComp> jetwithjecidxpairsetAK8Scout;
+      vector<reco::PFJet*> dummy_pfJets;
+      vector<reco::Particle::LorentzVector> dummy_jetP4s;
+    
       int n_fatjet_counter = 0;
       double jec = 1.0;
 
       for (auto &j: ak8_jets) {
         // --- calculate the jet correction
         // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
-        reco::PFJet dummy_pfJet;
         reco::Particle::LorentzVector dummy_jetP4(j.px(), j.py(), j.pz(), j.E());
-        dummy_pfJet.setP4(dummy_jetP4);
-        jec = jetCorrectorHLTAK8->correction(dummy_pfJet);
-        jetwithjecidxpairsetAK8Scout.insert(JetWithJECPair(&dummy_pfJet, jec, n_fatjet_counter));
-        //pair jet and n_fatjet_counter
+        dummy_jetP4s.push_back(dummy_jetP4);
+        reco::PFJet * dummy_pfJet = new reco::PFJet();
+        dummy_pfJet->setP4(dummy_jetP4s[n_fatjet_counter]);
+        jec = jetCorrectorHLTAK8->correction(*dummy_pfJet);
+        dummy_pfJets.push_back(dummy_pfJet);
+        JetWithJECPair * jetwithjecidxpair_j = new JetWithJECPair(dummy_pfJets[n_fatjet_counter], jec, n_fatjet_counter);
+        jetwithjecidxpairsetAK8Scout.insert(*jetwithjecidxpair_j);
         n_fatjet_counter ++;
+
       }
 
       for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair) {
@@ -2088,8 +2096,6 @@ if(runOffline){
 
             auto pfjet_pt_corr   = corr * pfjet->pt();
             auto pfjet_mass_corr = corr * pfjet->mass();
-
-            if (pfjet_pt_corr < jetAK8ScoutPtMin) continue;
 
             //FatJet_area.push_back(j.area());
             FatJet_rawFactor.push_back(1.f - (1.f/corr) );
@@ -2325,8 +2331,6 @@ if(runOffline){
         auto pfjet_pt_corr   = corr * pfjet->pt();
         auto pfjet_mass_corr = corr * pfjet->mass();
 
-        if (pfjet_pt_corr < jetAK8PtMin) continue;
-
         OffPuppiFatJet_pt .push_back( pfjet_pt_corr );
         OffPuppiFatJet_eta.push_back( pfjet->eta());
         OffPuppiFatJet_phi.push_back( pfjet->phi());
@@ -2366,8 +2370,6 @@ if(runOffline){
     } else{
       
       for (auto pfjet = puppi_ak8_pfjetsoffH->begin(); pfjet != puppi_ak8_pfjetsoffH->end(); ++pfjet) {
-
-        if (pfjet->pt() < jetAK8PtMin) continue;
 
         OffPuppiFatJet_pt .push_back( pfjet->pt() );
         OffPuppiFatJet_eta.push_back( pfjet->eta());

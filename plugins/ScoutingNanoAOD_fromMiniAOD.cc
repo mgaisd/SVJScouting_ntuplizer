@@ -173,7 +173,7 @@ public:
     JetWithJECPairReco(const reco::PFJet* j, double s, int idx) : first(j), second(s), third(idx), fourth(nullptr) {}
 
     // Constructur with additional scout jet 
-    JetWithJECPairReco(const reco::PFJet* dummy_j, double s, int idx , const ScoutingPFJet* scouting_j) : first(dummy_j), second(s), third(idx), fourth(scouting_j) {}
+    JetWithJECPairReco(const reco::PFJet* j, double s, int idx , const ScoutingPFJet* scouting_j) : first(j), second(s), third(idx), fourth(scouting_j) {}
     
     // Destructor remains unchanged
     ~JetWithJECPairReco() = default;
@@ -181,6 +181,7 @@ public:
     // Getter and setter methods remain unchanged
     inline const reco::PFJet* jet() const { return first; }
     inline void jet(const reco::PFJet* j) { first = j; }
+
     inline double corr() const { return second; }
     inline void corr(double d) { second = d; }
 
@@ -190,7 +191,7 @@ public:
 
     // Getter and setter for the new parameter
     inline const ScoutingPFJet* scout_jet() const { return fourth; }
-    inline void scout_jet(const ScoutingPFJet* j) { fourth = j; }
+    inline void scout_jet(const ScoutingPFJet* scouting_j) { fourth = scouting_j; }
 
 private:
     const reco::PFJet* first; // Pointer to PFJet object
@@ -203,9 +204,7 @@ private:
 
 struct JetWithJECPairRecoComp {
   inline bool operator()(const JetWithJECPairReco& a, const JetWithJECPairReco& b) const {
-    //inline bool operator()(JetWithJECPairReco * a, JetWithJECPairReco * b) const {
     return (a.jet()->pt() * a.corr()) > (b.jet()->pt() * b.corr());
-    //return true;
   }
 };
 
@@ -1811,28 +1810,26 @@ if(runOffline){
       edm::Handle<reco::JetCorrector> jetCorrectorHLTAK4;
       iEvent.getByToken(jetCorrectorHLTAK4Token, jetCorrectorHLTAK4);
       std::set<JetWithJECPairReco, JetWithJECPairRecoComp> jetwithinfosetAK4Scout;
-      vector<reco::PFJet> dummy_pfJets;
+      vector<reco::PFJet*> dummy_pfJets;
       vector<reco::Particle::LorentzVector> dummy_jetP4s;
-      vector<ScoutingPFJet> dummy_scout_pFJets;
-      reco::PFJet dummy_pfJet;
+      vector<const ScoutingPFJet*> dummy_scout_pFJets;
       reco::Particle::LorentzVector dummy_jetP4;
 
       int n_jet_counter = 0;
       double jec = 1.0;
 
       for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
-
-         // --- calculate the jet correction
-        // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
+    
         dummy_jetP4 = reco::Particle::LorentzVector(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
-        dummy_pfJet.setP4(dummy_jetP4);
-        jec = jetCorrectorHLTAK4->correction(dummy_pfJet);
-        dummy_pfJets.push_back(dummy_pfJet);
         dummy_jetP4s.push_back(dummy_jetP4);
-        ScoutingPFJet scout_pfjet = *pfjet;
+        reco::PFJet * dummy_pfJet = new reco::PFJet();
+        dummy_pfJet->setP4(dummy_jetP4s[n_jet_counter]);
+        jec = jetCorrectorHLTAK4->correction(*dummy_pfJet);
+        dummy_pfJets.push_back(dummy_pfJet);
+        const ScoutingPFJet * scout_pfjet = &(*pfjet);
         dummy_scout_pFJets.push_back(scout_pfjet);
-        JetWithJECPairReco jetwithjecidxpair_j = JetWithJECPairReco(JetWithJECPairReco(&dummy_pfJets[n_jet_counter], jec, n_jet_counter, &dummy_scout_pFJets[n_jet_counter]));
-        jetwithinfosetAK4Scout.insert(jetwithjecidxpair_j);
+        JetWithJECPairReco * jetwithjecidxpair_j = new JetWithJECPairReco(dummy_pfJets[n_jet_counter], jec, n_jet_counter, dummy_scout_pFJets[n_jet_counter]);
+        jetwithinfosetAK4Scout.insert(*jetwithjecidxpair_j);
         
         //pair jet and n_fatjet_counter
         n_jet_counter ++;
@@ -2037,13 +2034,13 @@ if(runOffline){
     // Retrieve JEC and use it to sort automatically jets by JEC-applied pt
     //
     std::set<JetWithJECPairReco, JetWithJECPairRecoComp> jetwithjecidxpairsetAK8Scout;
-    vector<reco::PFJet> dummy_pfJets;
+    //std::vector<JetWithJECPairReco*> jetwithjecidxpairsetAK8Scout;
+    vector<reco::PFJet*> dummy_pfJets;
     vector<reco::Particle::LorentzVector> dummy_jetP4s;
-    reco::PFJet dummy_pfJet;
-    reco::Particle::LorentzVector dummy_jetP4;
     
     int n_fatjet_counter = 0;
     double jec = 1.0;
+
 
     if (applyJECForAK8Scout) {
 
@@ -2051,24 +2048,27 @@ if(runOffline){
 
         // --- calculate the jet correction
         // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
-        dummy_jetP4 = reco::Particle::LorentzVector(j.px(), j.py(), j.pz(), j.E());
-        dummy_pfJet.setP4(dummy_jetP4);
-        jec = jetCorrectorHLTAK8->correction(dummy_pfJet);
-        dummy_pfJets.push_back(dummy_pfJet);
+        //const reco::Particle::LorentzVector dummy_jetP4;
+        //dummy_jetP4 = reco::Particle::LorentzVector(j.px(), j.py(), j.pz(), j.E());
+        reco::Particle::LorentzVector dummy_jetP4(j.px(), j.py(), j.pz(), j.E());
         dummy_jetP4s.push_back(dummy_jetP4);
-        JetWithJECPairReco jetwithjecidxpair_j = JetWithJECPairReco(&dummy_pfJets[n_fatjet_counter], jec, n_fatjet_counter);
-        jetwithjecidxpairsetAK8Scout.insert(jetwithjecidxpair_j);
-        
-        //pair jet and n_fatjet_counter
+        reco::PFJet * dummy_pfJet = new reco::PFJet();
+        dummy_pfJet->setP4(dummy_jetP4s[n_fatjet_counter]);
+        jec = jetCorrectorHLTAK8->correction(*dummy_pfJet);
+        dummy_pfJets.push_back(dummy_pfJet);
+        JetWithJECPairReco * jetwithjecidxpair_j = new JetWithJECPairReco(dummy_pfJets[n_fatjet_counter], jec, n_fatjet_counter);
+        jetwithjecidxpairsetAK8Scout.insert(*jetwithjecidxpair_j);
         n_fatjet_counter ++;
+
       }
 
-
       for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair) {
-      
+        
+
         auto pfjet = (*jetwithjecidxpair).jet();
         auto corr  = (*jetwithjecidxpair).corr();
         auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
+
       
         auto pfjet_pt_corr   = corr * pfjet->pt();
         auto pfjet_mass_corr = corr * pfjet->mass();
@@ -2099,7 +2099,7 @@ if(runOffline){
         //FatJet_tau4.push_back(nSub4.result(j));
         //FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
         //FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
-
+      
         n_fatjet++; 
 
     }  
@@ -2362,19 +2362,20 @@ if(runOffline){
       if (applyJECForAK8)
         jec = jetCorrectorAK8->correction(*it);
       jetwithjecpairsetAK8.insert(JetWithJECPairReco(jet, jec));
+
     }
 
 
     //
     // Loop over jets
     //
+    //print number of jets
     for (auto jetwithjecpair = jetwithjecpairsetAK8.begin(); jetwithjecpair != jetwithjecpairsetAK8.end(); ++jetwithjecpair) {
       auto pfjet = (*jetwithjecpair).jet();
       auto corr  = (*jetwithjecpair).corr();
 
       auto pfjet_pt_corr   = corr * pfjet->pt();
       auto pfjet_mass_corr = corr * pfjet->mass();
-
 
       OffPuppiFatJet_pt .push_back( pfjet_pt_corr );
       OffPuppiFatJet_eta.push_back( pfjet->eta());

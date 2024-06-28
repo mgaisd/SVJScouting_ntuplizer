@@ -9,10 +9,10 @@ For the production of Run2 scouting MiniAOD for SVJ signal look at the [reposito
 
 # To check out
 ```
-cmsrel CMSSW_10_6_26 #you can use CMSSW_11_1_0
+cmsrel CMSSW_10_6_26 
 cd CMSSW_10_6_26/src
 git cms-init
-git clone -b main https://github.com/cesarecazzaniga/SVJScouting.git PhysicsTools/SVJScouting
+git clone -b main https://github.com/CMS-SVJ-scouting/SVJScouting_ntuplizer.git PhysicsTools/SVJScouting
 git clone -b master https://github.com/tresreid/PatUtils.git PhysicsTools/PatUtils
 git cms-addpkg CommonTools/PileupAlgos
 git cms-addpkg PhysicsTools/PatAlgos

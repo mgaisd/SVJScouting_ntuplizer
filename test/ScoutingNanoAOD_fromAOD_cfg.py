@@ -102,6 +102,16 @@ params.register(
     'Flag to indicate whether or not signal is run'
 )
 
+def getPatAlgosToolsTask(process):
+    taskName = "patAlgosToolsTask"
+    if hasattr(process, taskName):
+        task = getattr(process, taskName)
+        if not isinstance(task, cms.Task):
+            raise Exception("patAlgosToolsTask does not have type Task")
+    else:
+        setattr(process, taskName, cms.Task())
+        task = getattr(process, taskName)
+    return task
 
 # Define the process
 process = cms.Process("LL")
@@ -200,6 +210,39 @@ runSig = False
 if params.signal:
   runSig = True
 
+
+
+############################################################
+#
+# Setup JECs for PFMET - Type 1 Corrections
+#
+############################################################
+#Load patSequences
+process.load('PhysicsTools.PatAlgos.patSequences_cff')
+from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncForMiniAODProduction
+
+
+runMetCorAndUncForMiniAODProduction(process, 
+                                    metType="PF",
+                                    jetCollUnskimmed="patJets",
+                                    )
+
+pfMETCorrTask = getPatAlgosToolsTask(process)
+process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
+pfMETCorrTask.add(process.slimmedMETs)
+#process.load('PhysicsTools.PatUtils.patCaloMETCorrections_cff')
+#pfMETCorrTask.add(process.patCaloMet)
+process.load('PhysicsTools.PatAlgos.slimming.offlineSlimmedPrimaryVertices_cfi')
+pfMETCorrTask.add(process.offlineSlimmedPrimaryVertices)
+process.load('CommonTools.RecoAlgos.primaryVertexAssociation_cfi')
+pfMETCorrTask.add(process.primaryVertexAssociation)
+process.load('PhysicsTools.PatAlgos.producersLayer1.lowPtElectronProducer_cff')
+pfMETCorrTask.add(process.rekeyLowPtGsfElectronSeedValueMaps)
+
+process.pfMETCorrTask = cms.Task(pfMETCorrTask)
+process.fullPatMetSequenc = cms.Sequence(process.pfMETCorrTask)
+
+
 # Load Puppi
 #
 process.load('CommonTools/PileupAlgos/Puppi_cff')
@@ -249,35 +292,39 @@ None'),pfCandidates = cms.InputTag('particleFlow'),
 #
 ############################################################
 # L1 corrections for AK4Puppi
-process.ak4PFPuppiL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
-    level       = cms.string('L1FastJet'),
-    algorithm   = cms.string('AK4PFPuppi'),
-    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
-)
+#process.ak4PFPuppiL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
+#    level       = cms.string('L1FastJet'),
+#    algorithm   = cms.string('AK4PFPuppi'),
+#    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
+#)
 # MC-truth corrections for AK8 Puppi jets
-process.ak4PFPuppiL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2Relative'),
-    algorithm = cms.string('AK4PFPuppi')
-)
+#process.ak4PFPuppiL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
+#    level     = cms.string('L2Relative'),
+#    algorithm = cms.string('AK4PFPuppi')
+#)
 # Dummy setup. L2L3Residual JEC is 1 for MC
-process.ak4PFPuppiL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2L3Residual'),
-    algorithm = cms.string('AK4PFPuppi')
-)
-process.ak4PFPuppiL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
-    correctors = cms.VInputTag(
-        'ak4PFPuppiL1FastjetCorrector',
-        'ak4PFPuppiL2RelativeCorrector',
-        'ak4PFPuppiL2L3ResidualCorrector',
-    )
-)
-process.ak4PFPuppiL2L3CorrectorTask = cms.Task(
-    process.ak4PFPuppiL1FastjetCorrector,
-    process.ak4PFPuppiL2RelativeCorrector,
-    process.ak4PFPuppiL2L3ResidualCorrector,
-    process.ak4PFPuppiL2L3Corrector,
-)
-process.ak4PFPuppiL2L3CorrectorSeq = cms.Sequence(process.ak4PFPuppiL2L3CorrectorTask)
+#process.ak4PFPuppiL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
+#    level     = cms.string('L2L3Residual'),
+#    algorithm = cms.string('AK4PFPuppi')
+#)
+#process.load("PhysicsTools.PatUtils.patPFMETCorrections_cff")
+
+
+#process.ak4PFPuppiL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
+#    correctors = cms.VInputTag(
+#        'ak4PFPuppiL1FastjetCorrector',
+#        'ak4PFPuppiL2RelativeCorrector',
+#        'ak4PFPuppiL2L3ResidualCorrector',
+#    )
+#)
+#process.ak4PFPuppiL2L3CorrectorTask = cms.Task(
+#    process.ak4PFPuppiL1FastjetCorrector,
+#    process.ak4PFPuppiL2RelativeCorrector,
+#    process.ak4PFPuppiL2L3ResidualCorrector,
+#    process.ak4PFPuppiL2L3Corrector,
+#)
+#process.ak4PFPuppiL2L3CorrectorSeq = cms.Sequence(process.ak4PFPuppiL2L3CorrectorTask)
+process.ak4PFPuppiL2L3CorrectorSeq = cms.Sequence(process.patAlgosToolsTask)
 
 ############################################################
 #
@@ -454,6 +501,10 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     electronsReco=cms.InputTag("gedGsfElectrons"),
     muonsReco=cms.InputTag("muons"),
     metReco=cms.InputTag("pfMet"),
+
+    #MET Type 1 Corrections
+    applyMETType1Corr=cms.bool(True),
+    pfmetType1=cms.InputTag("slimmedMETs"),
     
     #gen info and pileup
     genak4jets        = cms.InputTag("ak4GenJetsNoNu"),
@@ -469,7 +520,8 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
 
 
 
-process.p = cms.Path(process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.mmtree) 
+process.p = cms.Path(process.patDefaultSequence * process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.mmtree) 
+#process.p = cms.Path(process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.patAlgosToolsTask * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.mmtree)
 
 
 if(params.isMC):
@@ -490,9 +542,11 @@ if(params.isMC):
   PrefiringRateSystematicUnctyECAL = cms.double(0.2),
   PrefiringRateSystematicUnctyMuon = cms.double(0.2)
   )
-  process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.prefiringweight* process.mmtree)
+  process.p = cms.Path(process.patDefaultSequence * process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.prefiringweight* process.mmtree)
+  #process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.patAlgosToolsTask * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.prefiringweight* process.mmtree)
 else:
-  process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.mmtree)
+  process.p = cms.Path(process.patDefaultSequence * process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.mmtree)
+    #process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.patAlgosToolsTask * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.mmtree)
 
 
 

@@ -37,6 +37,9 @@
 //Added for MET
 #include "DataFormats/METReco/interface/PFMET.h"
 #include "DataFormats/METReco/interface/PFMETCollection.h"
+#include "DataFormats/PatCandidates/interface/Jet.h"
+#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#include "DataFormats/PatCandidates/interface/MET.h"
 
 
 //Added for offline electrons and muons
@@ -267,6 +270,8 @@ private:
   const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorAK8Token;
   double jetAK8PtMin = 0.;
 
+  bool applyMETType1Corr;
+  const edm::EDGetTokenT<std::vector<pat::MET>> metType1CorrToken;
 
   //Gen info
   const edm::EDGetTokenT<std::vector<reco::GenJet> >            genak4jetsToken; 
@@ -633,6 +638,7 @@ private:
 
   // MET
   double met_pt_reco, met_phi_reco;
+  double pfmet_pt_reco_t1_corr, pfmet_phi_reco_t1_corr;
 
   //Scouting MET
   double met_pt, met_phi;
@@ -687,6 +693,9 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   applyJECForAK8       (iConfig.getParameter<bool>("applyJECForAK8")),
   jetCorrectorAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK8"))),
   jetAK8PtMin          (iConfig.getParameter<double>("jetAK8PtMin")),
+
+  applyMETType1Corr       (iConfig.getParameter<bool>("applyMETType1Corr")),
+  metType1CorrToken       (consumes<std::vector<pat::MET>>    (iConfig.getParameter<edm::InputTag>("pfmetType1"))),
 
   //Gen info
   genak4jetsToken             (consumes<std::vector<reco::GenJet> >             (iConfig.getParameter<edm::InputTag>("genak4jets"))),
@@ -1064,6 +1073,10 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("CorrectedScoutMET_pt",&corr_scout_met_pt);
   tree->Branch("CorrectedScoutMET_phi",&corr_scout_met_phi);
 
+  //CZZ: added MET T1-corrected collections
+  tree->Branch("MET_T1_pt",&pfmet_pt_reco_t1_corr);
+  tree->Branch("MET_T1_phi",&pfmet_phi_reco_t1_corr);
+
 
 }
 
@@ -1097,6 +1110,9 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
   Handle<std::vector<reco::PFMET>> metReco;
   Handle<double> metPt;
   Handle<double> metPhi;
+
+  Handle<std::vector<pat::MET>> pfmet_t1_Reco;
+
 
   //define particles
   vector<double> neutralHadrons_ids = {111,130,310,2112};
@@ -1137,6 +1153,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
     iEvent.getByToken(recoak4PuppiJetToken, puppi_ak4_pfjetsoffH);
     iEvent.getByToken(recoak8PuppiJetToken, puppi_ak8_pfjetsoffH);
     iEvent.getByToken(recoMetToken, metReco);
+    iEvent.getByToken(metType1CorrToken, pfmet_t1_Reco);
   }
 
 
@@ -2528,6 +2545,15 @@ if(runOffline){
     met_pt_reco = metReco->front().pt();
     met_phi_reco = metReco->front().phi();
  }
+
+ //Adding corrections for MET
+ pfmet_pt_reco_t1_corr = -1;
+ pfmet_phi_reco_t1_corr = -1;
+
+ if (runOffline){
+      pfmet_pt_reco_t1_corr = pfmet_t1_Reco->front().pt();
+      pfmet_phi_reco_t1_corr = pfmet_t1_Reco->front().phi();
+  }
 
 //propagate HLT JECs for scouting AK4 to PFMET 
 Float16_t sum_jets_px;

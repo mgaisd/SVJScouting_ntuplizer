@@ -17,6 +17,8 @@ git clone -b master https://github.com/tresreid/PatUtils.git PhysicsTools/PatUti
 git cms-addpkg CommonTools/PileupAlgos
 git cms-addpkg PhysicsTools/PatAlgos
 git cms-addpkg JetMETCorrections
+git cms-addpkg CommonTools/RecoAlgos
+git cms-addpkg Configuration/ProcessModifiers
 ```
 
 # To setup and compile

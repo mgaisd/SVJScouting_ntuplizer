@@ -1066,16 +1066,16 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("OfflineFatJetPFCands_pFCandsIdx"                   ,&OfflinePuppiFatJetPFCands_pFCandsIdx 	);
 
   //CZZ: added MET collections
-  tree->Branch("MET_pt",&met_pt);
-  tree->Branch("MET_phi",&met_phi);
+  tree->Branch("ScoutMET_pt",&met_pt);
+  tree->Branch("ScoutMET_phi",&met_phi);
   tree->Branch("OfflineMET_pt",&met_pt_reco);
   tree->Branch("OfflineMET_phi",&met_phi_reco);
-  tree->Branch("CorrectedScoutMET_pt",&corr_scout_met_pt);
-  tree->Branch("CorrectedScoutMET_phi",&corr_scout_met_phi);
+  tree->Branch("ScoutMETT1_pt",&corr_scout_met_pt);
+  tree->Branch("ScoutMETT1_phi",&corr_scout_met_phi);
 
   //CZZ: added MET T1-corrected collections
-  tree->Branch("MET_T1_pt",&pfmet_pt_reco_t1_corr);
-  tree->Branch("MET_T1_phi",&pfmet_phi_reco_t1_corr);
+  tree->Branch("OfflineMETT1_pt",&pfmet_pt_reco_t1_corr);
+  tree->Branch("OfflineMETT1_phi",&pfmet_phi_reco_t1_corr);
 
 
 }

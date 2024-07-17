@@ -41,3 +41,9 @@ To run from AODs:
 cmsRun SVJScouting/test/ScoutingNanoAOD_fromAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year> signal=True
 ```
 
+To run from Scouting data:
+
+```
+cmsRun SVJScouting/test/ScoutingNanoAOD_fromData_cfg.py inputFiles=file:data_file.root outputFile=flatscouting_data.root maxEvents=-1 era=<year>
+```
+

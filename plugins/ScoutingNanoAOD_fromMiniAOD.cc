@@ -2136,7 +2136,7 @@ if(runOffline){
       for (auto &j: ak8_jets) {
         FatJet_rawFactor.push_back(0);
         FatJet_eta.push_back(j.eta());
-        FatJet_phi.push_back(j.phi());
+        FatJet_phi.push_back(j.phi_std());
         FatJet_pt .push_back(j.pt());
         FatJet_mass.push_back(j.m());
         FatJet_nconst.push_back(j.constituents().size());

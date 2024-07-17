@@ -186,6 +186,7 @@ private:
   const edm::EDGetTokenT<std::vector<ScoutingParticle> >  	pfcandsToken;
   const edm::EDGetTokenT<std::vector<ScoutingPFJet> >  		pfjetsToken;
   const edm::EDGetTokenT<std::vector<ScoutingVertex> >  	verticesToken;
+
   const edm::EDGetTokenT<double> metPtToken;
   const edm::EDGetTokenT<double> metPhiToken;
 
@@ -392,6 +393,8 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   pfcandsToken             (consumes<std::vector<ScoutingParticle> >         (iConfig.getParameter<edm::InputTag>("pfcands"))), 
   pfjetsToken              (consumes<std::vector<ScoutingPFJet> >            (iConfig.getParameter<edm::InputTag>("pfjets"))), 
   verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
+   
+  
   metPtToken               (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPt"))),
   metPhiToken              (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPhi"))),
 
@@ -1029,7 +1032,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
 
     for (auto &j: ak8_jets) {
       FatJet_eta.push_back(j.eta());
-      FatJet_phi.push_back(j.phi());
+      FatJet_phi.push_back(j.phi_std());
       FatJet_pt .push_back(j.pt());
       FatJet_mass.push_back(j.m());
       FatJet_nconst.push_back(j.constituents().size());

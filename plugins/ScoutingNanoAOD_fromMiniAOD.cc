@@ -275,6 +275,9 @@ private:
   const edm::EDGetTokenT<GenLumiInfoHeader>  	                  genLumiInfoHeadTag_;
   const edm::EDGetTokenT<std::vector<reco::GenParticle>>       gensToken;
 
+  bool addMatrixElementInfo;
+
+
   const edm::EDGetTokenT<double>  	rhoToken2;
   const edm::EDGetTokenT<double>  	prefireToken;
   const edm::EDGetTokenT<double>  	prefireTokenup;
@@ -628,13 +631,21 @@ private:
   vector<Float16_t> MatrixElementGenParticle_pdgId; 
   vector<Float16_t> MatrixElementGenParticle_status;
 
-  //
+  //ISR gluon
   vector<Float16_t> ISRGluonGenParticle_pt;  
   vector<Float16_t> ISRGluonGenParticle_eta;  
   vector<Float16_t> ISRGluonGenParticle_phi;  
   vector<Float16_t> ISRGluonGenParticle_mass; 
   vector<Float16_t> ISRGluonGenParticle_pdgId;
   vector<Float16_t> ISRGluonGenParticle_status;
+
+
+  vector<Float16_t> DarkMatterParticles_pt;  
+  vector<Float16_t> DarkMatterParticles_eta;  
+  vector<Float16_t> DarkMatterParticles_phi;  
+  vector<Float16_t> DarkMatterParticles_mass; 
+  vector<Float16_t> DarkMatterParticles_pdgId; 
+  vector<Float16_t> DarkMatterParticles_status;
 
   //prefire
   float                        rho2;
@@ -707,6 +718,8 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
   genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),   
   gensToken                (consumes<std::vector<reco::GenParticle>>               (iConfig.getParameter<edm::InputTag>("gens"))),
+
+  addMatrixElementInfo     (iConfig.getParameter<bool>("addMatrixElementInfo")),
   
   rhoToken2                (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("rho2"))),
   prefireToken             (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProb"))),
@@ -1051,6 +1064,14 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("ISRGluonGenParticle_mass"                  ,&ISRGluonGenParticle_mass               ); 
   tree->Branch("ISRGluonGenParticle_pdgId"                 ,&ISRGluonGenParticle_pdgId              );
   tree->Branch("ISRGluonGenParticle_status"                 ,&ISRGluonGenParticle_status              );
+
+  //add Dark matter info info
+  tree->Branch("DarkMatterParticles_pt"                    ,&DarkMatterParticles_pt                 );  
+  tree->Branch("DarkMatterParticles_eta"                   ,&DarkMatterParticles_eta                );  
+  tree->Branch("DarkMatterParticles_phi"                   ,&DarkMatterParticles_phi                );  
+  tree->Branch("DarkMatterParticles_mass"                  ,&DarkMatterParticles_mass               ); 
+  tree->Branch("DarkMatterParticles_pdgId"                 ,&DarkMatterParticles_pdgId              ); 
+  tree->Branch("DarkMatterParticles_status"                ,&DarkMatterParticles_status              );
 
   /*
   //offline PF Cands
@@ -2452,7 +2473,8 @@ if(runOffline){
 
 }
 
-if (runGen){
+cout << "genInfo: " << addMatrixElementInfo << endl;
+if (addMatrixElementInfo){
     //Genparticles genp
 
     Handle<GenParticleCollection> genP_iter;
@@ -2475,11 +2497,28 @@ if (runGen){
     ISRGluonGenParticle_pdgId.clear();
     ISRGluonGenParticle_status.clear();
 
+    DarkMatterParticles_pt.clear();
+    DarkMatterParticles_eta.clear();
+    DarkMatterParticles_phi.clear();
+    DarkMatterParticles_mass.clear();
+    DarkMatterParticles_pdgId.clear();
+    DarkMatterParticles_status.clear();
+
     for(size_t i = 0; i < genP_iter->size(); ++ i) { 
       const GenParticle & genP = (*genP_iter)[i];
 
-      //require particle wirth status 23 or 43 
-      if (abs(genP.status()) != 23 && abs(genP.status()) != 43) continue;
+
+      //require particle with status 23 or 43 or 1
+      if (abs(genP.status()) != 23 && abs(genP.status()) != 43 && abs(genP.status()) != 1) continue;
+
+      if (genP.status()==1 && ( (abs(genP.pdgId()) == 51) || (abs(genP.pdgId()) == 53))){
+        DarkMatterParticles_pt.push_back(genP.pt());
+        DarkMatterParticles_eta.push_back(genP.eta());
+        DarkMatterParticles_phi.push_back(genP.phi());
+        DarkMatterParticles_mass.push_back(genP.mass());
+        DarkMatterParticles_pdgId.push_back(genP.pdgId());
+        DarkMatterParticles_status.push_back(genP.status());
+      }
 
       //if particle has status 43, and pdgId is 21 (gluon from ISR), and mother is up quark, or down quark with status 41, then keep it
       bool is_isr_gluon = false;

@@ -719,7 +719,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),   
   gensToken                (consumes<std::vector<reco::GenParticle>>               (iConfig.getParameter<edm::InputTag>("gens"))),
 
-  addMatrixElementInfo     (iConfig.getParameter<bool>("addMatrixElementInfo")),
+  addMatrixElementInfo     (iConfig.existsAs<bool>("addMatrixElementInfo")    ?    iConfig.getParameter<bool>  ("addMatrixElementInfo")    : false),
   
   rhoToken2                (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("rho2"))),
   prefireToken             (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProb"))),

@@ -2670,10 +2670,10 @@ if (runScouting & applyJECForAK4Scout){
   corr_scout_met_pt = miss.Pt();
   corr_scout_met_phi = miss.Phi();
 
-}
+  }
 
   
- tree->Fill();	
+  tree->Fill();	
 	
 }
 

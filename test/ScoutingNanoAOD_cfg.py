@@ -224,12 +224,11 @@ L1Info = [
 
 runSig = False
 if params.signal:
-  runSig = True
+    runSig = True
 
 onlyScouting = False
 if params.onlyScouting:
     onlyScouting = True
-
 
 if not onlyScouting:
     # Load Puppi
@@ -279,6 +278,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
     doData            = cms.bool(not params.isMC and not params.signal),
     doSignal          = cms.bool(runSig), 
     isMC              = cms.bool(params.isMC),
+    onlyScouting      = cms.bool(params.onlyScouting),
     era = cms.string(params.era),
     stageL1Trigger    = cms.uint32(2),
 

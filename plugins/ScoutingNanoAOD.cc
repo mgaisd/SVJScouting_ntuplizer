@@ -32,7 +32,7 @@
 //Added for offline jets
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/JetReco/interface/PFJetCollection.h"
-#include "JetMETCorrections/JetCorrector/interface/JetCorrector.h"
+//#include "JetMETCorrections/JetCorrector/interface/JetCorrector.h"
 
 //Added for MET
 #include "DataFormats/METReco/interface/PFMET.h"
@@ -2563,7 +2563,7 @@ bool ScoutingNanoAOD::jetIDoff(const reco::PFJet &pfjet){
 bool ScoutingNanoAOD::jetID(const ScoutingPFJet &pfjet){
 // https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2018
 // same definition is used in SUEP Scouting search EXO-23-001
-// scouting version uses photon/muon energy instead of neutral/charged EM energy
+// scouting version uses photon/electron energy instead of neutral/charged EM energy
     //moved HT cut
     TLorentzVector jet; 
     jet.SetPtEtaPhiM(pfjet.pt(), pfjet.eta(), pfjet.phi(), pfjet.m() );

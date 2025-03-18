@@ -107,6 +107,13 @@ params.register(
     VarParsing.multiplicity.singleton,VarParsing.varType.bool,
     'Flag to indicate whether or not MatrixElementInfo is available'
 )
+params.register(
+    'UL2016preVFP', 
+    False, 
+    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
+    'Flag to indicate whether the sample belongs to the 2016 preVFP era'
+)
+
 
 # Define the process
 process = cms.Process("LL")
@@ -226,125 +233,13 @@ process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (jetPtMin = 100.)
 
 #and add the jet collection with
 from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
-addJetCollection(process,labelName = 'AK8PFPUPPI', jetSource = cms.InputTag('ak8PFJetsPuppi'), algo = 'AK', rParam=0.8, genJetCollection=cms.InputTag('slimmedGenJetsAK8'),jetCorrections = ('AK8PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute'], '\
-None'),pfCandidates = cms.InputTag('packedPFCandidates'),
+addJetCollection(process,labelName = 'AK8PFPUPPI', jetSource = cms.InputTag('ak8PFJetsPuppi'), algo = 'AK', rParam=0.8, genJetCollection=cms.InputTag('slimmedGenJetsAK8'),pfCandidates = cms.InputTag('packedPFCandidates'),
     pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
     svSource = cms.InputTag('slimmedSecondaryVertices'),
     muSource =cms.InputTag( 'slimmedMuons'),
     elSource = cms.InputTag('slimmedElectrons')
 )
 
-############################################################
-#
-# Setup JECs for AK8 Puppi jets
-#
-############################################################
-# Dummy setup. L1FastJet JEC is 1 for AK8 Puppi jets
-process.ak8PFPuppiL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
-    level       = cms.string('L1FastJet'),
-    algorithm   = cms.string('AK8PFPuppi'),
-    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
-)
-# MC-truth corrections  for AK8 Puppi jets
-process.ak8PFPuppiL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2Relative'),
-    algorithm = cms.string('AK8PFPuppi')
-)
-# Dummy setup. L2L3Residual JEC is 1 for MC
-process.ak8PFPuppiL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2L3Residual'),
-    algorithm = cms.string('AK8PFPuppi')
-)
-process.ak8PFPuppiL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
-    correctors = cms.VInputTag(
-        'ak8PFPuppiL1FastjetCorrector',
-        'ak8PFPuppiL2RelativeCorrector',
-        'ak8PFPuppiL2L3ResidualCorrector',
-    )
-)
-process.ak8PFPuppiL2L3CorrectorTask = cms.Task(
-    process.ak8PFPuppiL1FastjetCorrector,
-    process.ak8PFPuppiL2RelativeCorrector,
-    process.ak8PFPuppiL2L3ResidualCorrector,
-    process.ak8PFPuppiL2L3Corrector,
-)
-process.ak8PFPuppiL2L3CorrectorSeq = cms.Sequence(process.ak8PFPuppiL2L3CorrectorTask)
-
-############################################################
-#
-# Setup JECs for HLT AK4 PF jets
-#
-############################################################
-# Dummy setup. L1FastJet JEC is 1 for HLT AK4 PF jets
-process.ak4PFHLTL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
-    level       = cms.string('L1FastJet'),
-    algorithm   = cms.string('AK4PFHLT'),
-    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
-)
-# MC-truth corrections  for HLT AK8 PF jets
-process.ak4PFHLTL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2Relative'),
-    algorithm = cms.string('AK4PFHLT')
-)
-# Dummy setup. L2L3Residual JEC is 1 for MC
-process.ak4PFHLTL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2L3Residual'),
-    algorithm = cms.string('AK4PFHLT')
-)
-process.ak4PFHLTL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
-    correctors = cms.VInputTag(
-        'ak4PFHLTL1FastjetCorrector',
-        'ak4PFHLTL2RelativeCorrector',
-        'ak4PFHLTL2L3ResidualCorrector',
-    )
-)
-process.ak4PFHLTL2L3CorrectorTask = cms.Task(
-    process.ak4PFHLTL1FastjetCorrector,
-    process.ak4PFHLTL2RelativeCorrector,
-    process.ak4PFHLTL2L3ResidualCorrector,
-    process.ak4PFHLTL2L3Corrector,
-)
-process.ak4PFHLTL2L3CorrectorSeq = cms.Sequence(process.ak4PFHLTL2L3CorrectorTask)
-
-
-############################################################
-#
-# Setup JECs for HLT AK8 PF jets
-#
-############################################################
-# Dummy setup. L1FastJet JEC is 1 for HLT AK8 PF jets
-process.ak8PFHLTL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
-    level       = cms.string('L1FastJet'),
-    algorithm   = cms.string('AK8PFHLT'),
-    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
-)
-# MC-truth corrections  for HLT AK8 PF jets
-process.ak8PFHLTL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2Relative'),
-    algorithm = cms.string('AK8PFHLT')
-)
-# Dummy setup. L2L3Residual JEC is 1 for MC
-process.ak8PFHLTL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2L3Residual'),
-    algorithm = cms.string('AK8PFHLT')
-)
-process.ak8PFHLTL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
-    correctors = cms.VInputTag(
-        'ak8PFHLTL1FastjetCorrector',
-        'ak8PFHLTL2RelativeCorrector',
-        'ak8PFHLTL2L3ResidualCorrector',
-    )
-)
-process.ak8PFHLTL2L3CorrectorTask = cms.Task(
-    process.ak8PFHLTL1FastjetCorrector,
-    process.ak8PFHLTL2RelativeCorrector,
-    process.ak8PFHLTL2L3ResidualCorrector,
-    process.ak8PFHLTL2L3Corrector,
-)
-process.ak8PFHLTL2L3CorrectorSeq = cms.Sequence(process.ak8PFHLTL2L3CorrectorTask)
-
-if params.era == "2018":
-    era_18 = True
 
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     doL1              = cms.bool(False),
@@ -353,7 +248,6 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     addMatrixElementInfo = cms.bool(params.MatrixElementInfo),
     isMC              = cms.bool(params.isMC),
     era = cms.string(params.era),
-    era_18 = cms.bool(era_18),
     stageL1Trigger    = cms.uint32(2),
 
     hltProcess=cms.string("HLT"),
@@ -386,13 +280,9 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
     #HLT AK4 PF jets
-    applyJECForAK4Scout=cms.bool(True),
-    jetCorrectorHLTAK4=cms.InputTag("ak4PFHLTL2L3Corrector"),
     jetAK4ScoutPtMin=cms.double(20),
     
     #HLT AK8 PF jets
-    applyJECForAK8Scout=cms.bool(True),
-    jetCorrectorHLTAK8=cms.InputTag("ak8PFHLTL2L3Corrector"),
     jetAK8ScoutPtMin=cms.double(100),
 
     #offline objects
@@ -407,8 +297,6 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
 
     #Puppi AK8 PF
     ak8pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
-    applyJECForAK8=cms.bool(True),
-    jetCorrectorAK8=cms.InputTag("ak8PFPuppiL2L3Corrector"),
     jetAK8PtMin=cms.double(100),
 
     #gen info and pileup
@@ -423,29 +311,40 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
 
 )
 
-process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.mmtree) 
 
 if(params.isMC):
-#if(runSig or (params.isMC and not params.era=="2016")):
-#if(runSig):
-#if(params.signal):
-  #print("test1",runSig,params.isMC,params.era,(params.isMC and not params.era=="2016"))
-  from PhysicsTools.PatUtils.l1PrefiringWeightProducer_cfi import l1PrefiringWeightProducer
-  process.prefiringweight = l1PrefiringWeightProducer.clone(
-  ThePhotons           = cms.InputTag("hltScoutingEgammaPacker"),
-  TheMuons             = cms.InputTag("hltScoutingMuonPacker"),
-  TheJets            = cms.InputTag("hltScoutingPFPacker"),
-  #TheJets = cms.InputTag("slimmedJets"), #this should be the slimmedJets collection with up to date JECs 
-  #TheJets = cms.InputTag("updatedPatJetsUpdatedJEC"), #this should be the slimmedJets collection with up to date JECs 
-  DataEraECAL = cms.string("2017BtoF"), #Use 2016BtoH for 2016
-  DataEraMuon = cms.string("20172018"), #Use 2016 for 2016
-  UseJetEMPt = cms.bool(False),
-  PrefiringRateSystematicUnctyECAL = cms.double(0.2),
-  PrefiringRateSystematicUnctyMuon = cms.double(0.2)
-  )
-  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.prefiringweight* process.mmtree)
+    # taken from https://twiki.cern.ch/twiki/bin/viewauth/CMS/L1PrefiringWeightRecipe
+
+    if (params.era == "2016") and (params.UL2016preVFP):
+        prefiring_era = "2016preVFP"
+    elif (params.era == "2016") and (not params.UL2016preVFP):
+        prefiring_era = "2016postVFP"
+    else:
+        prefiring_era = params.era
+
+
+    prefiring_dict = {
+        '2016ULpreVFP' : {'ECAL':'UL2016preVFP', 'Muon':'2016preVFP'},
+        '2016ULpostVFP' : {'ECAL':'UL2016postVFP', 'Muon':'2016postVFP'},
+        '2017' : {'ECAL':'UL2017BtoF', 'Muon':'20172018'},
+        '2018' : {'ECAL':'None', 'Muon':'20172018'}
+    }
+
+    from PhysicsTools.PatUtils.l1PrefiringWeightProducer_cfi import l1PrefiringWeightProducer
+    process.prefiringweight = l1PrefiringWeightProducer.clone(
+    ThePhotons           = cms.InputTag("hltScoutingEgammaPacker"),
+    TheMuons             = cms.InputTag("hltScoutingMuonPacker"),
+    TheJets            = cms.InputTag("hltScoutingPFPacker"),
+    DataEraECAL = cms.string(prefiring_dict[prefiring_era]["ECAL"]),
+    DataEraMuon = cms.string(prefiring_dict[prefiring_era]["Muon"]),
+    UseJetEMPt = cms.bool(False),
+    PrefiringRateSystematicUnctyECAL = cms.double(0.2),
+    PrefiringRateSystematicUnctyMuon = cms.double(0.2)
+    )
+    process.p = cms.Path(process.puppi   * process.ak8PFJetsPuppi * process.prefiringweight* process.mmtree)
 else:
-  process.p = cms.Path(process.puppi * process.ak8PFJetsPuppi * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.mmtree)
+
+    process.p = cms.Path(process.puppi  * process.ak8PFJetsPuppi * process.mmtree)
 
 
 

@@ -272,22 +272,22 @@ private:
 
   //Photon
   UInt_t n_pho;
-  vector<Float16_t> 	       Photon_pt;
-  vector<Float16_t>            Photon_eta;
-  vector<Float16_t>            Photon_phi;
+  vector<Float16_t> 	     Photon_pt;
+  vector<Float16_t>        Photon_eta;
+  vector<Float16_t>        Photon_phi;
   vector<Float16_t>	       Photon_m;
   vector<Float16_t>	       Photon_sigmaietaieta;
   vector<Float16_t>	       Photon_HoE;
-  vector<Float16_t>            Photon_ecaliso;
+  vector<Float16_t>        Photon_ecaliso;
   vector<Float16_t>	       Photon_hcaliso;
 
   //Scouting Electron
   UInt_t n_ele;
-  vector<Float16_t> 	       Electron_pt;
-  vector<Float16_t>            Electron_eta;
-  vector<Float16_t>            Electron_phi;
+  vector<Float16_t> 	     Electron_pt;
+  vector<Float16_t>        Electron_eta;
+  vector<Float16_t>        Electron_phi;
   vector<Float16_t>	       Electron_m;
-  vector<Float16_t>            Electron_d0;
+  vector<Float16_t>        Electron_d0;
   vector<Float16_t>	       Electron_dz;
   vector<Float16_t>	       Electron_detain;
   vector<Float16_t>	       Electron_dphiin;
@@ -295,23 +295,23 @@ private:
   vector<Float16_t>	       Electron_HoE;
   vector<Float16_t>	       Electron_ooEMOop;
   vector<Float16_t>	       Electron_mHits;
-  vector<Float16_t>            Electron_charge;
-  vector<Float16_t>            Electron_ecaliso;
+  vector<Float16_t>        Electron_charge;
+  vector<Float16_t>        Electron_ecaliso;
   vector<Float16_t>	       Electron_hcaliso;
-  vector<Float16_t>            Electron_trkiso;
-  vector<Float16_t>            Electron_combinediso;
-  vector<bool>            Electron_ID;
-  vector<Float16_t>            Electron_chargedMiniIso;
-  vector<Float16_t>            Electron_combinedMiniIso;
+  vector<Float16_t>        Electron_trkiso;
+  vector<Float16_t>        Electron_combinediso;
+  vector<bool>             Electron_ID;
+  vector<Float16_t>        Electron_chargedMiniIso;
+  vector<Float16_t>        Electron_combinedMiniIso;
 
 
   //Offline Electron
   UInt_t n_ele_off;
-  vector<Float16_t> 	       OffElectron_pt;
-  vector<Float16_t>            OffElectron_eta;
-  vector<Float16_t>            OffElectron_phi;
+  vector<Float16_t> 	     OffElectron_pt;
+  vector<Float16_t>        OffElectron_eta;
+  vector<Float16_t>        OffElectron_phi;
   vector<Float16_t>	       OffElectron_m;
-  vector<Float16_t>            OffElectron_d0;
+  vector<Float16_t>        OffElectron_d0;
   vector<Float16_t>	       OffElectron_dz;
   vector<Float16_t>	       OffElectron_detain;
   vector<Float16_t>	       OffElectron_dphiin;
@@ -319,12 +319,12 @@ private:
   vector<Float16_t>	       OffElectron_HoE;
   vector<Float16_t>	       OffElectron_ooEMOop;
   vector<Float16_t>	       OffElectron_mHits;
-  vector<Float16_t>            OffElectron_charge;
-  vector<Float16_t>            OffElectron_ecaliso;
+  vector<Float16_t>        OffElectron_charge;
+  vector<Float16_t>        OffElectron_ecaliso;
   vector<Float16_t>	       OffElectron_hcaliso;
-  vector<Float16_t>            OffElectron_trkiso;
-  vector<Float16_t>            OffElectron_combinediso;
-  vector<bool>            OffElectron_ID;
+  vector<Float16_t>        OffElectron_trkiso;
+  vector<Float16_t>        OffElectron_combinediso;
+  vector<bool>             OffElectron_ID;
   Float_t isoChargedHadrons_;
   Float_t isoNeutralHadrons_;
   Float_t isoPhotons_;
@@ -384,12 +384,12 @@ private:
   //Scouting PFJets
   UInt_t                       n_jet;
   UInt_t                       n_jetId;
-  UInt_t                      n_jetoff;
-  UInt_t                      n_jetIdoff;
+  UInt_t                       n_jetoff;
+  UInt_t                       n_jetIdoff;
   float                        ht;
   float                        htoff;
   bool                         passJetId;
-  vector<Float16_t> 	       Jet_pt;
+  vector<Float16_t> 	         Jet_pt;
   vector<Float16_t>            Jet_eta;
   vector<Float16_t>            Jet_phi;
   vector<Float16_t>	       Jet_m;
@@ -2552,8 +2552,8 @@ bool ScoutingNanoAOD_fromAOD::jetIDoff(const reco::PFJet &pfjet){
     float NHF  = pfjet.neutralHadronEnergy()/jet.E();
     float NEMF = pfjet.neutralEmEnergy()/jet.E();
     float CHF  = pfjet.chargedHadronEnergy()/jet.E();
-    float MUF  = pfjet.chargedEmEnergy()/jet.E();
-    float CEMF = pfjet.electronEnergy()/jet.E();
+    float MUF  = pfjet.muonEnergy()/jet.E();
+    float CEMF = pfjet.chargedEmEnergy()/jet.E();
     float NumConst = pfjet.chargedMultiplicity()+pfjet.neutralMultiplicity();
     float CHM      = pfjet.chargedMultiplicity(); 
     bool passID = (abs(pfjet.eta())<=2.6 && CEMF<0.8 && CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9 );

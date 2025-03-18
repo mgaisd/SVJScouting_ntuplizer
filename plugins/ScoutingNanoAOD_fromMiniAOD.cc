@@ -126,6 +126,10 @@
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 #include "PhysicsTools/CandUtils/interface/Thrust.h"
 
+// for mini isolation
+#include "ScoutingMiniIsolation.h"
+
+
 using namespace std;
 using namespace fastjet;
 using namespace fastjet::contrib;
@@ -156,58 +160,6 @@ using namespace fastjet::contrib;
  };
 
 //------------------------------------------------------------------------
-
-
-//
-// Inspired from https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/Calibration/HcalCalibAlgos/test/DiJetAnalyzer.h#L61-L85
-//
-class JetWithJECPairReco {
-public:
-    // Existing constructors
-    JetWithJECPairReco() : first(nullptr), second(1.0), third(0), fourth(nullptr) {}
-    
-    // Constructur with jet and correction factor
-    JetWithJECPairReco(const reco::PFJet* j, double s) : first(j), second(s), third(0), fourth(nullptr) {}
-    
-    // Constructur with jet idx
-    JetWithJECPairReco(const reco::PFJet* j, double s, int idx) : first(j), second(s), third(idx), fourth(nullptr) {}
-
-    // Constructur with additional scout jet 
-    JetWithJECPairReco(const reco::PFJet* j, double s, int idx , const ScoutingPFJet* scouting_j) : first(j), second(s), third(idx), fourth(scouting_j) {}
-    
-    // Destructor remains unchanged
-    ~JetWithJECPairReco() = default;
-
-    // Getter and setter methods remain unchanged
-    inline const reco::PFJet* jet() const { return first; }
-    inline void jet(const reco::PFJet* j) { first = j; }
-
-    inline double corr() const { return second; }
-    inline void corr(double d) { second = d; }
-
-    // Getter and setter for the new parameter
-    inline int jet_idx() const { return third; }
-    inline void jet_idx(int i) { third = i; }
-
-    // Getter and setter for the new parameter
-    inline const ScoutingPFJet* scout_jet() const { return fourth; }
-    inline void scout_jet(const ScoutingPFJet* scouting_j) { fourth = scouting_j; }
-
-private:
-    const reco::PFJet* first; // Pointer to PFJet object
-    double second; // Correction factor 
-    int third; //jet idx
-    const ScoutingPFJet* fourth; // Pointer to ScoutingPFJet object
-};
-
-
-
-struct JetWithJECPairRecoComp {
-  inline bool operator()(const JetWithJECPairReco& a, const JetWithJECPairReco& b) const {
-    return (a.jet()->pt() * a.corr()) > (b.jet()->pt() * b.corr());
-  }
-};
-
 
 
 class ScoutingNanoAOD_fromMiniAOD : public edm::one::EDAnalyzer<edm::one::SharedResources, edm::one::WatchRuns, edm::one::WatchLuminosityBlocks> {
@@ -296,8 +248,8 @@ private:
   bool doData;       
   bool doSignal;       
   bool isMC;
+
   //bool monitor;
-  bool era_18;
   bool runScouting = false;
   bool runOffline =false;
   bool runGen = false;
@@ -354,15 +306,16 @@ private:
   vector<Float16_t>        Electron_trkiso;
   vector<Float16_t>        Electron_combinediso;
   vector<bool>             Electron_ID;
-
+  vector<Float16_t>        Electron_chargedMiniIso;
+  vector<Float16_t>        Electron_combinedMiniIso;
 
   //Offline Electron
   UInt_t n_ele_off;
-  vector<Float16_t> 	       OffElectron_pt;
-  vector<Float16_t>            OffElectron_eta;
-  vector<Float16_t>            OffElectron_phi;
+  vector<Float16_t> 	     OffElectron_pt;
+  vector<Float16_t>        OffElectron_eta;
+  vector<Float16_t>        OffElectron_phi;
   vector<Float16_t>	       OffElectron_m;
-  vector<Float16_t>            OffElectron_d0;
+  vector<Float16_t>        OffElectron_d0;
   vector<Float16_t>	       OffElectron_dz;
   vector<Float16_t>	       OffElectron_detain;
   vector<Float16_t>	       OffElectron_dphiin;
@@ -370,12 +323,12 @@ private:
   vector<Float16_t>	       OffElectron_HoE;
   vector<Float16_t>	       OffElectron_ooEMOop;
   vector<Float16_t>	       OffElectron_mHits;
-  vector<Float16_t>            OffElectron_charge;
-  vector<Float16_t>            OffElectron_ecaliso;
+  vector<Float16_t>        OffElectron_charge;
+  vector<Float16_t>        OffElectron_ecaliso;
   vector<Float16_t>	       OffElectron_hcaliso;
-  vector<Float16_t>            OffElectron_trkiso;
-  vector<Float16_t>            OffElectron_combinediso;
-  vector<bool>            OffElectron_ID;
+  vector<Float16_t>        OffElectron_trkiso;
+  vector<Float16_t>        OffElectron_combinediso;
+  vector<bool>             OffElectron_ID;
   Float_t isoChargedHadrons_;
   Float_t isoNeutralHadrons_;
   Float_t isoPhotons_;
@@ -414,6 +367,8 @@ private:
   vector<Float16_t>            Muon_trketaerror;
   vector<Float16_t>            Muon_trkdszerror;
   vector<Float16_t>            Muon_trkdsz;
+  vector<Float16_t>            Muon_chargedMiniIso;
+  vector<Float16_t>            Muon_combinedMiniIso;
 
   //Offline Muon
   UInt_t n_mu_off;
@@ -440,7 +395,6 @@ private:
   float                        ht;
   float                        htoff;
   bool                         passJetId;
-  vector<Float16_t> 	         Jet_rawFactor;
   vector<Float16_t> 	         Jet_pt;
   vector<Float16_t>            Jet_eta;
   vector<Float16_t>            Jet_phi;
@@ -464,6 +418,15 @@ private:
   vector<Float16_t> 	         Jet_csv;
   vector<Float16_t> 	         Jet_mvaDiscriminator;
   vector<Float16_t>  	         Jet_nConstituents;
+  // for jet id
+  vector<Float16_t>        Jet_neutralHadronEnergyFraction;
+  vector<Float16_t>	       Jet_photonEnergyFraction;
+  vector<Float16_t>	       Jet_chargedHadronEnergyFraction;
+  vector<Float16_t>	       Jet_muonEnergyFraction;
+  vector<Float16_t>	       Jet_electronEnergyFraction;
+  vector<Float16_t>	       Jet_neutralMultiplicity;
+  vector<Float16_t>	       Jet_chargedMultiplicity;
+  
   vector<bool>                 Jet_passId;
 
   vector<Float16_t> 	     OffJet_pt;
@@ -479,6 +442,18 @@ private:
   vector<Float16_t>	       OffJet_HFHadronEnergy;
   vector<Float16_t>	       OffJet_HFEMEnergy;
   vector<Float16_t>	       OffJet_HOEnergy;
+  // for jet id
+  vector<Float16_t>        OffJet_neutralHadronEnergyFraction;
+  vector<Float16_t>	       OffJet_neutralEmEnergyFraction;
+  vector<Float16_t>	       OffJet_chargedHadronEnergyFraction;
+  vector<Float16_t>	       OffJet_muonEnergyFraction;
+  vector<Float16_t>	       OffJet_chargedEmEnergyFraction;
+  vector<Float16_t>	       OffJet_electronEnergyFraction;
+  vector<Float16_t>	       OffJet_photonEnergyFraction;
+  vector<Float16_t>	       OffJet_nConstituents;
+  vector<Float16_t>	       OffJet_neutralMultiplicity;
+  vector<Float16_t>	       OffJet_chargedMultiplicity;
+
   vector<Float16_t>	       OffJet_chargedHadronMultiplicity;
   vector<Float16_t>        OffJet_neutralHadronMultiplicity;
   vector<Float16_t>	       OffJet_photonMultiplicity;
@@ -521,7 +496,6 @@ private:
 
   // Fatjets 
   UInt_t                       n_fatjet;
-  vector<Float16_t>            FatJet_rawFactor;
   vector<Float16_t>            FatJet_area;
   vector<Float16_t>            FatJet_eta;
   //vector<Float16_t>            FatJet_n2b1;
@@ -537,8 +511,17 @@ private:
   vector<Float16_t>            FatJet_mass;
   //vector<Float16_t>            FatJet_msoftdrop;
   //vector<Float16_t>            FatJet_mtrim;
-  vector<Float16_t>            FatJet_nconst;
+  vector<Float16_t>            FatJet_nConstituents;
+  vector<bool>                 FatJet_passId;
 
+  // for jet id
+  vector<Float16_t>        FatJet_neutralHadronEnergyFraction;
+  vector<Float16_t>	       FatJet_photonEnergyFraction;
+  vector<Float16_t>	       FatJet_chargedHadronEnergyFraction;
+  vector<Float16_t>	       FatJet_muonEnergyFraction;
+  vector<Float16_t>	       FatJet_electronEnergyFraction;
+  vector<Float16_t>	       FatJet_neutralMultiplicity;
+  vector<Float16_t>	       FatJet_chargedMultiplicity;
   /*
   // Fatjets offline
   UInt_t                       n_fatjet_off;
@@ -557,7 +540,7 @@ private:
   vector<Float16_t>            OfflineFatJet_mass;
   vector<Float16_t>            OfflineFatJet_msoftdrop;
   vector<Float16_t>            OfflineFatJet_mtrim;
-  vector<Float16_t>            OfflineFatJet_nconst;
+  vector<Float16_t>            OfflineFatJet_nConstituents;
   */
 
   //Offline Puppi PFJets
@@ -565,7 +548,6 @@ private:
   vector<Float16_t>        OffPuppiFatJet_eta;
   vector<Float16_t>        OffPuppiFatJet_phi;
   vector<Float16_t>	       OffPuppiFatJet_m;
-  vector<Float16_t>	       OffPuppiFatJet_rawFactor;
   vector<Float16_t>	       OffPuppiFatJet_area;
   vector<Float16_t>	       OffPuppiFatJet_chargedHadronEnergy;
   vector<Float16_t>        OffPuppiFatJet_neutralHadronEnergy;
@@ -582,6 +564,20 @@ private:
   vector<Float16_t>	       OffPuppiFatJet_muonMultiplicity;
   vector<Float16_t>	       OffPuppiFatJet_HFHadronMultiplicity;
   vector<Float16_t>	       OffPuppiFatJet_HFEMMultiplicity;
+
+  // for jet id
+  vector<Float16_t>        OffPuppiFatJet_neutralHadronEnergyFraction;
+  vector<Float16_t>	       OffPuppiFatJet_neutralEmEnergyFraction;
+  vector<Float16_t>	       OffPuppiFatJet_chargedHadronEnergyFraction;
+  vector<Float16_t>	       OffPuppiFatJet_muonEnergyFraction;
+  vector<Float16_t>	       OffPuppiFatJet_chargedEmEnergyFraction;
+  vector<Float16_t>	       OffPuppiFatJet_electronEnergyFraction;
+  vector<Float16_t>	       OffPuppiFatJet_photonEnergyFraction;
+  vector<Float16_t>	       OffPuppiFatJet_nConstituents;
+  vector<Float16_t>	       OffPuppiFatJet_neutralMultiplicity;
+  vector<Float16_t>	       OffPuppiFatJet_chargedMultiplicity;
+
+
   vector<bool>             OffPuppiFatJet_passId;
   UInt_t                   n_fatjet_off_puppi;
   UInt_t                   n_fatjetIdoffpuppi;
@@ -655,8 +651,6 @@ private:
 
   //Scouting MET
   double met_pt, met_phi;
-  double rec_met_pt, rec_met_phi;
-  double corr_scout_met_pt , corr_scout_met_phi;
   
   //Offline MET
   double met_pt_reco, met_phi_reco;
@@ -698,16 +692,10 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   recoMetToken         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
   recoPuppiMetToken    (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("PuppimetReco"))),
 
-  applyJECForAK8       (iConfig.getParameter<bool>("applyJECForAK8")),
-  jetCorrectorAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorAK8"))),
   jetAK8PtMin          (iConfig.getParameter<double>("jetAK8PtMin")),
 
-  applyJECForAK4Scout       (iConfig.getParameter<bool>("applyJECForAK4Scout")),
-  jetCorrectorHLTAK4Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorHLTAK4"))),
   jetAK4ScoutPtMin          (iConfig.getParameter<double>("jetAK4ScoutPtMin")),
 
-  applyJECForAK8Scout       (iConfig.getParameter<bool>("applyJECForAK8Scout")),
-  jetCorrectorHLTAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorHLTAK8"))),
   jetAK8ScoutPtMin          (iConfig.getParameter<double>("jetAK8ScoutPtMin")),
 
   //Gen tokens
@@ -730,7 +718,6 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")            : false),
   doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")            : false),
   isMC                     (iConfig.existsAs<bool>("isMC")              ?    iConfig.getParameter<bool>  ("isMC")            : true),
-  era_18                   (iConfig.existsAs<bool>("era_18")            ?    iConfig.getParameter<bool>  ("era_18")            : false),
 
 
   hltPSProv_(iConfig,consumesCollector(),*this), //it needs a referernce to the calling module for some reason, hence the *this   
@@ -795,6 +782,8 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("Electron_ID"               ,&Electron_ID   );
   tree->Branch("Electron_d0"               ,&Electron_d0              );
   tree->Branch("Electron_dz"               ,&Electron_dz              );
+  tree->Branch("Electron_chargedMiniIso"               ,&Electron_chargedMiniIso              );
+  tree->Branch("Electron_combinedMiniIso"               ,&Electron_combinedMiniIso              );
 
 
   //Scouting Photons
@@ -841,12 +830,13 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("Muon_tketaerror"               ,&Muon_trketaerror              );
   tree->Branch("Muon_tkdszerror"               ,&Muon_trkdszerror              );
   tree->Branch("Muon_tkdsz"                    ,&Muon_trkdsz                   );
+  tree->Branch("Muon_chargedMiniIso"           ,&Muon_chargedMiniIso           );
+  tree->Branch("Muon_combinedMiniIso"          ,&Muon_combinedMiniIso          );
 
 
   //Scouting AK4 PFJets
   tree->Branch("nJet"            	        ,&n_jet                         ,"nJet/i");
   tree->Branch("nJetId"            	        ,&n_jetId                       ,"nJetId/i");
-  tree->Branch("Jet_rawFactor"                     ,&Jet_rawFactor                    );
   tree->Branch("Jet_pt"            	        ,&Jet_pt                        );
   tree->Branch("Jet_eta"            	        ,&Jet_eta                       );
   tree->Branch("Jet_phi"            	        ,&Jet_phi                       );
@@ -871,10 +861,18 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("Jet_mvaDiscriminator"           ,&Jet_mvaDiscriminator          );
   tree->Branch("Jet_nConstituents"              ,&Jet_nConstituents             );
   tree->Branch("Jet_passId"                     ,&Jet_passId                    );
+  
+  //for jet id
+  tree->Branch("Jet_chargedHadronEnergyFraction"        ,&Jet_chargedHadronEnergyFraction       );
+  tree->Branch("Jet_neutralHadronEnergyFraction"        ,&Jet_neutralHadronEnergyFraction       );
+  tree->Branch("Jet_electronEnergyFraction"        ,&Jet_electronEnergyFraction       );
+  tree->Branch("Jet_muonEnergyFraction"        ,&Jet_muonEnergyFraction       );
+  tree->Branch("Jet_photonEnergyFraction"        ,&Jet_photonEnergyFraction       );
+  tree->Branch("Jet_neutralMultiplicity"        ,&Jet_neutralMultiplicity       );
+  tree->Branch("Jet_chargedMultiplicity"        ,&Jet_chargedMultiplicity       );
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                        ,&n_fatjet                      ,"nFatJet/i");
-  tree->Branch("FatJet_rawFactor"                     ,&FatJet_rawFactor                    );
   //tree->Branch("FatJet_area"                    ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                     ,&FatJet_eta                    );
   //tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
@@ -890,7 +888,18 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("FatJet_mass"                    ,&FatJet_mass                   );
   //tree->Branch("FatJet_msoftdrop"               ,&FatJet_msoftdrop              );
   //tree->Branch("FatJet_mtrim"                   ,&FatJet_mtrim                  );
-  tree->Branch("FatJet_nconst"                  ,&FatJet_nconst                 );
+  tree->Branch("FatJet_nConstituents"                  ,&FatJet_nConstituents                 );
+  tree->Branch("FatJet_passId"                  ,&FatJet_passId                 );
+
+  //for jet id
+  tree->Branch("FatJet_chargedHadronEnergyFraction"        ,&FatJet_chargedHadronEnergyFraction       );
+  tree->Branch("FatJet_neutralHadronEnergyFraction"        ,&FatJet_neutralHadronEnergyFraction       );
+  tree->Branch("FatJet_electronEnergyFraction"        ,&FatJet_electronEnergyFraction       );
+  tree->Branch("FatJet_muonEnergyFraction"        ,&FatJet_muonEnergyFraction       );
+  tree->Branch("FatJet_photonEnergyFraction"        ,&FatJet_photonEnergyFraction       );
+  tree->Branch("FatJet_neutralMultiplicity"        ,&FatJet_neutralMultiplicity       );
+  tree->Branch("FatJet_chargedMultiplicity"        ,&FatJet_chargedMultiplicity       );
+
 
   tree->Branch("rho"                            ,&rho2                           );
 
@@ -979,6 +988,18 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OfflineJet_HFHadronEnergy"             ,&OffJet_HFHadronEnergy            );
   tree->Branch("OfflineJet_HFEMEnergy"                 ,&OffJet_HFEMEnergy                );
   tree->Branch("OfflineJet_HOEnergy"                   ,&OffJet_HOEnergy                  );
+    //for jet id
+    tree->Branch("OfflineJet_chargedHadronEnergyFraction"        ,&OffJet_chargedHadronEnergyFraction       );
+    tree->Branch("OfflineJet_neutralHadronEnergyFraction"        ,&OffJet_neutralHadronEnergyFraction       );
+    tree->Branch("OfflineJet_chargedEmEnergyFraction"        ,&OffJet_chargedEmEnergyFraction       );
+    tree->Branch("OfflineJet_muonEnergyFraction"        ,&OffJet_muonEnergyFraction       );
+    tree->Branch("OfflineJet_neutralEmEnergyFraction"        ,&OffJet_neutralEmEnergyFraction       );
+    tree->Branch("OfflineJet_electronEnergyFraction"        ,&OffJet_electronEnergyFraction       );
+    tree->Branch("OfflineJet_photonEnergyFraction"        ,&OffJet_photonEnergyFraction       );
+    tree->Branch("OfflineJet_nConstituents"              ,&OffJet_nConstituents       );
+    tree->Branch("OfflineJet_neutralMultiplicity"        ,&OffJet_neutralMultiplicity       );
+    tree->Branch("OfflineJet_chargedMultiplicity"        ,&OffJet_chargedMultiplicity       );
+
   tree->Branch("OfflineJet_chargedHadronMultiplicity"  ,&OffJet_chargedHadronMultiplicity );
   tree->Branch("OfflineJet_neutralHadronMultiplicity"  ,&OffJet_neutralHadronMultiplicity );
   tree->Branch("OfflineJet_photonMultiplicity"         ,&OffJet_photonMultiplicity        );
@@ -1006,34 +1027,45 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OfflineFatJet_mass"                    ,&OfflineFatJet_mass                   );
   tree->Branch("OfflineFatJet_msoftdrop"               ,&OfflineFatJet_msoftdrop              );
   tree->Branch("OfflineFatJet_mtrim"                   ,&OfflineFatJet_mtrim                  );
-  tree->Branch("OfflineFatJet_nconst"                  ,&OfflineFatJet_nconst                 );
+  tree->Branch("OfflineFatJet_nConstituents"                  ,&OfflineFatJet_nConstituents                 );
   */
 
   //Offline AK8 Puppi PFJets
-  tree->Branch("nOfflinePuppiFatJet"            	             ,&n_fatjet_off_puppi                         ,"nOfflinePuppiFatJet/i");
-  tree->Branch("nOfflinePuppiFatJetId"            	           ,&n_fatjetIdoffpuppi                         ,"nOfflinePuppiFatJetId/i");
-  tree->Branch("OfflinePuppiFatJet_pt"            	           ,&OffPuppiFatJet_pt                        );
-  tree->Branch("OfflinePuppiFatJet_eta"            	           ,&OffPuppiFatJet_eta                       );
-  tree->Branch("OfflinePuppiFatJet_phi"            	           ,&OffPuppiFatJet_phi                       );
-  tree->Branch("OfflinePuppiFatJet_mass"            	         ,&OffPuppiFatJet_m                         );
-  tree->Branch("OfflinePuppiFatJet_rawFactor"                  ,&OffPuppiFatJet_rawFactor                 );
-  tree->Branch("OfflinePuppiFatJet_area"            	         ,&OffPuppiFatJet_area                      );
-  tree->Branch("OfflinePuppiFatJet_chargedHadronEnergy"        ,&OffPuppiFatJet_chargedHadronEnergy       );
-  tree->Branch("OfflinePuppiFatJet_neutralHadronEnergy"        ,&OffPuppiFatJet_neutralHadronEnergy       );
-  tree->Branch("OfflinePuppiFatJet_photonEnergy"               ,&OffPuppiFatJet_photonEnergy 	            );
-  tree->Branch("OfflinePuppiFatJet_electronEnergy"             ,&OffPuppiFatJet_electronEnergy            );
-  tree->Branch("OfflinePuppiFatJet_muonEnergy"    	           ,&OffPuppiFatJet_muonEnergy                );
-  tree->Branch("OfflinePuppiFatJet_HFHadronEnergy"             ,&OffPuppiFatJet_HFHadronEnergy            );
-  tree->Branch("OfflinePuppiFatJet_HFEMEnergy"                 ,&OffPuppiFatJet_HFEMEnergy                );
-  tree->Branch("OfflinePuppiFatJet_HOEnergy"                   ,&OffPuppiFatJet_HOEnergy                  );
-  tree->Branch("OfflinePuppiFatJet_chargedHadronMultiplicity"  ,&OffPuppiFatJet_chargedHadronMultiplicity );
-  tree->Branch("OfflinePuppiFatJet_neutralHadronMultiplicity"  ,&OffPuppiFatJet_neutralHadronMultiplicity );
-  tree->Branch("OfflinePuppiFatJet_photonMultiplicity"         ,&OffPuppiFatJet_photonMultiplicity        );
-  tree->Branch("OfflinePuppiFatJet_electronMultiplicity"       ,&OffPuppiFatJet_electronMultiplicity      );
-  tree->Branch("OfflinePuppiFatJet_muonMultiplicity"           ,&OffPuppiFatJet_muonMultiplicity          );
-  tree->Branch("OfflinePuppiFatJet_HFHadronMultiplicity"       ,&OffPuppiFatJet_HFHadronMultiplicity      );
-  tree->Branch("OfflinePuppiFatJet_HFEMMultiplicity"           ,&OffPuppiFatJet_HFEMMultiplicity          );
-  tree->Branch("OfflinePuppiFatJet_passId"                     ,&OffPuppiFatJet_passId                    );
+  tree->Branch("nOfflineFatJet"            	             ,&n_fatjet_off_puppi                         ,"nOfflineFatJet/i");
+  tree->Branch("nOfflineFatJetId"            	           ,&n_fatjetIdoffpuppi                         ,"nOfflineFatJetId/i");
+  tree->Branch("OfflineFatJet_pt"            	           ,&OffPuppiFatJet_pt                        );
+  tree->Branch("OfflineFatJet_eta"            	           ,&OffPuppiFatJet_eta                       );
+  tree->Branch("OfflineFatJet_phi"            	           ,&OffPuppiFatJet_phi                       );
+  tree->Branch("OfflineFatJet_mass"            	         ,&OffPuppiFatJet_m                         );
+  tree->Branch("OfflineFatJet_area"            	         ,&OffPuppiFatJet_area                      );
+  tree->Branch("OfflineFatJet_chargedHadronEnergy"        ,&OffPuppiFatJet_chargedHadronEnergy       );
+  tree->Branch("OfflineFatJet_neutralHadronEnergy"        ,&OffPuppiFatJet_neutralHadronEnergy       );
+  tree->Branch("OfflineFatJet_photonEnergy"               ,&OffPuppiFatJet_photonEnergy 	            );
+  tree->Branch("OfflineFatJet_electronEnergy"             ,&OffPuppiFatJet_electronEnergy            );
+  tree->Branch("OfflineFatJet_muonEnergy"    	           ,&OffPuppiFatJet_muonEnergy                );
+  tree->Branch("OfflineFatJet_HFHadronEnergy"             ,&OffPuppiFatJet_HFHadronEnergy            );
+  tree->Branch("OfflineFatJet_HFEMEnergy"                 ,&OffPuppiFatJet_HFEMEnergy                );
+  tree->Branch("OfflineFatJet_HOEnergy"                   ,&OffPuppiFatJet_HOEnergy                  );
+  tree->Branch("OfflineFatJet_chargedHadronMultiplicity"  ,&OffPuppiFatJet_chargedHadronMultiplicity );
+  tree->Branch("OfflineFatJet_neutralHadronMultiplicity"  ,&OffPuppiFatJet_neutralHadronMultiplicity );
+  tree->Branch("OfflineFatJet_photonMultiplicity"         ,&OffPuppiFatJet_photonMultiplicity        );
+  tree->Branch("OfflineFatJet_electronMultiplicity"       ,&OffPuppiFatJet_electronMultiplicity      );
+  tree->Branch("OfflineFatJet_muonMultiplicity"           ,&OffPuppiFatJet_muonMultiplicity          );
+  tree->Branch("OfflineFatJet_HFHadronMultiplicity"       ,&OffPuppiFatJet_HFHadronMultiplicity      );
+  tree->Branch("OfflineFatJet_HFEMMultiplicity"           ,&OffPuppiFatJet_HFEMMultiplicity          );
+  tree->Branch("OfflineFatJet_passId"                     ,&OffPuppiFatJet_passId                    );
+
+  //for jet id
+    tree->Branch("OfflineFatJet_chargedHadronEnergyFraction"        ,&OffPuppiFatJet_chargedHadronEnergyFraction       );
+    tree->Branch("OfflineFatJet_neutralHadronEnergyFraction"        ,&OffPuppiFatJet_neutralHadronEnergyFraction       );
+    tree->Branch("OfflineFatJet_chargedEmEnergyFraction"        ,&OffPuppiFatJet_chargedEmEnergyFraction       );
+    tree->Branch("OfflineFatJet_muonEnergyFraction"        ,&OffPuppiFatJet_muonEnergyFraction       );
+    tree->Branch("OfflineFatJet_neutralEmEnergyFraction"        ,&OffPuppiFatJet_neutralEmEnergyFraction       );
+    tree->Branch("OfflineFatJet_muonEnergyFraction"        ,&OffPuppiFatJet_muonEnergyFraction       );
+    tree->Branch("OfflineFatJet_photonEnergyFraction"        ,&OffPuppiFatJet_photonEnergyFraction       );
+    tree->Branch("OfflineFatJet_nConstituents"              ,&OffPuppiFatJet_nConstituents      );
+    tree->Branch("OfflineFatJet_neutralMultiplicity"        ,&OffPuppiFatJet_neutralMultiplicity       );
+    tree->Branch("OfflineFatJet_chargedMultiplicity"        ,&OffPuppiFatJet_chargedMultiplicity       );
 
    //add gen info
   tree->Branch("n_genjet"                             ,&n_genjet                         ,"nGenJets/i");
@@ -1091,28 +1123,26 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   */
 
   //offline Puppi PF Cands
-  tree->Branch("nOfflinePuppiPFCands"            	        ,&n_offpuppipfcand 		      ,"nOfflinePuppiPFCands/i");	
-  tree->Branch("OfflinePuppiPFCands_pt"                   ,&OffPuppiPFcand_pt                                  );
-  tree->Branch("OfflinePuppiPFCands_mass"                 ,&OffPuppiPFcand_m                                   );
-  tree->Branch("OfflinePuppiPFCands_eta"                  ,&OffPuppiPFcand_eta                                 );
-  tree->Branch("OfflinePuppiPFCands_phi"                  ,&OffPuppiPFcand_phi                                 );
-  tree->Branch("OfflinePuppiPFCands_pdgId"                ,&OffPuppiPFcand_pdgid                               );
-  tree->Branch("OfflinePuppiPFCands_charge"               ,&OffPuppiPFcand_q                                   );
+  tree->Branch("nOfflinePFCands"            	        ,&n_offpuppipfcand 		      ,"nOfflinePuppiPFCands/i");	
+  tree->Branch("OfflinePFCands_pt"                   ,&OffPuppiPFcand_pt                                  );
+  tree->Branch("OfflinePFCands_mass"                 ,&OffPuppiPFcand_m                                   );
+  tree->Branch("OfflinePFCands_eta"                  ,&OffPuppiPFcand_eta                                 );
+  tree->Branch("OfflinePFCands_phi"                  ,&OffPuppiPFcand_phi                                 );
+  tree->Branch("OfflinePFCands_pdgId"                ,&OffPuppiPFcand_pdgid                               );
+  tree->Branch("OfflinePFCands_charge"               ,&OffPuppiPFcand_q                                   );
 
   //CZZ: added jet indices for Offline Puppi PF candidates
-  tree->Branch("OfflinePuppiFatJetPFCands_jetIdx"                   ,&OfflinePuppiFatJetPFCands_jetIdx 	        );
-  tree->Branch("OfflinePuppiFatJetPFCands_pFCandsIdx"                   ,&OfflinePuppiFatJetPFCands_pFCandsIdx 	);
+  tree->Branch("OfflineFatJetPFCands_jetIdx"                   ,&OfflinePuppiFatJetPFCands_jetIdx 	        );
+  tree->Branch("OfflineFatJetPFCands_pFCandsIdx"                   ,&OfflinePuppiFatJetPFCands_pFCandsIdx 	);
 
 
   //CZZ: added MET collections
-  tree->Branch("MET_pt",&met_pt);
-  tree->Branch("MET_phi",&met_phi);
+  tree->Branch("ScoutMET_pt",&met_pt);
+  tree->Branch("ScoutMET_phi",&met_phi);
   tree->Branch("OfflineMET_pt",&met_pt_reco);
   tree->Branch("OfflineMET_phi",&met_phi_reco);
   tree->Branch("OfflinePuppiMET_pt",&puppi_met_reco_pt);
   tree->Branch("OfflinePuppiMET_phi",&puppi_met_reco_phi);
-  tree->Branch("CorrectedScoutMET_pt",&corr_scout_met_pt);
-  tree->Branch("CorrectedScoutMET_phi",&corr_scout_met_phi);
 
 }
 
@@ -1181,11 +1211,14 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
     iEvent.getByToken(verticesToken, verticesH);
     iEvent.getByToken(metPtToken, metPt);
     iEvent.getByToken(metPhiToken, metPhi);
-
   }
-  if(runOffline){
+
+  if(runGen){
     iEvent.getByToken(genak4jetsToken, genak4jetsH);
     iEvent.getByToken(genak8jetsToken, genak8jetsH);
+  }
+  
+  if(runOffline){
     iEvent.getByToken(recoverticeToken  , recoverticesH  );
     iEvent.getByToken(recoPfCandidateToken, pfcandsoffH);
     iEvent.getByToken(recoElectronToken, electronsoffH);
@@ -1301,6 +1334,8 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
   Electron_trkiso.clear();
   Electron_combinediso.clear();
   Electron_ID.clear();
+  Electron_chargedMiniIso.clear();
+  Electron_combinedMiniIso.clear();
   n_ele = 0;
 
   vector<ScoutingParticle> PFcands;
@@ -1765,12 +1800,46 @@ if(runOffline){
   }
 }
 
+  //* loop over electrons to compute to compute the mini-isolation
+  if(runScouting){
+    for (auto electrons_iter = electronsH->begin(); electrons_iter != electronsH->end(); ++electrons_iter) 
+      {
+        TLorentzVector electron_p4 = TLorentzVector();
+        electron_p4.SetPtEtaPhiM(electrons_iter->pt(), electrons_iter->eta(), electrons_iter->phi(), electrons_iter->m());
+        reco::Candidate::PolarLorentzVector electron_p4_reco(electron_p4.Pt(), electron_p4.Eta(), electron_p4.Phi(), electron_p4.M());
+        pat::PFIsolation ele_miniiso =  getMiniPFIsolationScout(PFcands, electron_p4_reco);
+        auto chg = ele_miniiso.chargedHadronIso();
+        auto neu = ele_miniiso.neutralHadronIso();
+        auto pho = ele_miniiso.photonIso();
+        float scale = 1.0 / electrons_iter->pt();
+        Electron_chargedMiniIso.push_back(scale * chg);
+        Electron_combinedMiniIso.push_back(scale * (chg + std::max(0.0, static_cast<double>(neu + pho) )));
+        
+    }
+  }
+
+  // * Loop over Muons and compute mini-isolaton
+  if(runScouting){
+    for (auto muons_iter = muonsH->begin(); muons_iter != muonsH->end(); ++muons_iter) 
+      {
+        TLorentzVector muon_p4 = TLorentzVector();
+        muon_p4.SetPtEtaPhiM(muons_iter->pt(), muons_iter->eta(), muons_iter->phi(), muons_iter->m());
+        reco::Candidate::PolarLorentzVector muon_p4_reco(muon_p4.Pt(), muon_p4.Eta(), muon_p4.Phi(), muon_p4.M());
+        pat::PFIsolation mu_miniiso =  getMiniPFIsolationScout(PFcands, muon_p4_reco);
+        auto chg = mu_miniiso.chargedHadronIso();
+        auto neu = mu_miniiso.neutralHadronIso();
+        auto pho = mu_miniiso.photonIso();
+        float scale = 1.0 / muons_iter->pt();
+        Muon_chargedMiniIso.push_back(scale * chg);
+        Muon_combinedMiniIso.push_back(scale * (chg + std::max(0.0, static_cast<double>(neu + pho) )));
+        
+    }
+  }
 
 
   // * 
   // AK4 Jets 
   // * 
-  Jet_rawFactor.clear();
   Jet_pt.clear();
   Jet_eta.clear();
   Jet_phi.clear();
@@ -1784,6 +1853,16 @@ if(runOffline){
   Jet_HFHadronEnergy.clear();
   Jet_HFEMEnergy.clear();
   Jet_HOEnergy.clear();
+
+  // for jet id
+  Jet_chargedHadronEnergyFraction.clear();
+  Jet_neutralHadronEnergyFraction.clear();
+  Jet_electronEnergyFraction.clear();
+  Jet_photonEnergyFraction.clear();
+  Jet_muonEnergyFraction.clear();
+  Jet_chargedMultiplicity.clear();
+  Jet_neutralMultiplicity.clear();
+
   Jet_chargedHadronMultiplicity.clear();
   Jet_neutralHadronMultiplicity.clear();
   Jet_photonMultiplicity.clear();
@@ -1808,6 +1887,19 @@ if(runOffline){
   OffJet_HFHadronEnergy.clear();
   OffJet_HFEMEnergy.clear();
   OffJet_HOEnergy.clear();
+
+  // for jet id
+  OffJet_chargedHadronEnergyFraction.clear();
+  OffJet_neutralHadronEnergyFraction.clear();
+  OffJet_chargedEmEnergyFraction.clear();
+  OffJet_neutralEmEnergyFraction.clear();
+  OffJet_muonEnergyFraction.clear();
+  OffJet_electronEnergyFraction.clear();
+  OffJet_photonEnergyFraction.clear();
+  OffJet_chargedMultiplicity.clear();
+  OffJet_neutralMultiplicity.clear();
+  OffJet_nConstituents.clear();
+
   OffJet_chargedHadronMultiplicity.clear();
   OffJet_neutralHadronMultiplicity.clear();
   OffJet_photonMultiplicity.clear();
@@ -1825,139 +1917,62 @@ if(runOffline){
   passJetId = false;
 
   if(runScouting){
+    for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
 
-    if (applyJECForAK4Scout){
+      Jet_pt .push_back( pfjet->pt() );
+      Jet_eta.push_back( pfjet->eta());
+      Jet_phi.push_back( pfjet->phi());
+      Jet_m  .push_back( pfjet->m()  );
+      Jet_area.push_back( pfjet->jetArea());
 
-      edm::Handle<reco::JetCorrector> jetCorrectorHLTAK4;
-      iEvent.getByToken(jetCorrectorHLTAK4Token, jetCorrectorHLTAK4);
-      std::set<JetWithJECPairReco, JetWithJECPairRecoComp> jetwithinfosetAK4Scout;
-      vector<reco::PFJet*> dummy_pfJets;
-      vector<reco::Particle::LorentzVector> dummy_jetP4s;
-      vector<const ScoutingPFJet*> dummy_scout_pFJets;
-      reco::Particle::LorentzVector dummy_jetP4;
+      Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
+      Jet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
+      Jet_photonEnergy       .push_back( pfjet->photonEnergy()       );
+      Jet_electronEnergy     .push_back( pfjet->electronEnergy()     );
+      Jet_muonEnergy         .push_back( pfjet->muonEnergy()     );
+      Jet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
+      Jet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
+      Jet_HOEnergy           .push_back( pfjet->HOEnergy()       );
+      
+      Jet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
+      Jet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
+      Jet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
+      Jet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
+      Jet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
+      Jet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
+      Jet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
 
-      int n_jet_counter = 0;
-      double jec = 1.0;
+      // create a LorentzVector to get the energy
+      // charged and neutral EM fractions are approximated with just electrons/photons (not available in scouting)
+      math::PtEtaPhiMLorentzVector j(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
 
-      for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
-    
-        dummy_jetP4 = reco::Particle::LorentzVector(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
-        dummy_jetP4s.push_back(dummy_jetP4);
-        reco::PFJet * dummy_pfJet = new reco::PFJet();
-        dummy_pfJet->setP4(dummy_jetP4s[n_jet_counter]);
-        jec = jetCorrectorHLTAK4->correction(*dummy_pfJet);
-        dummy_pfJets.push_back(dummy_pfJet);
-        const ScoutingPFJet * scout_pfjet = &(*pfjet);
-        dummy_scout_pFJets.push_back(scout_pfjet);
-        JetWithJECPairReco * jetwithjecidxpair_j = new JetWithJECPairReco(dummy_pfJets[n_jet_counter], jec, n_jet_counter, dummy_scout_pFJets[n_jet_counter]);
-        jetwithinfosetAK4Scout.insert(*jetwithjecidxpair_j);
-        
-        //pair jet and n_fatjet_counter
-        n_jet_counter ++;
-      }
+      Jet_chargedHadronEnergyFraction.push_back( pfjet->chargedHadronEnergy()/j.E());
+      Jet_neutralHadronEnergyFraction.push_back( pfjet->neutralHadronEnergy()/j.E());
+      Jet_electronEnergyFraction.push_back( pfjet->electronEnergy()/j.E());
+      Jet_photonEnergyFraction.push_back( pfjet->photonEnergy()/j.E());
+      Jet_muonEnergyFraction.push_back( pfjet->muonEnergy()/j.E());
+      Jet_chargedMultiplicity.push_back( pfjet->muonMultiplicity() + pfjet->electronMultiplicity() + pfjet->chargedHadronMultiplicity());
+      Jet_neutralMultiplicity.push_back( pfjet->photonMultiplicity() + pfjet->neutralHadronMultiplicity());
 
-      //loop over the set and fill the vectors
-      for (auto jetwithinfo : jetwithinfosetAK4Scout) {
-        auto corr = jetwithinfo.corr();
-        auto scoutingpfjet = jetwithinfo.scout_jet();
+      Jet_csv             .push_back( pfjet->csv() );
+      Jet_mvaDiscriminator.push_back( pfjet->mvaDiscriminator()    );
+      Jet_nConstituents   .push_back( pfjet->constituents().size() );
+      
+      n_jet++;
 
-        Jet_rawFactor.push_back(1.f - (1.f/corr) );
-        Jet_pt .push_back( scoutingpfjet->pt() * corr );
-        Jet_eta.push_back( scoutingpfjet->eta());
-        Jet_phi.push_back( scoutingpfjet->phi());
-        Jet_m  .push_back( scoutingpfjet->m() * corr );
+      passJetId = jetID(*pfjet);
+      Jet_passId.push_back( passJetId );
 
-        Jet_area.push_back( scoutingpfjet->jetArea());
+      // apply jet ID 
+      if ( passJetId == false ) continue; 
+      if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
+      ht += pfjet->pt() ; 
+      n_jetId++ ; 
 
-        Jet_chargedHadronEnergy.push_back( scoutingpfjet->chargedHadronEnergy());
-        Jet_neutralHadronEnergy.push_back( scoutingpfjet->neutralHadronEnergy());
-        Jet_photonEnergy       .push_back( scoutingpfjet->photonEnergy()       );
-        Jet_electronEnergy     .push_back( scoutingpfjet->electronEnergy()     );
-        Jet_muonEnergy         .push_back( scoutingpfjet->muonEnergy()     );
-        Jet_HFHadronEnergy     .push_back( scoutingpfjet->HFHadronEnergy() );
-        Jet_HFEMEnergy         .push_back( scoutingpfjet->HFEMEnergy()     );
-        Jet_HOEnergy           .push_back( scoutingpfjet->HOEnergy()       );
-        
-        Jet_chargedHadronMultiplicity.push_back( scoutingpfjet->chargedHadronMultiplicity());
-        Jet_neutralHadronMultiplicity.push_back( scoutingpfjet->neutralHadronMultiplicity());
-        Jet_photonMultiplicity       .push_back( scoutingpfjet->photonMultiplicity()       );
-        Jet_electronMultiplicity     .push_back( scoutingpfjet->electronMultiplicity()     );
-        Jet_muonMultiplicity         .push_back( scoutingpfjet->muonMultiplicity()         );
-        Jet_HFHadronMultiplicity     .push_back( scoutingpfjet->HFHadronMultiplicity()     );
-        Jet_HFEMMultiplicity         .push_back( scoutingpfjet->HFEMMultiplicity()         );
-
-        Jet_csv             .push_back( scoutingpfjet->csv() );
-        Jet_mvaDiscriminator.push_back( scoutingpfjet->mvaDiscriminator()    );
-        Jet_nConstituents   .push_back( scoutingpfjet->constituents().size() );
-        
-        n_jet++;
-
-        passJetId = jetID(*scoutingpfjet);
-        Jet_passId.push_back( passJetId );
-
-        // apply jet ID 
-        if ( passJetId == false ) continue;
-        if (scoutingpfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
-        ht += scoutingpfjet->pt() ; 
-        n_jetId++ ; 
-
-      }
-
-      }else{
-
-       for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
-
-
-        Jet_pt .push_back( pfjet->pt() );
-        Jet_eta.push_back( pfjet->eta());
-        Jet_phi.push_back( pfjet->phi());
-        Jet_m  .push_back( pfjet->m()  );
-        Jet_area.push_back( pfjet->jetArea());
-
-        Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
-        Jet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
-        Jet_photonEnergy       .push_back( pfjet->photonEnergy()       );
-        Jet_electronEnergy     .push_back( pfjet->electronEnergy()     );
-        Jet_muonEnergy         .push_back( pfjet->muonEnergy()     );
-        Jet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
-        Jet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
-        Jet_HOEnergy           .push_back( pfjet->HOEnergy()       );
-        
-        Jet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
-        Jet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
-        Jet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
-        Jet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
-        Jet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
-        Jet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
-        Jet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
-
-        Jet_csv             .push_back( pfjet->csv() );
-        Jet_mvaDiscriminator.push_back( pfjet->mvaDiscriminator()    );
-        Jet_nConstituents   .push_back( pfjet->constituents().size() );
-        
-        n_jet++;
-
-        passJetId = jetID(*pfjet);
-        Jet_passId.push_back( passJetId );
-
-        // apply jet ID 
-        if ( passJetId == false ) continue; 
-        if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
-        ht += pfjet->pt() ; 
-        n_jetId++ ; 
-
-      }
-  
-    }
-
+      }  
   }
 
   if(runOffline){
-
-    //
-    // Retrieve JEC and use it to sort jets by JEC-applied pt
-    //
-
     for ( auto pfjet = puppi_ak4_pfjetsoffH->begin(); pfjet != puppi_ak4_pfjetsoffH->end(); ++pfjet){
 
       OffJet_pt .push_back( pfjet->pt() );
@@ -1976,6 +1991,17 @@ if(runOffline){
       OffJet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
       OffJet_HOEnergy           .push_back( pfjet->hoEnergy()       );
       
+      OffJet_chargedHadronEnergyFraction.push_back( pfjet->chargedHadronEnergy()/pfjet->energy());
+      OffJet_neutralHadronEnergyFraction.push_back( pfjet->neutralHadronEnergy()/pfjet->energy());
+      OffJet_chargedEmEnergyFraction.push_back( pfjet->chargedEmEnergy()/pfjet->energy());
+      OffJet_neutralEmEnergyFraction.push_back( pfjet->neutralEmEnergy()/pfjet->energy());
+      OffJet_muonEnergyFraction.push_back( pfjet->muonEnergy()/pfjet->energy());
+      OffJet_electronEnergyFraction.push_back( pfjet->electronEnergy()/pfjet->energy());
+      OffJet_photonEnergyFraction.push_back( pfjet->photonEnergy()/pfjet->energy());
+      OffJet_chargedMultiplicity.push_back( pfjet->chargedMultiplicity());
+      OffJet_neutralMultiplicity.push_back( pfjet->neutralMultiplicity());
+      OffJet_nConstituents.push_back( pfjet->chargedMultiplicity() + pfjet->neutralMultiplicity());
+
       OffJet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
       OffJet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
       OffJet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
@@ -2024,7 +2050,6 @@ if(runOffline){
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
   //here add for scouting AK8 jets
-  FatJet_rawFactor.clear();
   FatJet_eta .clear();
   FatJet_phi .clear();
   FatJet_pt  .clear();
@@ -2039,130 +2064,118 @@ if(runOffline){
   //FatJet_tau32.clear();
   //FatJet_msoftdrop.clear();
   //FatJet_mtrim.clear();
-  FatJet_nconst.clear();
+  FatJet_nConstituents.clear();
+
+  // for jet id
+  FatJet_chargedHadronEnergyFraction.clear();
+  FatJet_neutralHadronEnergyFraction.clear();
+  FatJet_electronEnergyFraction.clear();
+  FatJet_photonEnergyFraction.clear();
+  FatJet_muonEnergyFraction.clear();
+  FatJet_chargedMultiplicity.clear();
+  FatJet_neutralMultiplicity.clear();
+  FatJet_passId.clear();
+
   n_fatjet = 0;
 
 
   if(runScouting){
 
-    edm::Handle<reco::JetCorrector> jetCorrectorHLTAK8;
-    iEvent.getByToken(jetCorrectorHLTAK8Token, jetCorrectorHLTAK8);
 
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
     vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jetAK8ScoutPtMin)); //pt min
 
-    //
-    // Retrieve JEC and use it to sort automatically jets by JEC-applied pt
-    //
-    std::set<JetWithJECPairReco, JetWithJECPairRecoComp> jetwithjecidxpairsetAK8Scout;
-    vector<reco::PFJet*> dummy_pfJets;
-    vector<reco::Particle::LorentzVector> dummy_jetP4s;
+    for (auto &j: ak8_jets) {
+      FatJet_eta.push_back(j.eta());
+      FatJet_phi.push_back(j.phi_std());
+      FatJet_pt .push_back(j.pt());
+      FatJet_mass.push_back(j.m());
+      FatJet_nConstituents.push_back(j.constituents().size());
+
+    // needs to be done manually, not included in scouting 
+    // charged and neutral EM fractions are approximated with just electrons/photons (not available in scouting)
+    // loop over constituents of the jet and compute the fractions of photons, electrons, muons, charged hadrons, neutral hadrons 
+    double sum_photon = 0;
+    double sum_electron = 0;
+    double sum_charged_hadron = 0;
+    double sum_neutral_hadron = 0;
+    double sum_muon = 0;
+    int sum_charged_hadron_multiplicity = 0;
+    int sum_neutral_hadron_multiplicity = 0;
+    int sum_photon_multiplicity = 0;
+    int sum_electron_multiplicity = 0;
+    int sum_muon_multiplicity = 0;
+
+
+    for (auto &k: j.constituents()) {
+      //check if the particle is a photon using the pdgid in the user info and comparing it with photons_ids
+      auto found_photon = std::find(photons_ids.begin(), photons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_photon!= photons_ids.end()) {
+          sum_photon += k.E();
+          sum_photon_multiplicity++;
+      }
+
+      //check if the particle is an electron using the pdgid in the user info and comparing it with electrons_ids
+      auto found_electron = std::find(electrons_ids.begin(), electrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_electron!= electrons_ids.end()) {
+          sum_electron += k.E();
+          sum_electron_multiplicity++;
+      }
+      
+      
+      //check if the particle is a muon using the pdgid in the user info and comparing it with muons_ids
+      auto found_muon = std::find(muons_ids.begin(), muons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_muon!= muons_ids.end()) {
+          sum_muon += k.E();
+          sum_muon_multiplicity++;
+      }
+
+
+      //check if the particle is a charged hadron using the pdgid in the user info and comparing it with charged_hadrons_ids
+      auto found_charged_hadron = std::find(chargedHadrons_ids.begin(), chargedHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_charged_hadron!= chargedHadrons_ids.end()) {
+          sum_charged_hadron += k.E();
+          sum_charged_hadron_multiplicity++;
+      }
+
+
+      //check if the particle is a neutral hadron using the pdgid in the user info and comparing it with neutral_hadrons_ids
+      auto found_neutral_hadron = std::find(neutralHadrons_ids.begin(), neutralHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+      if (found_neutral_hadron!= neutralHadrons_ids.end()) {
+          sum_neutral_hadron += k.E();
+          sum_neutral_hadron_multiplicity++;
+      }
     
-    int n_fatjet_counter = 0;
-    double jec = 1.0;
-
-
-    if (applyJECForAK8Scout) {
-
-      for (auto &j: ak8_jets) {
-
-        // --- calculate the jet correction
-        // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
-        //const reco::Particle::LorentzVector dummy_jetP4;
-        //dummy_jetP4 = reco::Particle::LorentzVector(j.px(), j.py(), j.pz(), j.E());
-        reco::Particle::LorentzVector dummy_jetP4(j.px(), j.py(), j.pz(), j.E());
-        dummy_jetP4s.push_back(dummy_jetP4);
-        reco::PFJet * dummy_pfJet = new reco::PFJet();
-        dummy_pfJet->setP4(dummy_jetP4s[n_fatjet_counter]);
-        jec = jetCorrectorHLTAK8->correction(*dummy_pfJet);
-        dummy_pfJets.push_back(dummy_pfJet);
-        JetWithJECPairReco * jetwithjecidxpair_j = new JetWithJECPairReco(dummy_pfJets[n_fatjet_counter], jec, n_fatjet_counter);
-        jetwithjecidxpairsetAK8Scout.insert(*jetwithjecidxpair_j);
-        n_fatjet_counter ++;
-
-      }
-
-      for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair) {
-        
-
-        auto pfjet = (*jetwithjecidxpair).jet();
-        auto corr  = (*jetwithjecidxpair).corr();
-        auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
-
-      
-        auto pfjet_pt_corr   = corr * pfjet->pt();
-        auto pfjet_mass_corr = corr * pfjet->mass();
-
-
-        //FatJet_area.push_back(j.area());
-        FatJet_rawFactor.push_back(1.f - (1.f/corr) );
-        FatJet_eta.push_back(pfjet->eta());
-        FatJet_phi.push_back(pfjet->phi());
-        FatJet_pt .push_back(pfjet_pt_corr);
-        FatJet_mass.push_back(pfjet_mass_corr);
-        FatJet_nconst.push_back((ak8_jets[jec_sorted_jet_idx].constituents()).size());
-
-        //PseudoJet sd_ak8 = sd_groomer(j);
-        //FatJet_msoftdrop.push_back(sd_ak8.m());
-        
-        //PseudoJet trimmed_ak8 = trimmer(j);
-        //FatJet_mtrim.push_back(trimmed_ak8.m());
-        
-        // Energy correlation
-        //FatJet_n2b1.push_back(N2(sd_ak8));
-        //FatJet_n3b1.push_back(N3(sd_ak8));
-        
-        // Nsubjettiness, tau 
-        //FatJet_tau1.push_back(nSub1.result(j));
-        //FatJet_tau2.push_back(nSub2.result(j));
-        //FatJet_tau3.push_back(nSub3.result(j));
-        //FatJet_tau4.push_back(nSub4.result(j));
-        //FatJet_tau21.push_back(nSub2.result(j)/nSub1.result(j));
-        //FatJet_tau32.push_back(nSub3.result(j)/nSub2.result(j));
-      
-        n_fatjet++; 
-
-    }  
-
-    unsigned int n_pfcand_tot = 0;
-    for (auto & pfcands_iter : PFcands ) {
-      if (pfcands_iter.pt() < 1.) continue;
-      if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
-      int tmpidx = -1;
-      int ak8count = 0;
-      for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair){
-        //get jet idx
-        auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
-        //based on jec_sorted_jet_idx, select the jet from ak8_jets
-        for (auto &k: ak8_jets[jec_sorted_jet_idx].constituents()){
-          if ((UInt_t)k.user_index() == n_pfcand_tot){
-            tmpidx = ak8count;
-            ak8count++;
-            break;
-          }
-        }
-        if (tmpidx>-1){
-          FatJetPFCands_jetIdx.push_back(tmpidx);
-          FatJetPFCands_pFCandsIdx.push_back(n_pfcand_tot);
-          break;
-        }else{
-          ak8count++;
-        }
-      }
-      n_pfcand_tot++;
     }
 
-    }else{
+    //define variables for jetID
+    //define the fraction of electrons
+    double jet_charged_em_fraction = (sum_electron) / j.E();
+    //define the fraction of photons
+    double jet_neutral_em_fraction = (sum_photon) / j.E();
+    //define the fraction of muons
+    double jet_muon_fraction = sum_muon / j.E();
+    //define the fraction of charged hadrons
+    double jet_charged_hadron_fraction = sum_charged_hadron / j.E();
+    //define the fraction of neutral hadrons
+    double jet_neutral_hadron_fraction = sum_neutral_hadron / j.E();
+    //define multiplicity of charged hadrons, neutral hadrons, photons, electrons, muons
+    double NumConst = sum_charged_hadron_multiplicity + sum_neutral_hadron_multiplicity + sum_photon_multiplicity + sum_electron_multiplicity + sum_muon_multiplicity;
+    double CHM =  sum_muon_multiplicity + sum_electron_multiplicity + sum_charged_hadron_multiplicity;
 
-      for (auto &j: ak8_jets) {
-        FatJet_rawFactor.push_back(0);
-        FatJet_eta.push_back(j.eta());
-        FatJet_phi.push_back(j.phi_std());
-        FatJet_pt .push_back(j.pt());
-        FatJet_mass.push_back(j.m());
-        FatJet_nconst.push_back(j.constituents().size());
-        n_fatjet++;
-      }
+    bool passID = (abs(j.eta())<=2.6 && jet_charged_em_fraction < 0.8 && jet_neutral_em_fraction < 0.9 && jet_muon_fraction < 0.8 && jet_neutral_hadron_fraction < 0.9 && jet_charged_hadron_fraction > 0 && NumConst > 1 && CHM > 0);
+
+    FatJet_chargedHadronEnergyFraction.push_back(jet_charged_hadron_fraction);
+    FatJet_neutralHadronEnergyFraction.push_back(jet_neutral_hadron_fraction);
+    FatJet_electronEnergyFraction.push_back(jet_charged_em_fraction);
+    FatJet_photonEnergyFraction.push_back(jet_neutral_em_fraction);
+    FatJet_muonEnergyFraction.push_back(jet_muon_fraction);
+    FatJet_chargedMultiplicity.push_back(sum_muon_multiplicity + sum_electron_multiplicity + sum_charged_hadron_multiplicity);
+    FatJet_neutralMultiplicity.push_back(sum_photon_multiplicity + sum_neutral_hadron_multiplicity);
+
+    FatJet_passId.push_back(passID) ;
+    n_fatjet++;
+  }
 
       unsigned int n_pfcand_tot = 0;
       for (auto & pfcands_iter : PFcands ) {
@@ -2187,12 +2200,8 @@ if(runOffline){
           }
         }
         n_pfcand_tot++;
-      }
-    
+      }    
     }
-
-  }
-
 
   /*
   //here add for offline AK8 jets
@@ -2211,7 +2220,7 @@ if(runOffline){
   OfflineFatJet_tau32.clear();
   OfflineFatJet_msoftdrop.clear();
   OfflineFatJet_mtrim.clear();
-  OfflineFatJet_nconst.clear();
+  OfflineFatJet_nConstituents.clear();
   
   if (runOffline){
 
@@ -2225,7 +2234,7 @@ if(runOffline){
       OfflineFatJet_eta.push_back(j.pseudorapidity());
       OfflineFatJet_mass.push_back(j.m());
 
-      OfflineFatJet_nconst.push_back(j.constituents().size());
+      OfflineFatJet_nConstituents.push_back(j.constituents().size());
       
       PseudoJet sd_ak8_off = sd_groomer(j);
       OfflineFatJet_msoftdrop.push_back(sd_ak8_off.m());
@@ -2281,7 +2290,7 @@ if(runOffline){
   }else{// rho=0;
     rho2=0;}
 
-  if(doSignal or (isMC and not era_18)){
+  if(doSignal or isMC){
     PSweights = genEvtInfo->weights();
     Handle<double> prefirewgt;
     iEvent.getByToken(prefireToken, prefirewgt);
@@ -2343,7 +2352,6 @@ OffPuppiFatJet_pt.clear();
 OffPuppiFatJet_eta.clear();
 OffPuppiFatJet_phi.clear();
 OffPuppiFatJet_m.clear();
-OffPuppiFatJet_rawFactor.clear();
 OffPuppiFatJet_area.clear();
 OffPuppiFatJet_chargedHadronEnergy.clear();
 OffPuppiFatJet_neutralHadronEnergy.clear();
@@ -2365,43 +2373,30 @@ n_fatjet_off_puppi = 0;
 n_fatjetIdoffpuppi = 0;
 passOffPuppiFatJetId = false;
 
+// for jet id
+OffPuppiFatJet_chargedHadronEnergyFraction.clear();
+OffPuppiFatJet_neutralHadronEnergyFraction.clear();
+OffPuppiFatJet_chargedEmEnergyFraction.clear();
+OffPuppiFatJet_neutralEmEnergyFraction.clear();
+OffPuppiFatJet_muonEnergyFraction.clear();
+OffPuppiFatJet_electronEnergyFraction.clear();
+OffPuppiFatJet_photonEnergyFraction.clear();
+OffPuppiFatJet_chargedMultiplicity.clear();
+OffPuppiFatJet_neutralMultiplicity.clear();
+OffPuppiFatJet_nConstituents.clear();
+
+
 vector<vector<reco::CandidatePtr>> OffPFcandsAK8Puppi;
 
 if(runOffline){
 
-    edm::Handle<reco::JetCorrector> jetCorrectorAK8;
-    iEvent.getByToken(jetCorrectorAK8Token, jetCorrectorAK8);
+    for (auto pfjet = puppi_ak8_pfjetsoffH->begin(); pfjet != puppi_ak8_pfjetsoffH->end(); ++pfjet) {
+      //const reco::PFJet* jet = &(*it);
 
-    //
-    // Retrieve JEC and use it to sort jets by JEC-applied pt
-    //
-    std::set<JetWithJECPairReco, JetWithJECPairRecoComp> jetwithjecpairsetAK8;
-    for (auto it = puppi_ak8_pfjetsoffH->begin(); it != puppi_ak8_pfjetsoffH->end(); ++it) {
-      const reco::PFJet* jet = &(*it);
-      double jec = 1.0;
-      if (applyJECForAK8)
-        jec = jetCorrectorAK8->correction(*it);
-      jetwithjecpairsetAK8.insert(JetWithJECPairReco(jet, jec));
-
-    }
-
-
-    //
-    // Loop over jets
-    //
-    //print number of jets
-    for (auto jetwithjecpair = jetwithjecpairsetAK8.begin(); jetwithjecpair != jetwithjecpairsetAK8.end(); ++jetwithjecpair) {
-      auto pfjet = (*jetwithjecpair).jet();
-      auto corr  = (*jetwithjecpair).corr();
-
-      auto pfjet_pt_corr   = corr * pfjet->pt();
-      auto pfjet_mass_corr = corr * pfjet->mass();
-
-      OffPuppiFatJet_pt .push_back( pfjet_pt_corr );
+      OffPuppiFatJet_pt .push_back( pfjet->pt() );
       OffPuppiFatJet_eta.push_back( pfjet->eta());
       OffPuppiFatJet_phi.push_back( pfjet->phi());
-      OffPuppiFatJet_m  .push_back( pfjet_mass_corr );
-      OffPuppiFatJet_rawFactor.push_back(1.f - (pfjet->pt()/pfjet_pt_corr) );
+      OffPuppiFatJet_m  .push_back( pfjet->mass() );
 
       OffPuppiFatJet_area.push_back( pfjet->jetArea());
 
@@ -2422,6 +2417,17 @@ if(runOffline){
       OffPuppiFatJet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
       OffPuppiFatJet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
 
+      OffPuppiFatJet_chargedHadronEnergyFraction.push_back( pfjet->chargedHadronEnergy()/pfjet->energy());
+      OffPuppiFatJet_neutralHadronEnergyFraction.push_back( pfjet->neutralHadronEnergy()/pfjet->energy());
+      OffPuppiFatJet_chargedEmEnergyFraction.push_back( pfjet->chargedEmEnergy()/pfjet->energy());
+      OffPuppiFatJet_neutralEmEnergyFraction.push_back( pfjet->neutralEmEnergy()/pfjet->energy());
+      OffPuppiFatJet_muonEnergyFraction.push_back( pfjet->muonEnergy()/pfjet->energy());
+      OffPuppiFatJet_electronEnergyFraction.push_back( pfjet->electronEnergy()/pfjet->energy());
+      OffPuppiFatJet_photonEnergyFraction.push_back( pfjet->photonEnergy()/pfjet->energy());
+      OffPuppiFatJet_chargedMultiplicity.push_back( pfjet->chargedMultiplicity());
+      OffPuppiFatJet_neutralMultiplicity.push_back( pfjet->neutralMultiplicity());
+      OffPuppiFatJet_nConstituents.push_back( pfjet->chargedMultiplicity() + pfjet->neutralMultiplicity());
+  
       n_fatjet_off_puppi++;
 
       passOffPuppiFatJetId = jetIDoff(*pfjet);
@@ -2620,122 +2626,6 @@ if (addMatrixElementInfo){
  }
   
 
-//propagate HLT JECs for scouting AK4 to PFMET 
-Float16_t sum_jets_px;
-Float16_t sum_jets_py;
-sum_jets_px = 0;
-sum_jets_py = 0;
-corr_scout_met_pt = 0;
-corr_scout_met_phi = 0;
-
-if (runScouting & applyJECForAK4Scout){
-
-  JetDefinition ak04_def = JetDefinition(antikt_algorithm, 0.4);
-
-  ClusterSequenceArea ak04_cs(fj_part, ak04_def, area_def);
-  vector<PseudoJet> ak04_jets = sorted_by_pt(ak04_cs.inclusive_jets(0.)); 
-
-
-  //define corrector for scouting AK4 jets
-  edm::Handle<reco::JetCorrector> jetCorrectorHLTAK4Rec;
-  iEvent.getByToken(jetCorrectorHLTAK4Token, jetCorrectorHLTAK4Rec);
-
-
-  for (auto &j: ak04_jets) {
-
-    // --- calculate the jet correction
-    // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
-    reco::PFJet dummy_pfJet;
-    reco::Particle::LorentzVector dummy_jetP4(j.pt(), j.eta(), j.phi(), j.m());
-    dummy_pfJet.setP4(dummy_jetP4);
-
-    //loop over constituents of the jet and compute the fractions of photons, electrons, muons, charged hadrons, neutral hadrons 
-    double sum_photon = 0;
-    double sum_electron = 0;
-    double sum_charged_hadron = 0;
-    double sum_neutral_hadron = 0;
-    double sum_muon = 0;
-    int sum_charged_hadron_multiplicity = 0;
-    int sum_neutral_hadron_multiplicity = 0;
-    int sum_photon_multiplicity = 0;
-    int sum_electron_multiplicity = 0;
-    int sum_muon_multiplicity = 0;
-
-
-    for (auto &k: j.constituents()) {
-      //check if the particle is a photon using the pdgid in the user info and comparing it with photons_ids
-      auto found_photon = std::find(photons_ids.begin(), photons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
-      if (found_photon!= photons_ids.end()) {
-          sum_photon += k.E();
-          sum_photon_multiplicity++;
-      }
-
-      //check if the particle is an electron using the pdgid in the user info and comparing it with electrons_ids
-      auto found_electron = std::find(electrons_ids.begin(), electrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
-      if (found_electron!= electrons_ids.end()) {
-          sum_electron += k.E();
-          sum_electron_multiplicity++;
-      }
-      
-      
-      //check if the particle is a muon using the pdgid in the user info and comparing it with muons_ids
-      auto found_muon = std::find(muons_ids.begin(), muons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
-      if (found_muon!= muons_ids.end()) {
-          sum_muon += k.E();
-          sum_muon_multiplicity++;
-      }
-
-
-      //check if the particle is a charged hadron using the pdgid in the user info and comparing it with charged_hadrons_ids
-      auto found_charged_hadron = std::find(chargedHadrons_ids.begin(), chargedHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
-      if (found_charged_hadron!= chargedHadrons_ids.end()) {
-          sum_charged_hadron += k.E();
-          sum_charged_hadron_multiplicity++;
-      }
-
-
-      //check if the particle is a neutral hadron using the pdgid in the user info and comparing it with neutral_hadrons_ids
-      auto found_neutral_hadron = std::find(neutralHadrons_ids.begin(), neutralHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
-      if (found_neutral_hadron!= neutralHadrons_ids.end()) {
-          sum_neutral_hadron += k.E();
-          sum_neutral_hadron_multiplicity++;
-      }
-      
-    }
-
-    //define variables for jetID
-    //define the fraction of electrons
-    double jet_charged_em_fraction = (sum_electron) / j.E();
-    //define the fraction of photons
-    double jet_neutral_em_fraction = (sum_photon) / j.E();
-    //define the fraction of muons
-    double jet_muon_fraction = sum_muon / j.E();
-    //define the fraction of charged hadrons
-    double jet_charged_hadron_fraction = sum_charged_hadron / j.E();
-    //define the fraction of neutral hadrons
-    double jet_neutral_hadron_fraction = sum_neutral_hadron / j.E();
-    //define multiplicity of charged hadrons, neutral hadrons, photons, electrons, muons
-    double NumConst = sum_charged_hadron_multiplicity + sum_neutral_hadron_multiplicity + sum_photon_multiplicity + sum_electron_multiplicity + sum_muon_multiplicity;
-    double CHM =  sum_muon_multiplicity + sum_electron_multiplicity + sum_charged_hadron_multiplicity;
-    //define the id
-    bool passID = (abs(j.eta())<=2.4 && jet_charged_em_fraction < 0.8 && jet_neutral_em_fraction < 0.9 && jet_muon_fraction < 0.8 && jet_neutral_hadron_fraction < 0.9 && jet_charged_hadron_fraction > 0 && NumConst > 1 && CHM > 0);
-
-  
-    //check if jet pT is larger then 15 GeV, and jet pass requirements for jetID
-    double jec = 1.0;
-    if (dummy_pfJet.pt() > 15.0 &&  passID )
-      jec = jetCorrectorHLTAK4Rec->correction(dummy_pfJet);
-
-    sum_jets_px += j.px() * jec;
-    sum_jets_py += j.py() * jec;
-
-  }
-
-  TLorentzVector miss = TLorentzVector(sum_jets_px, sum_jets_py, 0, 0); //(-pi,pi)
-  corr_scout_met_pt = miss.Pt();
-  corr_scout_met_phi = miss.Phi();
-
-}
 
 
 tree->Fill();	
@@ -2806,12 +2696,12 @@ bool ScoutingNanoAOD_fromMiniAOD::jetIDoff(const pat::Jet &pfjet){
     jet.SetPtEtaPhiM(pfjet.pt(), pfjet.eta(), pfjet.phi(), pfjet.mass() );
     
     float NHF  = pfjet.neutralHadronEnergy()/jet.E();
-    float NEMF = pfjet.photonEnergy()/jet.E();
+    float NEMF = pfjet.neutralEmEnergy()/jet.E();
     float CHF  = pfjet.chargedHadronEnergy()/jet.E();
     float MUF  = pfjet.muonEnergy()/jet.E();
-    float CEMF = pfjet.electronEnergy()/jet.E();
-    float NumConst = pfjet.chargedHadronMultiplicity()+pfjet.neutralHadronMultiplicity()+pfjet.photonMultiplicity() + pfjet.electronMultiplicity() + pfjet.muonMultiplicity() + pfjet.HFHadronMultiplicity() + pfjet.HFEMMultiplicity();
-    float CHM      = pfjet.chargedHadronMultiplicity() +pfjet.electronMultiplicity() + pfjet.muonMultiplicity(); 
+    float CEMF = pfjet.chargedEmEnergy()/jet.E();
+    float NumConst = pfjet.chargedMultiplicity()+pfjet.neutralMultiplicity();
+    float CHM      = pfjet.chargedMultiplicity(); 
     bool passID = (abs(pfjet.eta())<=2.6 && CEMF<0.8 && CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9 );
 
     return passID;

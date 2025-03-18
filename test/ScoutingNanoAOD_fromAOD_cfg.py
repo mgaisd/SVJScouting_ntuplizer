@@ -1,4 +1,5 @@
 import FWCore.ParameterSet.Config as cms
+import FWCore.ParameterSet.Config as cms
 import FWCore.Utilities.FileUtils as FileUtils
 import os
 
@@ -89,10 +90,10 @@ params.setDefault(
 )
 
 params.register(
-  "era",
-  "2018",
-  VarParsing.multiplicity.singleton,VarParsing.varType.string,
-  "era"
+    "era",
+    "2018",
+    VarParsing.multiplicity.singleton,VarParsing.varType.string,
+    "era"
 )
 
 params.register(
@@ -101,6 +102,21 @@ params.register(
     VarParsing.multiplicity.singleton,VarParsing.varType.bool,
     'Flag to indicate whether or not signal is run'
 )
+
+params.register(
+    'onlyScouting', 
+    False, 
+    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
+    'Flag to indicate whether the sample contains only scouting data without additional offline collections'
+)
+
+params.register(
+    'UL2016preVFP', 
+    False, 
+    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
+    'Flag to indicate whether the sample belongs to the 2016 preVFP era'
+)
+
 
 def getPatAlgosToolsTask(process):
     taskName = "patAlgosToolsTask"
@@ -208,242 +224,62 @@ L1Info = [
 
 runSig = False
 if params.signal:
-  runSig = True
+    runSig = True
+
+onlyScouting = False
+if params.onlyScouting:
+    onlyScouting = True
+
+if not onlyScouting:
+    # Load Puppi
+    #
+    process.load('CommonTools/PileupAlgos/Puppi_cff')
+    # The following modification ensures that tune V15 is setup for puppi
+    # https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/CommonTools/PileupAlgos/python/Puppi_cff.py#L123-L130
+    process.puppi.EtaMinUseDeltaZ = 2.4
+    process.puppi.PtMaxCharged = 20.
+    process.puppi.PtMaxNeutralsStartSlope = 20.
+    process.puppi.NumOfPUVtxsForCharged = 2
+    process.puppi.algos[0].etaMin = [-0.01]
+
+    #define a new jet collection - Puppi Jets AK4
+    from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJetsPuppi
+    process.ak4PFJetsPuppi  = ak4PFJetsPuppi.clone (doAreaFastjet = True, useExplicitGhosts = cms.bool(True),jetPtMin = 10.)
 
 
-
-############################################################
-#
-# Setup JECs for PFMET - Type 1 Corrections
-#
-############################################################
-#Load patSequences
-process.load('PhysicsTools.PatAlgos.patSequences_cff')
-from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncForMiniAODProduction
-
-
-runMetCorAndUncForMiniAODProduction(process, 
-                                    metType="PF",
-                                    jetCollUnskimmed="patJets",
-                                    )
-
-pfMETCorrTask = getPatAlgosToolsTask(process)
-process.load('PhysicsTools.PatAlgos.slimming.slimmedMETs_cfi')
-pfMETCorrTask.add(process.slimmedMETs)
-#process.load('PhysicsTools.PatUtils.patCaloMETCorrections_cff')
-#pfMETCorrTask.add(process.patCaloMet)
-process.load('PhysicsTools.PatAlgos.slimming.offlineSlimmedPrimaryVertices_cfi')
-pfMETCorrTask.add(process.offlineSlimmedPrimaryVertices)
-process.load('CommonTools.RecoAlgos.primaryVertexAssociation_cfi')
-pfMETCorrTask.add(process.primaryVertexAssociation)
-process.load('PhysicsTools.PatAlgos.producersLayer1.lowPtElectronProducer_cff')
-pfMETCorrTask.add(process.rekeyLowPtGsfElectronSeedValueMaps)
-
-process.pfMETCorrTask = cms.Task(pfMETCorrTask)
-process.fullPatMetSequenc = cms.Sequence(process.pfMETCorrTask)
-
-
-# Load Puppi
-#
-process.load('CommonTools/PileupAlgos/Puppi_cff')
-# The following modification ensures that tune V15 is setup for puppi
-# https://github.com/cms-sw/cmssw/blob/CMSSW_10_6_26/CommonTools/PileupAlgos/python/Puppi_cff.py#L123-L130
-process.puppi.EtaMinUseDeltaZ = 2.4
-process.puppi.PtMaxCharged = 20.
-process.puppi.PtMaxNeutralsStartSlope = 20.
-process.puppi.NumOfPUVtxsForCharged = 2
-process.puppi.algos[0].etaMin = [-0.01]
-
-#define a new jet collection - Puppi Jets AK4
-from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJetsPuppi
-process.ak4PFJetsPuppi  = ak4PFJetsPuppi.clone (doAreaFastjet = True, useExplicitGhosts = cms.bool(True),jetPtMin = 10.)
-
-
-#and add Puppi Jets AK4 
-from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
-addJetCollection(process,labelName = 'AK4PFPUPPI', jetSource = cms.InputTag('ak4PFJetsPuppi'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag('ak4GenJetsNoNu'), jetCorrections = ('AK4PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute'], '\
-None'),pfCandidates = cms.InputTag('particleFlow'),
-    pvSource = cms.InputTag('offlinePrimaryVertices'),
-    svSource = cms.InputTag('offlineSecondaryVertices'),
-    muSource =cms.InputTag( 'muons'),
-    elSource = cms.InputTag('gedGsfElectrons')
-)
-
-
-
-#define a new jet collection - Puppi Jets AK8
-from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJetsPuppi
-process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (doAreaFastjet = True, useExplicitGhosts = cms.bool(True),jetPtMin = 100.)
-
-
-#and add Puppi Jets AK8 
-from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
-addJetCollection(process,labelName = 'AK8PFPUPPI', jetSource = cms.InputTag('ak8PFJetsPuppi'), algo = 'AK', rParam=0.8, genJetCollection=cms.InputTag('ak8GenJetsNoNu'), jetCorrections = ('AK8PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute'], '\
-None'),pfCandidates = cms.InputTag('particleFlow'),
-    pvSource = cms.InputTag('offlinePrimaryVertices'),
-    svSource = cms.InputTag('offlineSecondaryVertices'),
-    muSource =cms.InputTag( 'muons'),
-    elSource = cms.InputTag('gedGsfElectrons')
-)
-
-############################################################
-#
-# Setup JECs for AK4 Puppi jets
-#
-############################################################
-# L1 corrections for AK4Puppi
-#process.ak4PFPuppiL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
-#    level       = cms.string('L1FastJet'),
-#    algorithm   = cms.string('AK4PFPuppi'),
-#    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
-#)
-# MC-truth corrections for AK8 Puppi jets
-#process.ak4PFPuppiL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
-#    level     = cms.string('L2Relative'),
-#    algorithm = cms.string('AK4PFPuppi')
-#)
-# Dummy setup. L2L3Residual JEC is 1 for MC
-#process.ak4PFPuppiL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
-#    level     = cms.string('L2L3Residual'),
-#    algorithm = cms.string('AK4PFPuppi')
-#)
-#process.load("PhysicsTools.PatUtils.patPFMETCorrections_cff")
-
-
-#process.ak4PFPuppiL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
-#    correctors = cms.VInputTag(
-#        'ak4PFPuppiL1FastjetCorrector',
-#        'ak4PFPuppiL2RelativeCorrector',
-#        'ak4PFPuppiL2L3ResidualCorrector',
-#    )
-#)
-#process.ak4PFPuppiL2L3CorrectorTask = cms.Task(
-#    process.ak4PFPuppiL1FastjetCorrector,
-#    process.ak4PFPuppiL2RelativeCorrector,
-#    process.ak4PFPuppiL2L3ResidualCorrector,
-#    process.ak4PFPuppiL2L3Corrector,
-#)
-#process.ak4PFPuppiL2L3CorrectorSeq = cms.Sequence(process.ak4PFPuppiL2L3CorrectorTask)
-process.ak4PFPuppiL2L3CorrectorSeq = cms.Sequence(process.patAlgosToolsTask)
-
-############################################################
-#
-# Setup JECs for AK8 Puppi jets
-#
-############################################################
-# Dummy setup. L1FastJet JEC is 1 for AK8 Puppi jets
-process.ak8PFPuppiL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
-    level       = cms.string('L1FastJet'),
-    algorithm   = cms.string('AK8PFPuppi'),
-    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
-)
-# MC-truth corrections  for AK8 Puppi jets
-process.ak8PFPuppiL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2Relative'),
-    algorithm = cms.string('AK8PFPuppi')
-)
-# Dummy setup. L2L3Residual JEC is 1 for MC
-process.ak8PFPuppiL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2L3Residual'),
-    algorithm = cms.string('AK8PFPuppi')
-)
-process.ak8PFPuppiL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
-    correctors = cms.VInputTag(
-        'ak8PFPuppiL1FastjetCorrector',
-        'ak8PFPuppiL2RelativeCorrector',
-        'ak8PFPuppiL2L3ResidualCorrector',
+    #and add Puppi Jets AK4 
+    from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
+    addJetCollection(process,labelName = 'AK4PFPUPPI', jetSource = cms.InputTag('ak4PFJetsPuppi'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag('ak4GenJetsNoNu'), pfCandidates = cms.InputTag('particleFlow'),
+        pvSource = cms.InputTag('offlinePrimaryVertices'),
+        svSource = cms.InputTag('offlineSecondaryVertices'),
+        muSource =cms.InputTag( 'muons'),
+        elSource = cms.InputTag('gedGsfElectrons')
     )
-)
-process.ak8PFPuppiL2L3CorrectorTask = cms.Task(
-    process.ak8PFPuppiL1FastjetCorrector,
-    process.ak8PFPuppiL2RelativeCorrector,
-    process.ak8PFPuppiL2L3ResidualCorrector,
-    process.ak8PFPuppiL2L3Corrector,
-)
-process.ak8PFPuppiL2L3CorrectorSeq = cms.Sequence(process.ak8PFPuppiL2L3CorrectorTask)
 
-############################################################
-#
-# Setup JECs for HLT AK4 PF jets
-#
-############################################################
-# Dummy setup. L1FastJet JEC is 1 for HLT AK4 PF jets
-process.ak4PFHLTL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
-    level       = cms.string('L1FastJet'),
-    algorithm   = cms.string('AK4PFHLT'),
-    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
-)
-# MC-truth corrections  for HLT AK8 PF jets
-process.ak4PFHLTL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2Relative'),
-    algorithm = cms.string('AK4PFHLT')
-)
-# Dummy setup. L2L3Residual JEC is 1 for MC
-process.ak4PFHLTL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2L3Residual'),
-    algorithm = cms.string('AK4PFHLT')
-)
-process.ak4PFHLTL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
-    correctors = cms.VInputTag(
-        'ak4PFHLTL1FastjetCorrector',
-        'ak4PFHLTL2RelativeCorrector',
-        'ak4PFHLTL2L3ResidualCorrector',
+
+
+    #define a new jet collection - Puppi Jets AK8
+    from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJetsPuppi
+    process.ak8PFJetsPuppi  = ak8PFJetsPuppi.clone (doAreaFastjet = True, useExplicitGhosts = cms.bool(True),jetPtMin = 100.)
+
+
+    #and add Puppi Jets AK8 
+    from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
+    addJetCollection(process,labelName = 'AK8PFPUPPI', jetSource = cms.InputTag('ak8PFJetsPuppi'), algo = 'AK', rParam=0.8, genJetCollection=cms.InputTag('ak8GenJetsNoNu'), pfCandidates = cms.InputTag('particleFlow'),
+        pvSource = cms.InputTag('offlinePrimaryVertices'),
+        svSource = cms.InputTag('offlineSecondaryVertices'),
+        muSource =cms.InputTag( 'muons'),
+        elSource = cms.InputTag('gedGsfElectrons')
     )
-)
-process.ak4PFHLTL2L3CorrectorTask = cms.Task(
-    process.ak4PFHLTL1FastjetCorrector,
-    process.ak4PFHLTL2RelativeCorrector,
-    process.ak4PFHLTL2L3ResidualCorrector,
-    process.ak4PFHLTL2L3Corrector,
-)
-process.ak4PFHLTL2L3CorrectorSeq = cms.Sequence(process.ak4PFHLTL2L3CorrectorTask)
 
-############################################################
-#
-# Setup JECs for HLT AK8 PF jets
-#
-############################################################
-# Dummy setup. L1FastJet JEC is 1 for HLT AK8 PF jets
-process.ak8PFHLTL1FastjetCorrector = cms.EDProducer('L1FastjetCorrectorProducer',
-    level       = cms.string('L1FastJet'),
-    algorithm   = cms.string('AK8PFHLT'),
-    srcRho      = cms.InputTag('fixedGridRhoFastjetAll')
-)
-# MC-truth corrections  for HLT AK8 PF jets
-process.ak8PFHLTL2RelativeCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2Relative'),
-    algorithm = cms.string('AK8PFHLT')
-)
-# Dummy setup. L2L3Residual JEC is 1 for MC
-process.ak8PFHLTL2L3ResidualCorrector = cms.EDProducer('LXXXCorrectorProducer',
-    level     = cms.string('L2L3Residual'),
-    algorithm = cms.string('AK8PFHLT')
-)
-process.ak8PFHLTL2L3Corrector = cms.EDProducer('ChainedJetCorrectorProducer',
-    correctors = cms.VInputTag(
-        'ak8PFHLTL1FastjetCorrector',
-        'ak8PFHLTL2RelativeCorrector',
-        'ak8PFHLTL2L3ResidualCorrector',
-    )
-)
-process.ak8PFHLTL2L3CorrectorTask = cms.Task(
-    process.ak8PFHLTL1FastjetCorrector,
-    process.ak8PFHLTL2RelativeCorrector,
-    process.ak8PFHLTL2L3ResidualCorrector,
-    process.ak8PFHLTL2L3Corrector,
-)
-process.ak8PFHLTL2L3CorrectorSeq = cms.Sequence(process.ak8PFHLTL2L3CorrectorTask)
-
-if params.era == "2018":
-    era_18 = True
 
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     doL1              = cms.bool(False),
     doData            = cms.bool(not params.isMC and not params.signal),
     doSignal          = cms.bool(runSig), 
     isMC              = cms.bool(params.isMC),
+    onlyScouting      = cms.bool(params.onlyScouting),
     era = cms.string(params.era),
-    era_18 = cms.bool(era_18),
     stageL1Trigger    = cms.uint32(2),
 
     hltProcess=cms.string("HLT"),
@@ -476,13 +312,9 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
     #HLT AK4 PF jets
-    applyJECForAK4Scout=cms.bool(True),
-    jetCorrectorHLTAK4=cms.InputTag("ak4PFHLTL2L3Corrector"),
     jetAK4ScoutPtMin=cms.double(20),
     
     #HLT AK8 PF jets
-    applyJECForAK8Scout=cms.bool(True),
-    jetCorrectorHLTAK8=cms.InputTag("ak8PFHLTL2L3Corrector"),
     jetAK8ScoutPtMin=cms.double(100),
 
     #offline objects
@@ -490,14 +322,10 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
 
     #Puppi PF
     ak4pfjetsReco=cms.InputTag("ak4PFJetsPuppi"),
-    applyJECForAK4=cms.bool(True),
-    jetCorrectorAK4=cms.InputTag("ak4PFPuppiL2L3Corrector"),
     jetAK4PtMin=cms.double(10),
 
     #Puppi AK8 PF
     ak8pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),
-    applyJECForAK8=cms.bool(True),
-    jetCorrectorAK8=cms.InputTag("ak8PFPuppiL2L3Corrector"),
     jetAK8PtMin=cms.double(100),
 
     verticesReco=cms.InputTag('offlinePrimaryVertices'),
@@ -505,10 +333,6 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     muonsReco=cms.InputTag("muons"),
     metReco=cms.InputTag("pfMet"),
 
-    #MET Type 1 Corrections
-    applyMETType1Corr=cms.bool(True),
-    pfmetType1=cms.InputTag("slimmedMETs"),
-    
     #gen info and pileup
     genak4jets        = cms.InputTag("ak4GenJetsNoNu"),
     genak8jets        = cms.InputTag("ak8GenJetsNoNu"),
@@ -522,34 +346,44 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
 )
 
 
-
-process.p = cms.Path(process.patDefaultSequence * process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.mmtree) 
-#process.p = cms.Path(process.puppi * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.patAlgosToolsTask * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.mmtree)
-
-
 if(params.isMC):
-#if(runSig or (params.isMC and not params.era=="2016")):
-#if(runSig):
-#if(params.signal):
-  #print("test1",runSig,params.isMC,params.era,(params.isMC and not params.era=="2016"))
-  from PhysicsTools.PatUtils.l1PrefiringWeightProducer_cfi import l1PrefiringWeightProducer
-  process.prefiringweight = l1PrefiringWeightProducer.clone(
-  ThePhotons           = cms.InputTag("hltScoutingEgammaPacker"),
-  TheMuons             = cms.InputTag("hltScoutingMuonPacker"),
-  TheJets            = cms.InputTag("hltScoutingPFPacker"),
-  #TheJets = cms.InputTag("slimmedJets"), #this should be the slimmedJets collection with up to date JECs 
-  #TheJets = cms.InputTag("updatedPatJetsUpdatedJEC"), #this should be the slimmedJets collection with up to date JECs 
-  DataEraECAL = cms.string("2017BtoF"), #Use 2016BtoH for 2016
-  DataEraMuon = cms.string("20172018"), #Use 2016 for 2016
-  UseJetEMPt = cms.bool(False),
-  PrefiringRateSystematicUnctyECAL = cms.double(0.2),
-  PrefiringRateSystematicUnctyMuon = cms.double(0.2)
-  )
-  process.p = cms.Path(process.patDefaultSequence * process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.prefiringweight* process.mmtree)
-  #process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.patAlgosToolsTask * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq * process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.prefiringweight* process.mmtree)
+    # taken from https://twiki.cern.ch/twiki/bin/viewauth/CMS/L1PrefiringWeightRecipe
+
+    if (params.era == "2016") and (params.UL2016preVFP):
+        prefiring_era = "2016preVFP"
+    elif (params.era == "2016") and (not params.UL2016preVFP):
+        prefiring_era = "2016postVFP"
+    else:
+        prefiring_era = params.era
+
+
+    prefiring_dict = {
+        '2016ULpreVFP' : {'ECAL':'UL2016preVFP', 'Muon':'2016preVFP'},
+        '2016ULpostVFP' : {'ECAL':'UL2016postVFP', 'Muon':'2016postVFP'},
+        '2017' : {'ECAL':'UL2017BtoF', 'Muon':'20172018'},
+        '2018' : {'ECAL':'None', 'Muon':'20172018'}
+    }
+
+    from PhysicsTools.PatUtils.l1PrefiringWeightProducer_cfi import l1PrefiringWeightProducer
+    process.prefiringweight = l1PrefiringWeightProducer.clone(
+    ThePhotons           = cms.InputTag("hltScoutingEgammaPacker"),
+    TheMuons             = cms.InputTag("hltScoutingMuonPacker"),
+    TheJets            = cms.InputTag("hltScoutingPFPacker"),
+    DataEraECAL = cms.string(prefiring_dict[prefiring_era]["ECAL"]),
+    DataEraMuon = cms.string(prefiring_dict[prefiring_era]["Muon"]),
+    UseJetEMPt = cms.bool(False),
+    PrefiringRateSystematicUnctyECAL = cms.double(0.2),
+    PrefiringRateSystematicUnctyMuon = cms.double(0.2)
+    )
+    if onlyScouting:
+        process.p = cms.Path(process.prefiringweight * process.mmtree)
+    else:
+        process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.prefiringweight* process.mmtree)
 else:
-  process.p = cms.Path(process.patDefaultSequence * process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.ak4PFPuppiL2L3CorrectorSeq * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.mmtree)
-    #process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.patAlgosToolsTask * process.ak8PFPuppiL2L3CorrectorSeq * process.ak8PFHLTL2L3CorrectorSeq *  process.ak4PFHLTL2L3CorrectorSeq * process.fullPatMetSequenc * process.mmtree)
+    if onlyScouting:
+        process.p = cms.Path(process.mmtree)
+    else:
+        process.p = cms.Path(process.puppi  * process.ak4PFJetsPuppi * process.ak8PFJetsPuppi * process.mmtree)
 
 
 

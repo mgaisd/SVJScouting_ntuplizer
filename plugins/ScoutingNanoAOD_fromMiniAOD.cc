@@ -26,7 +26,6 @@
 #include "DataFormats/Scouting/interface/ScoutingParticle.h"
 #include "DataFormats/Scouting/interface/ScoutingVertex.h"
 #include "DataFormats/JetReco/interface/PFJet.h"
-#include "JetMETCorrections/JetCorrector/interface/JetCorrector.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenLumiInfoHeader.h"
@@ -207,16 +206,13 @@ private:
   const edm::EDGetTokenT<std::vector<pat::MET>> recoPuppiMetToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
 
-  bool applyJECForAK8;
-  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorAK8Token;
+
   double jetAK8PtMin = 0.;
 
-  bool applyJECForAK4Scout;
-  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorHLTAK4Token;
+
   double jetAK4ScoutPtMin = 0.;
 
-  bool applyJECForAK8Scout;
-  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorHLTAK8Token;
+
   double jetAK8ScoutPtMin = 0.;
 
   const edm::EDGetTokenT<std::vector<reco::GenJet> >            genak4jetsToken; 

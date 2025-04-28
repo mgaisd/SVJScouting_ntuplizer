@@ -1674,6 +1674,8 @@ if(runOffline){
   Muon_trketaerror.clear();
   Muon_trkdszerror.clear();
   Muon_trkdsz.clear();
+  Muon_chargedMiniIso.clear();
+  Muon_combinedMiniIso.clear();
   n_mu=0;  
   
   if(runScouting){

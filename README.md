@@ -19,6 +19,9 @@ git cms-addpkg PhysicsTools/PatAlgos
 git cms-addpkg JetMETCorrections
 git cms-addpkg CommonTools/RecoAlgos
 git cms-addpkg Configuration/ProcessModifiers
+
+# for correct gen weight handling:
+git cms-merge-topic -u https TreeMaker:GenWeightRefactor_106X_squash
 ```
 
 # To setup and compile

@@ -1,6 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 import FWCore.Utilities.FileUtils as FileUtils
 import os
+from PhysicsTools.SVJScouting.pdfrecalculator_cfi import PDFRecalculator
 
 # Set parameters externally 
 from FWCore.ParameterSet.VarParsing import VarParsing
@@ -124,8 +125,20 @@ params.parseArguments()
 # Message Logger settings
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.destinations = ['cout', 'cerr']
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000 
-
+process.MessageLogger.cerr.FwkReport.reportEvery = 100 #1000 
+#debug
+# process.MessageLogger.categories.append('ScoutingNanoAOD_fromMiniAOD')  # Add your category
+# process.MessageLogger.categories.append('PDFRecalculator')  # Add another category if needed
+# process.MessageLogger.cerr.INFO = cms.untracked.PSet(
+#     limit = cms.untracked.int32(0)  # Disable general INFO messages
+# )
+# process.MessageLogger.cerr.ScoutingNanoAOD_fromMiniAOD = cms.untracked.PSet(
+#     limit = cms.untracked.int32(-1)  # Enable all messages for this category
+# )
+# process.MessageLogger.cerr.PDFRecalculator = cms.untracked.PSet(
+#     limit = cms.untracked.int32(-1)  # Enable all messages for this category
+# )
+#debug
 
 # Set the process options -- Display summary at the end, enable unscheduled execution
 process.options = cms.untracked.PSet( 
@@ -180,6 +193,17 @@ process.gentree = cms.EDAnalyzer("LHEWeightsTreeMaker",
     genInfo = cms.InputTag("generator"),
     useLHEWeights = cms.bool(params.useWeights)
 )
+
+from PhysicsTools.SVJScouting.addSVJPDFsAndScales_cff import addSVJPDFsAndScales
+# check if these settings are correct
+addSVJPDFsAndScales(process, debug_flag=True, recalculatePDFs_flag=True, recalculateScales_flag=True, nEM_flag=2, nQCD_flag=0, pythiaSettings_flag='', pdfSetName_flag='NNPDF31_nnlo_as_0118_mc_hessian_pdfas')
+
+
+# # Load the PDFRecalculator
+# process.load("PhysicsTools.SVJScouting.pdfrecalculator_cfi")
+# #process.PDFRecalculator = cms.EDProducer("PDFRecalculator")
+# print(process.PDFRecalculator)
+
 
 
 HLTInfo = [
@@ -269,6 +293,10 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromMiniAOD',
     hltSeeds          = cms.vstring(HLTInfo),
     GetLumiInfoHeader=cms.InputTag("generator"),
 
+    #PDF weights
+    PDFweights = cms.InputTag("PDFRecalculator", "LHEPdfWeight"),
+    ScaleWeights = cms.InputTag("PDFRecalculator", "LHEScaleWeight"),
+
     #scouting objects
     muons             = cms.InputTag("hltScoutingMuonPackerCalo"),
     electrons         = cms.InputTag("hltScoutingEgammaPacker"),
@@ -341,10 +369,10 @@ if(params.isMC):
     PrefiringRateSystematicUnctyECAL = cms.double(0.2),
     PrefiringRateSystematicUnctyMuon = cms.double(0.2)
     )
-    process.p = cms.Path(process.puppi   * process.ak8PFJetsPuppi * process.prefiringweight* process.mmtree)
+    process.p = cms.Path(process.puppi   * process.ak8PFJetsPuppi * process.prefiringweight * process.theoryWeightsMC * process.mmtree)
 else:
 
-    process.p = cms.Path(process.puppi  * process.ak8PFJetsPuppi * process.mmtree)
+    process.p = cms.Path(process.puppi  * process.ak8PFJetsPuppi * process.theoryWeightsMC * process.mmtree)
 
 
 

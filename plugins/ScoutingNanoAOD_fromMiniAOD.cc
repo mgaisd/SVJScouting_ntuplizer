@@ -231,6 +231,9 @@ private:
   const edm::EDGetTokenT<double>  	prefireTokenup;
   const edm::EDGetTokenT<double>  	prefireTokendown;
 
+  const edm::EDGetTokenT<std::vector<float>> 	scaleWeightToken;
+  const edm::EDGetTokenT<std::vector<float>>  	pdfWeightToken;
+
   std::vector<std::string> triggerPathsVector;
   std::map<std::string, int> triggerPathsMap;
 	
@@ -265,6 +268,8 @@ private:
   std::vector<bool>            hltResult_;
   std::vector<std::string>     hltResultName_;
   vector<double>            PSweights;
+  vector<float>            PDFweights;
+  vector<float>            ScaleWeights;
 
   UInt_t scouting_trig; 
   UInt_t scouting_trig_prescaled;
@@ -710,6 +715,9 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   prefireTokenup           (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProbUp"))),
   prefireTokendown         (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProbDown"))),
 
+  scaleWeightToken         (consumes<std::vector<float>>                    (iConfig.getParameter<edm::InputTag>("ScaleWeights"))),
+  pdfWeightToken           (consumes<std::vector<float>>                    (iConfig.getParameter<edm::InputTag>("PDFweights"))),
+
   doL1                     (iConfig.existsAs<bool>("doL1")              ?    iConfig.getParameter<bool>  ("doL1")            : false),
   doData                   (iConfig.existsAs<bool>("doData")            ?    iConfig.getParameter<bool>  ("doData")            : false),
   doSignal                 (iConfig.existsAs<bool>("doSignal")          ?    iConfig.getParameter<bool>  ("doSignal")            : false),
@@ -739,6 +747,9 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("run"		                    ,&run                  ,"run/i");
   tree->Branch("event"		                    ,&event_                  ,"event/i");
   tree->Branch("PSweights"            	    ,&PSweights 	                 );
+  tree->Branch("ScaleWeights"               ,&ScaleWeights                 );      
+  tree->Branch("PDFweights"                 ,&PDFweights                    );     
+  
   tree->Branch("prefire"		                ,&prefire                      );
   tree->Branch("prefireup"		              ,&prefireup                    );
   tree->Branch("prefiredown"		            ,&prefiredown                  );
@@ -2290,6 +2301,34 @@ if(runOffline){
 
   if(doSignal or isMC){
     PSweights = genEvtInfo->weights();
+    
+    // Handle<double> pdfwgt;
+    // iEvent.getByToken(PDFwgtToken, pdfwgt);
+    // PDFweights = *pdfwgt;
+    
+    edm::Handle<std::vector<float>> scaleWeightsHandle;
+    edm::Handle<std::vector<float>> pdfWeightsHandle;
+
+    iEvent.getByToken(scaleWeightToken, scaleWeightsHandle);
+    iEvent.getByToken(pdfWeightToken, pdfWeightsHandle);
+
+    if (scaleWeightsHandle.isValid()) {
+      for (const auto& weight : *scaleWeightsHandle) {
+        ScaleWeights.push_back(weight); // Store in your TTree variable
+      }
+    }else{
+      std::cout << "Scale weights not valid" << std::endl;
+    }
+    
+    if (pdfWeightsHandle.isValid()) {
+      for (const auto& weight : *pdfWeightsHandle) {
+        PDFweights.push_back(weight); // Store in your TTree variable
+      }
+    }else{
+      std::cout << "PDF weights not valid" << std::endl;
+    }
+    
+    
     Handle<double> prefirewgt;
     iEvent.getByToken(prefireToken, prefirewgt);
     prefire = *prefirewgt;

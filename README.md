@@ -20,7 +20,7 @@ git cms-addpkg JetMETCorrections
 git cms-addpkg CommonTools/RecoAlgos
 git cms-addpkg Configuration/ProcessModifiers
 
-# for correct gen weight handling:
+# for importing theory weights for backgrounds (not really necessary and not tested)
 git cms-merge-topic -u https TreeMaker:GenWeightRefactor_106X_squash
 ```
 

@@ -2300,6 +2300,10 @@ if(runOffline){
     rho2=0;}
 
   if(doSignal or isMC){
+    PSweights.clear();
+    ScaleWeights.clear();
+    PDFweights.clear();
+
     PSweights = genEvtInfo->weights();
     
     // Handle<double> pdfwgt;

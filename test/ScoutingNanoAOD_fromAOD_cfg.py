@@ -341,6 +341,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     gens_sig          = cms.InputTag("genParticles"),
     rho               = cms.InputTag("fixedGridRhoFastjetAllScouting"),
     rho2              = cms.InputTag("hltScoutingPFPacker","rho"),
+    genMet            = cms.InputTag("genMetTrue"),
 
 )
 

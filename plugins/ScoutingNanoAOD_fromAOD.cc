@@ -37,6 +37,7 @@
 //Added for MET
 #include "DataFormats/METReco/interface/PFMET.h"
 #include "DataFormats/METReco/interface/PFMETCollection.h"
+#include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
@@ -222,6 +223,7 @@ private:
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
   const edm::EDGetTokenT<GenLumiInfoHeader>  	genLumiInfoHeadTag_;
+  const edm::EDGetTokenT<std::vector<reco::GenMET> >            genMetToken;
 
 
   const edm::EDGetTokenT<double>  	rhoToken2;
@@ -630,6 +632,9 @@ private:
   //Scouting MET
   double met_pt, met_phi;
 
+  //Gen MET
+  double genMET_pt, genMET_phi;
+
   //reco vertices
   Int_t nPV_;        // number of reconsrtucted primary vertices
     
@@ -679,6 +684,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   pileupInfoToken2         (consumes<std::vector<PileupSummaryInfo> >        (iConfig.getParameter<edm::InputTag>("pileupinfo_sig"))),
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
   genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),   
+  genMetToken              (consumes<std::vector<reco::GenMET> >             (iConfig.getParameter<edm::InputTag>("genMet"))),
   
   rhoToken2                (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("rho2"))),
   prefireToken             (consumes<double>                                 (edm::InputTag("prefiringweight:nonPrefiringProb"))),
@@ -1091,6 +1097,10 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
     tree->Branch("OfflineMET_pt",&met_pt_reco);
     tree->Branch("OfflineMET_phi",&met_phi_reco);
   }
+  
+  //Gen MET branches
+  tree->Branch("genMET_pt",&genMET_pt);
+  tree->Branch("genMET_phi",&genMET_phi);
 
 
 
@@ -1122,6 +1132,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
 
   Handle<vector<reco::GenJet> > genak4jetsH;
   Handle<vector<reco::GenJet> > genak8jetsH;
+  Handle<std::vector<reco::GenMET> > genMetH;
 
   Handle<std::vector<reco::PFMET>> metReco;
   Handle<double> metPt;
@@ -1165,6 +1176,7 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
   if(runGen){
     iEvent.getByToken(genak4jetsToken, genak4jetsH);
     iEvent.getByToken(genak8jetsToken, genak8jetsH);
+    iEvent.getByToken(genMetToken, genMetH);
   }
 
   if(runOffline){
@@ -2474,6 +2486,8 @@ if(runOffline){
   met_phi = -1;
   met_pt_reco = -1;
   met_phi_reco = -1;
+  genMET_pt = -1;
+  genMET_phi = -1;
 
   if (runScouting){
   met_pt = *metPt;
@@ -2483,6 +2497,11 @@ if(runOffline){
   if (runOffline){
     met_pt_reco = metReco->front().pt();
     met_phi_reco = metReco->front().phi();
+  }
+  
+  if (runGen){
+    genMET_pt = genMetH->front().pt();
+    genMET_phi = genMetH->front().phi();
   }
   
   tree->Fill();	

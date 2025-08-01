@@ -163,7 +163,44 @@ using namespace fastjet::contrib;
  };
 
 //------------------------------------------------------------------------
+class JetWithJECPair {
+public:
+    // Existing constructors
+    JetWithJECPair() : first(nullptr), second(1.0), third(0) {}
+    
+    // Constructur with jet and correction factor
+    JetWithJECPair(const reco::PFJet* j, double s) : first(j), second(s), third(0) {}
+    
+    // Constructur with jet idx
+    JetWithJECPair(const reco::PFJet* j, double s, int idx) : first(j), second(s), third(idx) {}
+    
+    // Destructor remains unchanged
+    ~JetWithJECPair() = default;
 
+    // Getter and setter methods remain unchanged
+    inline const reco::PFJet* jet() const { return first; }
+    inline void jet(const reco::PFJet* j) { first = j; }
+    inline double corr() const { return second; }
+    inline void corr(double d) { second = d; }
+
+    // Getter and setter for the new parameter
+    inline int jet_idx() const { return third; }
+    inline void jet_idx(int i) { third = i; }
+
+private:
+    const reco::PFJet* first; // Pointer to PFJet object
+    double second; // Correction factor 
+    int third; //jet idx
+};
+
+
+
+struct JetWithJECPairComp {
+  inline bool operator()(const JetWithJECPair& a, const JetWithJECPair& b) const {
+    return (a.jet()->pt() * a.corr()) > (b.jet()->pt() * b.corr());
+  }
+};
+//////////////////////////////////////
 
 class ScoutingNanoAOD_fromAOD : public edm::one::EDAnalyzer<edm::one::SharedResources, edm::one::WatchRuns, edm::one::WatchLuminosityBlocks> {
 public:
@@ -198,7 +235,8 @@ private:
   const edm::EDGetTokenT<double> metPtToken;
   const edm::EDGetTokenT<double> metPhiToken;
 
-
+  bool applyJECForAK8Scout;
+  const edm::EDGetTokenT<reco::JetCorrector> jetCorrectorHLTAK8Token;
   double jetAK8ScoutPtMin = 0.;
   
   //Offline tokens
@@ -507,6 +545,7 @@ private:
 
   // Fatjets 
   UInt_t                       n_fatjet;
+  vector<Float16_t>            FatJet_rawFactor;
   //vector<Float16_t>            FatJet_jesc; 
   //vector<Float16_t>            FatJet_area;
   vector<Float16_t>            FatJet_eta;
@@ -660,6 +699,8 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   metPtToken               (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPt"))),
   metPhiToken              (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPhi"))),
 
+  applyJECForAK8Scout       (iConfig.getParameter<bool>("applyJECForAK8Scout")),
+  jetCorrectorHLTAK8Token (consumes<reco::JetCorrector>              (iConfig.getParameter<edm::InputTag>("jetCorrectorHLTAK8"))),
   jetAK8ScoutPtMin          (iConfig.getParameter<double>("jetAK8ScoutPtMin")),
 
   //Offline tokens
@@ -851,6 +892,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                       ,&n_fatjet                      ,"nFatJet/i");
+  tree->Branch("FatJet_rawFactor"                     ,&FatJet_rawFactor);
   //tree->Branch("FatJet_area"                    ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                     ,&FatJet_eta                    );
   //tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
@@ -877,6 +919,8 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("FatJet_photonEnergyFraction"        ,&FatJet_photonEnergyFraction       );
   tree->Branch("FatJet_neutralMultiplicity"        ,&FatJet_neutralMultiplicity       );
   tree->Branch("FatJet_chargedMultiplicity"        ,&FatJet_chargedMultiplicity       );
+
+  tree->Branch("FatJet_rawFactor"                ,&FatJet_rawFactor               );
 
   tree->Branch("rho"                            ,&rho2                           );
 
@@ -2012,6 +2056,7 @@ if(runOffline){
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
   //here add for scouting AK8 jets
+  FatJet_rawFactor.clear();
   //FatJet_area.clear();
   FatJet_eta .clear();
   FatJet_phi .clear();
@@ -2043,16 +2088,51 @@ if(runOffline){
 
 
   if(runScouting){
+    edm::Handle<reco::JetCorrector> jetCorrectorHLTAK8;
+    iEvent.getByToken(jetCorrectorHLTAK8Token, jetCorrectorHLTAK8);
 
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
     vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jetAK8ScoutPtMin)); //pt min
+
+    //
+    // Retrieve JEC and use it to sort automatically jets by JEC-applied pt
+    //
+    std::set<JetWithJECPair, JetWithJECPairComp> jetwithjecidxpairsetAK8Scout;
+    int n_fatjet_counter = 0;
     for (auto &j: ak8_jets) {
+            // --- calculate the jet correction
+      // First use a dummy reco::PFJet and fill its 4-vector, in order to use the corrector
+      reco::PFJet dummy_pfJet;
+      reco::Particle::LorentzVector dummy_jetP4(j.px(), j.py(), j.pz(), j.E());
+      dummy_pfJet.setP4(dummy_jetP4);
+      double jec = 1.0;
+      if (applyJECForAK8Scout)
+        jec = jetCorrectorHLTAK8->correction(dummy_pfJet);
+      jetwithjecidxpairsetAK8Scout.insert(JetWithJECPair(&dummy_pfJet, jec, n_fatjet_counter));
+      //pair jet and n_fatjet_counter
+      n_fatjet_counter ++;
+    }
+
+for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair) {
+      
+
+      auto pfjet = (*jetwithjecidxpair).jet();
+      auto corr  = (*jetwithjecidxpair).corr();
+      auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
+
+      auto pfjet_pt_corr   = corr * pfjet->pt();
+      auto pfjet_mass_corr = corr * pfjet->mass();
+
+      if (pfjet_pt_corr < jetAK8ScoutPtMin) continue;
+
       //FatJet_area.push_back(j.area());
-      FatJet_eta.push_back(j.eta());
-      FatJet_phi.push_back(j.phi_std());
-      FatJet_pt .push_back(j.pt());
-      FatJet_mass.push_back(j.m());
-      FatJet_nConstituents.push_back(j.constituents().size());
+      FatJet_rawFactor.push_back(1.f - (1.f/corr) );
+      FatJet_eta.push_back(pfjet->eta());
+      FatJet_phi.push_back(pfjet->phi());
+      FatJet_pt .push_back(pfjet_pt_corr);
+      FatJet_mass.push_back(pfjet_mass_corr);
+      FatJet_nConstituents.push_back((ak8_jets[jec_sorted_jet_idx].constituents()).size());
+
 
       // needs to be done manually, not included in scouting 
       // charged and neutral EM fractions are approximated with just electrons/photons (not available in scouting)
@@ -2069,7 +2149,7 @@ if(runOffline){
       int sum_muon_multiplicity = 0;
 
 
-      for (auto &k: j.constituents()) {
+      for (auto &k: ak8_jets[jec_sorted_jet_idx].constituents()) {
         //check if the particle is a photon using the pdgid in the user info and comparing it with photons_ids
         auto found_photon = std::find(photons_ids.begin(), photons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
         if (found_photon!= photons_ids.end()) {
@@ -2112,20 +2192,20 @@ if(runOffline){
 
       //define variables for jetID
       //define the fraction of electrons
-      double jet_charged_em_fraction = (sum_electron) / j.E();
+      double jet_charged_em_fraction = (sum_electron) / ak8_jets[jec_sorted_jet_idx].E();
       //define the fraction of photons
-      double jet_neutral_em_fraction = (sum_photon) / j.E();
+      double jet_neutral_em_fraction = (sum_photon) / ak8_jets[jec_sorted_jet_idx].E();
       //define the fraction of muons
-      double jet_muon_fraction = sum_muon / j.E();
+      double jet_muon_fraction = sum_muon / ak8_jets[jec_sorted_jet_idx].E();
       //define the fraction of charged hadrons
-      double jet_charged_hadron_fraction = sum_charged_hadron / j.E();
+      double jet_charged_hadron_fraction = sum_charged_hadron / ak8_jets[jec_sorted_jet_idx].E();
       //define the fraction of neutral hadrons
-      double jet_neutral_hadron_fraction = sum_neutral_hadron / j.E();
+      double jet_neutral_hadron_fraction = sum_neutral_hadron / ak8_jets[jec_sorted_jet_idx].E();
       //define multiplicity of charged hadrons, neutral hadrons, photons, electrons, muons
       double NumConst = sum_charged_hadron_multiplicity + sum_neutral_hadron_multiplicity + sum_photon_multiplicity + sum_electron_multiplicity + sum_muon_multiplicity;
       double CHM =  sum_muon_multiplicity + sum_electron_multiplicity + sum_charged_hadron_multiplicity;
 
-      bool passID = (abs(j.eta())<=2.6 && jet_charged_em_fraction < 0.8 && jet_neutral_em_fraction < 0.9 && jet_muon_fraction < 0.8 && jet_neutral_hadron_fraction < 0.9 && jet_charged_hadron_fraction > 0 && NumConst > 1 && CHM > 0);
+      bool passID = (abs(ak8_jets[jec_sorted_jet_idx].eta())<=2.6 && jet_charged_em_fraction < 0.8 && jet_neutral_em_fraction < 0.9 && jet_muon_fraction < 0.8 && jet_neutral_hadron_fraction < 0.9 && jet_charged_hadron_fraction > 0 && NumConst > 1 && CHM > 0);
 
       FatJet_chargedHadronEnergyFraction.push_back(jet_charged_hadron_fraction);
       FatJet_neutralHadronEnergyFraction.push_back(jet_neutral_hadron_fraction);
@@ -2139,14 +2219,17 @@ if(runOffline){
       n_fatjet++;
     } 
 
-    unsigned int n_pfcand_tot = 0;
+        unsigned int n_pfcand_tot = 0;
     for (auto & pfcands_iter : PFcands ) {
       if (pfcands_iter.pt() < 1.) continue;
       if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
       int tmpidx = -1;
       int ak8count = 0;
-      for (auto &j: ak8_jets) {
-        for (auto &k: j.constituents()){
+      for (auto jetwithjecidxpair = jetwithjecidxpairsetAK8Scout.begin(); jetwithjecidxpair != jetwithjecidxpairsetAK8Scout.end(); ++jetwithjecidxpair){
+        //get jet idx
+        auto jec_sorted_jet_idx = (*jetwithjecidxpair).jet_idx();
+        //based on jec_sorted_jet_idx, select the jet from ak8_jets
+        for (auto &k: ak8_jets[jec_sorted_jet_idx].constituents()){
           if ((UInt_t)k.user_index() == n_pfcand_tot){
             tmpidx = ak8count;
             ak8count++;
@@ -2164,6 +2247,7 @@ if(runOffline){
       n_pfcand_tot++;
     }
   }
+
 
   /*
   //here add for offline AK8 jets

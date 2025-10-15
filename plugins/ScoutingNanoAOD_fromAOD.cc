@@ -32,7 +32,7 @@
 //Added for offline jets
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/JetReco/interface/PFJetCollection.h"
-//#include "JetMETCorrections/JetCorrector/interface/JetCorrector.h"
+#include "JetMETCorrections/JetCorrector/interface/JetCorrector.h"
 
 //Added for MET
 #include "DataFormats/METReco/interface/PFMET.h"

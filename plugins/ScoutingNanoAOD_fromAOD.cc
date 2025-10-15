@@ -1138,8 +1138,6 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
   Handle<double> metPt;
   Handle<double> metPhi;
 
-  Handle<std::vector<pat::MET>> pfmet_t1_Reco;
-
 
   //define particles
   vector<double> neutralHadrons_ids = {111,130,310,2112};

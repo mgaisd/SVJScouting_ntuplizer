@@ -33,6 +33,7 @@
 //Added for MET
 #include "DataFormats/METReco/interface/PFMET.h"
 #include "DataFormats/METReco/interface/PFMETCollection.h"
+#include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
@@ -222,6 +223,7 @@ private:
   const edm::EDGetTokenT<GenEventInfoProduct>                   genEvtInfoToken;
   const edm::EDGetTokenT<GenLumiInfoHeader>  	                  genLumiInfoHeadTag_;
   const edm::EDGetTokenT<std::vector<reco::GenParticle>>       gensToken;
+  const edm::EDGetTokenT<std::vector<reco::GenMET> >            genMetToken;
 
   bool addMatrixElementInfo;
 
@@ -657,6 +659,8 @@ private:
   double met_pt_reco, met_phi_reco;
   double puppi_met_reco_pt, puppi_met_reco_phi;
 
+  //Gen MET  
+  double genMET_pt, genMET_phi;
 
   //reco vertices
   Int_t nPV_;        // number of reconsrtucted primary vertices
@@ -707,6 +711,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   genEvtInfoToken          (consumes<GenEventInfoProduct>                    (iConfig.getParameter<edm::InputTag>("geneventinfo"))), 
   genLumiInfoHeadTag_(consumes<GenLumiInfoHeader,edm::InLumi>(edm::InputTag("generator"))),   
   gensToken                (consumes<std::vector<reco::GenParticle>>               (iConfig.getParameter<edm::InputTag>("gens"))),
+  genMetToken              (consumes<std::vector<reco::GenMET> >             (iConfig.getParameter<edm::InputTag>("genMet"))),
 
   addMatrixElementInfo     (iConfig.existsAs<bool>("addMatrixElementInfo")    ?    iConfig.getParameter<bool>  ("addMatrixElementInfo")    : false),
   
@@ -1151,6 +1156,10 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OfflinePuppiMET_pt",&puppi_met_reco_pt);
   tree->Branch("OfflinePuppiMET_phi",&puppi_met_reco_phi);
 
+  //Gen MET branches
+  tree->Branch("genMET_pt",&genMET_pt);
+  tree->Branch("genMET_phi",&genMET_phi);
+
 }
 
 
@@ -1181,6 +1190,7 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
 
   Handle<vector<reco::GenJet> > genak4jetsH;
   Handle<vector<reco::GenJet> > genak8jetsH;
+  Handle<std::vector<reco::GenMET> > genMetH;
 
   Handle<std::vector<pat::MET>> metReco;
   Handle<std::vector<pat::MET>> PuppimetReco;
@@ -1223,6 +1233,7 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
   if(runGen){
     iEvent.getByToken(genak4jetsToken, genak4jetsH);
     iEvent.getByToken(genak8jetsToken, genak8jetsH);
+    iEvent.getByToken(genMetToken, genMetH);
   }
   
   if(runOffline){
@@ -2652,6 +2663,8 @@ if (addMatrixElementInfo){
  met_phi_reco = -1;
  puppi_met_reco_pt = -1;
  puppi_met_reco_phi = -1;
+ genMET_pt = -1;
+ genMET_phi = -1;
 
  if (runScouting){
   met_pt = *metPt;
@@ -2664,6 +2677,11 @@ if (addMatrixElementInfo){
 
     puppi_met_reco_pt = PuppimetReco->front().pt();
     puppi_met_reco_phi = PuppimetReco->front().phi();
+ }
+
+ if (runGen){
+   genMET_pt = genMetH->front().pt();
+   genMET_phi = genMetH->front().phi();
  }
   
 

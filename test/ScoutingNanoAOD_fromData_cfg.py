@@ -191,6 +191,12 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromData',
     metPt             = cms.InputTag("hltScoutingPFPacker", "pfMetPt"),
     metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
+    #HLT AK4 PF jets
+    jetAK4ScoutPtMin=cms.double(20),
+
+    #HLT AK8 PF jets
+    jetAK8ScoutPtMin=cms.double(100),
+
 )
 
 process.p = cms.Path(process.mmtree) 

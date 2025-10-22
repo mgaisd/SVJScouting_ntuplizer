@@ -198,7 +198,7 @@ private:
   const edm::EDGetTokenT<double> metPtToken;
   const edm::EDGetTokenT<double> metPhiToken;
 
-
+  double jetAK4ScoutPtMin = 0.;
   double jetAK8ScoutPtMin = 0.;
   
   //Offline tokens
@@ -211,10 +211,8 @@ private:
   const edm::EDGetTokenT<std::vector<reco::PFMET>> recoMetToken;
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
 
-  double jetAK4ScoutPtMin = 0.;
   double jetAK4PtMin = 0.;
   double jetAK8PtMin = 0.;
-
 
   //Gen info
   const edm::EDGetTokenT<std::vector<reco::GenJet> >            genak4jetsToken; 
@@ -271,6 +269,7 @@ private:
   UInt_t scouting_trig_zero_bias;
   UInt_t offline_trig; 
   UInt_t veto_trig;
+
 
   //Photon
   UInt_t n_pho;
@@ -394,12 +393,12 @@ private:
   vector<Float16_t> 	         Jet_pt;
   vector<Float16_t>            Jet_eta;
   vector<Float16_t>            Jet_phi;
-  vector<Float16_t>	       Jet_m;
-  vector<Float16_t>	       Jet_area;
-  vector<Float16_t>	       Jet_chargedHadronEnergy;
+  vector<Float16_t>            Jet_m;
+  vector<Float16_t>            Jet_area;
+  vector<Float16_t>            Jet_chargedHadronEnergy;
   vector<Float16_t>            Jet_neutralHadronEnergy;
-  vector<Float16_t>	       Jet_photonEnergy;
-  vector<Float16_t>	       Jet_electronEnergy;
+  vector<Float16_t>            Jet_photonEnergy;
+  vector<Float16_t>            Jet_electronEnergy;
   vector<Float16_t>	       Jet_muonEnergy;
   vector<Float16_t>	       Jet_HFHadronEnergy;
   vector<Float16_t>	       Jet_HFEMEnergy;
@@ -660,7 +659,8 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   metPtToken               (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPt"))),
   metPhiToken              (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPhi"))),
 
-  jetAK8ScoutPtMin          (iConfig.getParameter<double>("jetAK8ScoutPtMin")),
+  jetAK4ScoutPtMin         (iConfig.getParameter<double>("jetAK4ScoutPtMin")),
+  jetAK8ScoutPtMin         (iConfig.getParameter<double>("jetAK8ScoutPtMin")),
 
   //Offline tokens
   recoverticeToken     (consumes<reco::VertexCollection>          (iConfig.getParameter<edm::InputTag>("verticesReco"))),
@@ -671,7 +671,6 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   recoPfCandidateToken (consumes<std::vector<reco::PFCandidate>>  (iConfig.getParameter<edm::InputTag>("pfcandsReco"))),
   recoMetToken         (consumes<std::vector<reco::PFMET>>        (iConfig.getParameter<edm::InputTag>("metReco"))),
 
-  jetAK4ScoutPtMin     (iConfig.getParameter<double>("jetAK4ScoutPtMin")),
 
   jetAK4PtMin          (iConfig.getParameter<double>("jetAK4PtMin")),
   
@@ -921,7 +920,6 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("PV_chi2"                    ,&Vertex_chi2	                );
   tree->Branch("PV_ndof"                    ,&Vertex_ndof	                );
   tree->Branch("PV_isValidVtx"              ,&Vertex_isValidVtx 	        );
-
 
   //Other variables
   tree->Branch("ht"                             ,&ht                            );
@@ -1318,7 +1316,6 @@ void ScoutingNanoAOD_fromAOD::analyze(const edm::Event& iEvent, const edm::Event
         Electron_d0.push_back(electrons_iter->d0());
         Electron_dz.push_back(electrons_iter->dz());
         n_ele++;
-
 
         //Notice: here pushing back the electrons in the PFcands vector (for scouting electrons are not stored as PFcands, but as a separate collection)
         ScoutingParticle tmp(electrons_iter->pt(),electrons_iter->eta(),electrons_iter->phi(),electrons_iter->m(),(-11)*electrons_iter->charge(),0);
@@ -2043,7 +2040,7 @@ if(runOffline){
   if(runScouting){
 
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
-    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jetAK8ScoutPtMin)); //pt min
+    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jetAK8ScoutPtMin)); //pt min cut in config file
     for (auto &j: ak8_jets) {
       //FatJet_area.push_back(j.area());
       FatJet_eta.push_back(j.eta());
@@ -2402,7 +2399,6 @@ if(runOffline){
   GenJet_phi.clear();
   GenJet_mass.clear();
   
-  double jetAK4PtMin = 10.0;
   n_genjet = 0;
   if(runGen){
     for (auto genjet = genak4jetsH->begin(); genjet != genak4jetsH->end(); ++genjet) {
@@ -2488,8 +2484,8 @@ if(runOffline){
   genMET_phi = -1;
 
   if (runScouting){
-  met_pt = *metPt;
-  met_phi = *metPhi;
+    met_pt = *metPt;
+    met_phi = *metPhi;
   }
 
   if (runOffline){

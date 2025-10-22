@@ -321,7 +321,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
 
     #Puppi PF
     ak4pfjetsReco=cms.InputTag("ak4PFJetsPuppi"),
-    jetAK4PtMin=cms.double(10),
+    jetAK4PtMin=cms.double(20),
 
     #Puppi AK8 PF
     ak8pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),

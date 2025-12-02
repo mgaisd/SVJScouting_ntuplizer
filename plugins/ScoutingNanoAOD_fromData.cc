@@ -562,7 +562,7 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                        ,&n_fatjet                      ,"nFatJet/i");
-  //tree->Branch("FatJet_area"                    ,&FatJet_area                   );
+  tree->Branch("FatJet_area"                    ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                     ,&FatJet_eta                    );
   //tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
   //tree->Branch("FatJet_n3b1"                    ,&FatJet_n3b1                   );
@@ -1135,6 +1135,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   FatJet_phi .clear();
   FatJet_pt  .clear();
   FatJet_mass.clear();
+  FatJet_area.clear();
   FatJet_nConstituents.clear();
   
   // for jet id
@@ -1160,6 +1161,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
       FatJet_phi.push_back(j.phi_std());
       FatJet_pt .push_back(j.pt());
       FatJet_mass.push_back(j.m());
+      FatJet_area.push_back(j.area());
       FatJet_nConstituents.push_back(j.constituents().size());
       
       // needs to be done manually, not included in scouting 

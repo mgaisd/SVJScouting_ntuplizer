@@ -885,7 +885,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                        ,&n_fatjet                      ,"nFatJet/i");
-  //tree->Branch("FatJet_area"                    ,&FatJet_area                   );
+  tree->Branch("FatJet_area"                    ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                     ,&FatJet_eta                    );
   //tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
   //tree->Branch("FatJet_n3b1"                    ,&FatJet_n3b1                   );
@@ -2074,6 +2074,7 @@ if(runOffline){
   FatJet_phi .clear();
   FatJet_pt  .clear();
   FatJet_mass.clear();
+  FatJet_area.clear();
   //FatJet_n2b1.clear();
   //FatJet_n3b1.clear();
   //FatJet_tau1.clear();
@@ -2110,6 +2111,7 @@ if(runOffline){
       FatJet_phi.push_back(j.phi_std());
       FatJet_pt .push_back(j.pt());
       FatJet_mass.push_back(j.m());
+      FatJet_area.push_back(j.area());
       FatJet_nConstituents.push_back(j.constituents().size());
 
     // needs to be done manually, not included in scouting 
@@ -2531,7 +2533,7 @@ if(runOffline){
 
 }
 
-cout << "genInfo: " << addMatrixElementInfo << endl;
+// cout << "genInfo: " << addMatrixElementInfo << endl;
 if (addMatrixElementInfo){
     //Genparticles genp
 

@@ -507,7 +507,7 @@ private:
   // Fatjets 
   UInt_t                       n_fatjet;
   //vector<Float16_t>            FatJet_jesc; 
-  //vector<Float16_t>            FatJet_area;
+  vector<Float16_t>            FatJet_area;
   vector<Float16_t>            FatJet_eta;
   //vector<Float16_t>            FatJet_n2b1;
   //vector<Float16_t>            FatJet_n3b1;
@@ -850,7 +850,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                       ,&n_fatjet                      ,"nFatJet/i");
-  //tree->Branch("FatJet_area"                    ,&FatJet_area                   );
+  tree->Branch("FatJet_area"                    ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                     ,&FatJet_eta                    );
   //tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
   //tree->Branch("FatJet_n3b1"                    ,&FatJet_n3b1                   );
@@ -2007,7 +2007,7 @@ if(runOffline){
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
   //here add for scouting AK8 jets
-  //FatJet_area.clear();
+  FatJet_area.clear();
   FatJet_eta .clear();
   FatJet_phi .clear();
   FatJet_pt  .clear();
@@ -2042,11 +2042,11 @@ if(runOffline){
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
     vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jetAK8ScoutPtMin)); //pt min cut in config file
     for (auto &j: ak8_jets) {
-      //FatJet_area.push_back(j.area());
       FatJet_eta.push_back(j.eta());
       FatJet_phi.push_back(j.phi_std());
       FatJet_pt .push_back(j.pt());
       FatJet_mass.push_back(j.m());
+      FatJet_area.push_back(j.area());
       FatJet_nConstituents.push_back(j.constituents().size());
 
       // needs to be done manually, not included in scouting 

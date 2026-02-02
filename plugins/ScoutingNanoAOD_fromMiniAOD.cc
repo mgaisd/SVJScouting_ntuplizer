@@ -612,6 +612,10 @@ private:
   vector<Float16_t>            GenFatJet_phi;
   vector<Float16_t>            GenFatJet_mass;
 
+  //GenJet matching indices
+  vector<int>                  Jet_genJetIdx;        // index of matched gen jet for AK4
+  vector<int>                  FatJet_genJetAK8Idx;  // index of matched gen jet for AK8
+
   // Primary vertices
   UInt_t n_pvs;
   vector<Float16_t>            Vertex_x;
@@ -1092,6 +1096,10 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("GenFatJet_eta"                        ,&GenFatJet_eta                       );
   tree->Branch("GenFatJet_phi"                        ,&GenFatJet_phi                       );
   tree->Branch("GenFatJet_mass"                       ,&GenFatJet_mass                      );
+
+  //add genjet matching indices
+  tree->Branch("Jet_genJetIdx"                        ,&Jet_genJetIdx                       );
+  tree->Branch("FatJet_genJetAK8Idx"                  ,&FatJet_genJetAK8Idx                 );
 
   //add GenParticle info
   tree->Branch("MatrixElementGenParticle_pt"                    ,&MatrixElementGenParticle_pt                 );  
@@ -1894,6 +1902,7 @@ if(runOffline){
   Jet_mvaDiscriminator.clear();
   Jet_nConstituents.clear();
   Jet_passId.clear();
+  Jet_genJetIdx.clear();
   OffJet_pt.clear();
   OffJet_eta.clear();
   OffJet_phi.clear();
@@ -2096,6 +2105,7 @@ if(runOffline){
   FatJet_chargedMultiplicity.clear();
   FatJet_neutralMultiplicity.clear();
   FatJet_passId.clear();
+  FatJet_genJetAK8Idx.clear();
 
   n_fatjet = 0;
 
@@ -2379,6 +2389,39 @@ if(runOffline){
     }
   }
 
+  // * Match AK4 reco jets to gen jets // *
+  if(runGen && runScouting){
+    const double maxDeltaR_AK4 = 0.4;  // Use jet radius for matching
+    std::vector<bool> genJetMatched(GenJet_pt.size(), false);  // Track which gen jets are already matched
+    
+    for(size_t ijet = 0; ijet < Jet_pt.size(); ++ijet) {
+      int bestMatch = -1;
+      double minDeltaR = maxDeltaR_AK4;
+      
+      for(size_t igen = 0; igen < GenJet_pt.size(); ++igen) {
+        if(genJetMatched[igen]) continue;  // Skip already matched gen jets (resolveAmbiguities)
+        
+        // Use CMSSW's standard deltaR function
+        double dR = reco::deltaR(Jet_eta[ijet], Jet_phi[ijet], GenJet_eta[igen], GenJet_phi[igen]);
+        
+        if(dR < minDeltaR) {
+          minDeltaR = dR;
+          bestMatch = igen;
+        }
+      }
+      
+      if(bestMatch >= 0) {
+        genJetMatched[bestMatch] = true;  // Mark this gen jet as matched
+      }
+      Jet_genJetIdx.push_back(bestMatch);
+    }
+  } else {
+    // Fill with -1 if no gen info
+    for(size_t ijet = 0; ijet < Jet_pt.size(); ++ijet) {
+      Jet_genJetIdx.push_back(-1);
+    }
+  }
+
   // * Gen Fatjets // *
   GenFatJet_pt.clear();
   GenFatJet_eta.clear();
@@ -2396,6 +2439,39 @@ if(runOffline){
         GenFatJet_mass  .push_back( genjet->mass()  );
         n_genfatjet++;
       }
+    }
+  }
+
+  // * Match AK8 reco jets to gen jets // *
+  if(runOffline && runScouting){
+    const double maxDeltaR_AK8 = 0.8;  // Use jet radius for matching
+    std::vector<bool> genFatJetMatched(GenFatJet_pt.size(), false);  // Track which gen jets are already matched
+    
+    for(size_t ijet = 0; ijet < FatJet_pt.size(); ++ijet) {
+      int bestMatch = -1;
+      double minDeltaR = maxDeltaR_AK8;
+      
+      for(size_t igen = 0; igen < GenFatJet_pt.size(); ++igen) {
+        if(genFatJetMatched[igen]) continue;  // Skip already matched gen jets (resolveAmbiguities)
+        
+        // Use CMSSW's standard deltaR function
+        double dR = reco::deltaR(FatJet_eta[ijet], FatJet_phi[ijet], GenFatJet_eta[igen], GenFatJet_phi[igen]);
+        
+        if(dR < minDeltaR) {
+          minDeltaR = dR;
+          bestMatch = igen;
+        }
+      }
+      
+      if(bestMatch >= 0) {
+        genFatJetMatched[bestMatch] = true;  // Mark this gen jet as matched
+      }
+      FatJet_genJetAK8Idx.push_back(bestMatch);
+    }
+  } else {
+    // Fill with -1 if no gen info
+    for(size_t ijet = 0; ijet < FatJet_pt.size(); ++ijet) {
+      FatJet_genJetAK8Idx.push_back(-1);
     }
   }
 

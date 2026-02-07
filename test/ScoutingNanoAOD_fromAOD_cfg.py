@@ -350,9 +350,9 @@ if(params.isMC):
     # taken from https://twiki.cern.ch/twiki/bin/viewauth/CMS/L1PrefiringWeightRecipe
 
     if (params.era == "2016") and (params.UL2016preVFP):
-        prefiring_era = "2016preVFP"
+        prefiring_era = "2016ULpreVFP"
     elif (params.era == "2016") and (not params.UL2016preVFP):
-        prefiring_era = "2016postVFP"
+        prefiring_era = "2016ULpostVFP"
     else:
         prefiring_era = params.era
 

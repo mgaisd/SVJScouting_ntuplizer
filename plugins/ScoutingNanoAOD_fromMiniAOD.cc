@@ -2443,7 +2443,7 @@ if(runOffline){
   }
 
   // * Match AK8 reco jets to gen jets // *
-  if(runOffline && runScouting){
+  if(runGen && runScouting){
     const double maxDeltaR_AK8 = 0.8;  // Use jet radius for matching
     std::vector<bool> genFatJetMatched(GenFatJet_pt.size(), false);  // Track which gen jets are already matched
     

@@ -311,7 +311,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     metPhi            = cms.InputTag("hltScoutingPFPacker", "pfMetPhi"),
 
     #HLT AK4 PF jets
-    jetAK4ScoutPtMin=cms.double(20),
+    jetAK4ScoutPtMin=cms.double(15),#20
     
     #HLT AK8 PF jets
     jetAK8ScoutPtMin=cms.double(100),
@@ -319,9 +319,12 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD_fromAOD',
     #offline objects
     pfcandsReco=cms.InputTag("particleFlow"),
 
+    #Offline PF AK4 jets
+    ak4pfjetsReco=cms.InputTag("ak4PFJets", "", "RECO"),
+
     #Puppi PF
-    ak4pfjetsReco=cms.InputTag("ak4PFJetsPuppi"),
-    jetAK4PtMin=cms.double(20),
+    ak4puppijetsReco=cms.InputTag("ak4PFJetsPuppi"),
+    jetAK4PtMin=cms.double(15),#20
 
     #Puppi AK8 PF
     ak8pfjetsReco=cms.InputTag("ak8PFJetsPuppi"),

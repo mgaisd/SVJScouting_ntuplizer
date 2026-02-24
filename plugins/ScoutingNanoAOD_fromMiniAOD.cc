@@ -208,6 +208,7 @@ private:
   edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
 
 
+  double jetAK4PtMin = 0.;
   double jetAK8PtMin = 0.;
 
 
@@ -701,6 +702,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   recoMetToken         (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("metReco"))),
   recoPuppiMetToken    (consumes<std::vector<pat::MET>>                    (iConfig.getParameter<edm::InputTag>("PuppimetReco"))),
 
+  jetAK4PtMin          (iConfig.getParameter<double>("jetAK4PtMin")),
   jetAK8PtMin          (iConfig.getParameter<double>("jetAK8PtMin")),
 
   jetAK4ScoutPtMin          (iConfig.getParameter<double>("jetAK4ScoutPtMin")),
@@ -2003,6 +2005,8 @@ if(runOffline){
 
   if(runOffline){
     for ( auto pfjet = puppi_ak4_pfjetsoffH->begin(); pfjet != puppi_ak4_pfjetsoffH->end(); ++pfjet){
+
+      if (pfjet->pt() < jetAK4PtMin) continue; //pt cut
 
       OffJet_pt .push_back( pfjet->pt() );
       OffJet_eta.push_back( pfjet->eta());

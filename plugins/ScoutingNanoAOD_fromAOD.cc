@@ -2009,8 +2009,6 @@ if(runOffline){
   if(runScouting){
     for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
 
-      if (pfjet->pt() < jetAK4ScoutPtMin) continue; //pt cut
-
       // Calculate HT at start of loop
       passJetId = jetID(*pfjet);
       if ( passJetId == true && pfjet->pt() >= 30) {
@@ -2037,6 +2035,9 @@ if(runOffline){
           }
         }
       }
+
+      // Apply pt cut on corrected jet pt
+      if (correctedJetP4.pt() < jetAK4ScoutPtMin) continue;
 
       // Save jet variables with corrected momentum
       Jet_pt .push_back( correctedJetP4.pt() );
@@ -2087,8 +2088,6 @@ if(runOffline){
     for (auto it = ak4_pfjetsoffH->begin(); it != ak4_pfjetsoffH->end(); ++it) {
       auto pfjet = *it;
 
-      if (pfjet.pt() < jetAK4PtMin) continue; //pt cut
-
       // Calculate HT at start of loop
       passJetId = jetIDoff(pfjet);
       if ( passJetId == true && pfjet.pt() >= 30) {
@@ -2111,6 +2110,9 @@ if(runOffline){
           correctedJetP4 -= muonP4;
         }
       }
+
+      // Apply pt cut on corrected jet pt
+      if (correctedJetP4.pt() < jetAK4PtMin) continue;
 
       // Save jet variables with corrected momentum
       OffJet_pt .push_back( correctedJetP4.pt() );
@@ -2160,8 +2162,6 @@ if(runOffline){
     for (auto it = puppi_ak4_pfjetsoffH->begin(); it != puppi_ak4_pfjetsoffH->end(); ++it) {
       auto pfjet = *it;
 
-      if (pfjet.pt() < jetAK4PtMin) continue; //pt cut
-
       // Calculate HT at start of loop
       passJetId = jetIDoff(pfjet);
       if ( passJetId == true && pfjet.pt() >= 30) {
@@ -2184,6 +2184,9 @@ if(runOffline){
           correctedJetP4 -= muonP4;
         }
       }
+
+      // Apply pt cut on corrected jet pt
+      if (correctedJetP4.pt() < jetAK4PtMin) continue;
 
       // Save jet variables with corrected momentum
       OffPuppiJet_pt .push_back( correctedJetP4.pt() );

@@ -1950,10 +1950,42 @@ if(runOffline){
   if(runScouting){
     for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
 
-      Jet_pt .push_back( pfjet->pt() );
-      Jet_eta.push_back( pfjet->eta());
-      Jet_phi.push_back( pfjet->phi());
-      Jet_m  .push_back( pfjet->m()  );
+      // Calculate HT at start of loop
+      passJetId = jetID(*pfjet);
+      if ( passJetId == true && pfjet->pt() >= 30) {
+        ht += pfjet->pt();
+        n_jetId++;
+      }
+
+      // Create LorentzVector for energy calculations
+      // charged and neutral EM fractions are approximated with just electrons/photons (not available in scouting)
+      math::PtEtaPhiMLorentzVector j(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
+
+      // Check EM energy fraction < 0.9 (approximated with electronEnergy + photonEnergy since chargedEmEnergy and neutralEmEnergy are not available in scouting)
+      double emEnergyFraction = (pfjet->electronEnergy() + pfjet->photonEnergy()) / j.E();
+      if (emEnergyFraction >= 0.9) continue;
+
+      // Remove muon overlap (avoids double counting muon energy in MET calculation for Type-1 MET)
+      math::PtEtaPhiMLorentzVector correctedJetP4 = j;
+      const std::vector<int> & constituentIndices = pfjet->constituents();
+      for (const auto & idx : constituentIndices) {
+        if (idx >= 0 && idx < (int)pfcandsH->size()) {
+          const auto & cand = (*pfcandsH)[idx];
+          if (abs(cand.pdgId()) == 13) { // muon
+            math::PtEtaPhiMLorentzVector muonP4(cand.pt(), cand.eta(), cand.phi(), cand.m());
+            correctedJetP4 -= muonP4;
+          }
+        }
+      }
+
+      // Apply pt cut on corrected jet pt
+      if (correctedJetP4.pt() < jetAK4ScoutPtMin) continue;
+
+      // Save jet variables with corrected momentum
+      Jet_pt .push_back( correctedJetP4.pt() );
+      Jet_eta.push_back( correctedJetP4.eta());
+      Jet_phi.push_back( correctedJetP4.phi());
+      Jet_m  .push_back( correctedJetP4.mass()  );
       Jet_area.push_back( pfjet->jetArea());
 
       Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
@@ -1973,10 +2005,6 @@ if(runOffline){
       Jet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
       Jet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
 
-      // create a LorentzVector to get the energy
-      // charged and neutral EM fractions are approximated with just electrons/photons (not available in scouting)
-      math::PtEtaPhiMLorentzVector j(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
-
       Jet_chargedHadronEnergyFraction.push_back( pfjet->chargedHadronEnergy()/j.E());
       Jet_neutralHadronEnergyFraction.push_back( pfjet->neutralHadronEnergy()/j.E());
       Jet_electronEnergyFraction.push_back( pfjet->electronEnergy()/j.E());
@@ -1988,17 +2016,9 @@ if(runOffline){
       Jet_csv             .push_back( pfjet->csv() );
       Jet_mvaDiscriminator.push_back( pfjet->mvaDiscriminator()    );
       Jet_nConstituents   .push_back( pfjet->constituents().size() );
-      
-      n_jet++;
-
-      passJetId = jetID(*pfjet);
       Jet_passId.push_back( passJetId );
 
-      // apply jet ID 
-      if ( passJetId == false ) continue; 
-      if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
-      ht += pfjet->pt() ; 
-      n_jetId++ ; 
+      n_jet++;
 
       }  
   }
@@ -2006,12 +2026,37 @@ if(runOffline){
   if(runOffline){
     for ( auto pfjet = puppi_ak4_pfjetsoffH->begin(); pfjet != puppi_ak4_pfjetsoffH->end(); ++pfjet){
 
-      if (pfjet->pt() < jetAK4PtMin) continue; //pt cut
+      // Calculate HT at start of loop
+      passJetId = jetIDoff(*pfjet);
+      if ( passJetId == true && pfjet->pt() >= 30) {
+        htoff += pfjet->pt();
+        n_jetIdoff++;
+      }
 
-      OffJet_pt .push_back( pfjet->pt() );
-      OffJet_eta.push_back( pfjet->eta());
-      OffJet_phi.push_back( pfjet->phi());
-      OffJet_m  .push_back( pfjet->mass() );
+      // Check EM energy fraction < 0.9
+      double emEnergyFraction = (pfjet->chargedEmEnergy() + pfjet->neutralEmEnergy()) / pfjet->energy();
+      if (emEnergyFraction >= 0.9) continue;
+
+      // Remove muon overlap (avoids double counting muon energy in MET calculation for Type-1 MET)
+      reco::Candidate::LorentzVector correctedJetP4 = pfjet->p4();
+      const std::vector<reco::CandidatePtr> & cands = pfjet->getJetConstituents();
+      for (const auto & cand : cands) {
+        const reco::PFCandidate *pfcand = dynamic_cast<const reco::PFCandidate *>(cand.get());
+        const reco::Candidate *mu = (pfcand != 0 ? ( pfcand->muonRef().isNonnull() ? pfcand->muonRef().get() : 0) : cand.get());
+        if ( mu != 0 && abs(mu->pdgId()) == 13 ) {
+          reco::Candidate::LorentzVector muonP4 = cand->p4();
+          correctedJetP4 -= muonP4;
+        }
+      }
+
+      // Apply pt cut on corrected jet pt
+      if (correctedJetP4.pt() < jetAK4PtMin) continue;
+
+      // Save jet variables with corrected momentum
+      OffJet_pt .push_back( correctedJetP4.pt() );
+      OffJet_eta.push_back( correctedJetP4.eta());
+      OffJet_phi.push_back( correctedJetP4.phi());
+      OffJet_m  .push_back( correctedJetP4.mass() );
 
       OffJet_area.push_back( pfjet->jetArea());
 
@@ -2043,16 +2088,8 @@ if(runOffline){
       OffJet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
       OffJet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
 
-      n_jetoff++;
-
-      passJetId = jetIDoff(*pfjet);
       OffJet_passId.push_back( passJetId );
-
-      //// apply jet ID 
-      if ( passJetId == false ) continue; 
-      if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
-      htoff += pfjet->pt() ; 
-      n_jetIdoff++ ;
+      n_jetoff++;
 
     }  
   }
@@ -2525,7 +2562,9 @@ vector<vector<reco::CandidatePtr>> OffPFcandsAK8Puppi;
 if(runOffline){
 
     for (auto pfjet = puppi_ak8_pfjetsoffH->begin(); pfjet != puppi_ak8_pfjetsoffH->end(); ++pfjet) {
-      //const reco::PFJet* jet = &(*it);
+
+      if (pfjet->pt() < jetAK8PtMin) continue; //pt cut
+      if (abs(pfjet->eta()) > 2.4) continue; //eta cut
 
       OffPuppiFatJet_pt .push_back( pfjet->pt() );
       OffPuppiFatJet_eta.push_back( pfjet->eta());

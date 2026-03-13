@@ -1271,7 +1271,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
 
       unsigned int n_pfcand_tot = 0;
       for (auto & pfcands_iter : PFcands ) {
-        if (pfcands_iter.pt() < 1.) continue;
+        if (pfcands_iter.pt() < 0.5) continue;
         if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
         int tmpidx = -1;
         int ak8count = 0;

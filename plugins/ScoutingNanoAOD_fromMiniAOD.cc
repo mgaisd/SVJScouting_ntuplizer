@@ -2252,7 +2252,7 @@ if(runOffline){
 
       unsigned int n_pfcand_tot = 0;
       for (auto & pfcands_iter : PFcands ) {
-        if (pfcands_iter.pt() < 1.) continue;
+        if (pfcands_iter.pt() < 0.5) continue;
         if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
         int tmpidx = -1;
         int ak8count = 0;
@@ -2329,7 +2329,7 @@ if(runOffline){
 
     unsigned int n_pfcand_off_tot = 0;
     for(auto pfcandsoff_iter = pfcandsoffH->begin(); pfcandsoff_iter != pfcandsoffH->end(); ++pfcandsoff_iter ){
-      if (pfcandsoff_iter->pt() < 1.) continue;
+      if (pfcandsoff_iter->pt() < 0.5) continue;
       if (abs(pfcandsoff_iter->eta()) >= 2.4 ) continue;    
       int tmpidx_off = -1;
       int ak8count_off = 0;
@@ -2633,7 +2633,7 @@ if(runOffline){
   //iter over jets
     for (unsigned ic=0;ic<OffPFcandsAK8Puppi[j].size();++ic){
       const reco::Candidate* pfc = dynamic_cast <const reco::Candidate*> (OffPFcandsAK8Puppi[j][ic].get());
-      if (pfc->pt() < 1.) continue;
+      if (pfc->pt() < 0.5) continue;
       if (abs(pfc->eta()) >= 2.4 ) continue; 
       OffPuppiPFcand_pt.push_back(pfc->pt()); 
       OffPuppiPFcand_eta.push_back(pfc->eta());

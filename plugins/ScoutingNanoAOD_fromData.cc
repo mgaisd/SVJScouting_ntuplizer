@@ -1276,6 +1276,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
         int tmpidx = -1;
         int ak8count = 0;
         for (auto &j: ak8_jets) {
+          if (abs(j.eta()) > 2.4) continue; //eta cut, should be the same as for the fatjets
           for (auto &k: j.constituents()){
             if ((UInt_t)k.user_index() == n_pfcand_tot){
               tmpidx = ak8count;

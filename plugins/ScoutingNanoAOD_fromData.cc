@@ -222,7 +222,6 @@ private:
   std::vector<int>             l1Prescale_;
   std::vector<bool>            hltResult_;
   std::vector<std::string>     hltResultName_;
-  vector<double>            PSweights;
 
   UInt_t scouting_trig; 
 
@@ -449,7 +448,7 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("event"		                    ,&event_                  ,"event/i");
   
   //scouting, offline triggers
-  tree->Branch("scouting_trig"            	        ,&scouting_trig 			,"scounting_trig/i");
+  tree->Branch("scouting_trig"            	        ,&scouting_trig 			,"scouting_trig/i");
 
   //Scouting Electrons
   tree->Branch("nElectron"               	         ,&n_ele                        ,"nElectron/i");

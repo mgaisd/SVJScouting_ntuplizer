@@ -263,7 +263,8 @@ private:
   std::vector<int>             l1Prescale_;
   std::vector<bool>            hltResult_;
   std::vector<std::string>     hltResultName_;
-  vector<double>            PSweights;
+  vector<double>               PSweights;
+  Float16_t                    genWeight;
 
   UInt_t scouting_trig; 
   UInt_t scouting_trig_prescaled;
@@ -764,6 +765,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("run"		                    ,&run                  ,"run/i");
   tree->Branch("event"		                    ,&event_                  ,"event/i");
   tree->Branch("PSweights"            	    ,&PSweights 	                 );
+  tree->Branch("genWeight"            	    ,&genWeight 	                 );
   tree->Branch("prefire"		                ,&prefire                      );
   tree->Branch("prefireup"		              ,&prefireup                    );
   tree->Branch("prefiredown"		            ,&prefiredown                  );
@@ -777,8 +779,8 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   
   //scouting, offline triggers
   tree->Branch("scouting_trig_prescaled"            	         ,&scouting_trig_prescaled 			,"scouting_trig_prescaled/i");
-  tree->Branch("scouting_trig"            	                   ,&scouting_trig 			,"scounting_trig/i");
-  tree->Branch("scouting_trig_zero_bias"            	        ,&scouting_trig_zero_bias 			,"scounting_trig_zero_bias/i");
+  tree->Branch("scouting_trig"            	                   ,&scouting_trig 			,"scouting_trig/i");
+  tree->Branch("scouting_trig_zero_bias"            	        ,&scouting_trig_zero_bias 			,"scouting_trig_zero_bias/i");
   tree->Branch("offline_trig"            	        ,&offline_trig 			,"offline_trig/i");
   tree->Branch("veto_trig"            	        ,&veto_trig 			,"veto_trig/i");
   tree->Branch("genModel"            	        ,&label 			);
@@ -2637,8 +2639,13 @@ if(runOffline){
   }else{// rho=0;
     rho2=0;}
 
+  genWeight = 1.0;
+  PSweights.clear();
+
   if(doSignal or isMC){
+    genWeight = genEvtInfo->weight();
     PSweights = genEvtInfo->weights();
+
     Handle<double> prefirewgt;
     iEvent.getByToken(prefireToken, prefirewgt);
     prefire = *prefirewgt;

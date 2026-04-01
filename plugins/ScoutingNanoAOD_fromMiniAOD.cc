@@ -271,6 +271,7 @@ private:
   std::vector<bool>            hltResult_;
   std::vector<std::string>     hltResultName_;
   vector<double>            PSweights;
+  Float16_t                 genWeight;
   vector<float>            PDFweights;
   vector<float>            ScaleWeights;
 
@@ -758,6 +759,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("run"		                    ,&run                  ,"run/i");
   tree->Branch("event"		                    ,&event_                  ,"event/i");
   tree->Branch("PSweights"            	    ,&PSweights 	                 );
+  tree->Branch("genWeight"                   ,&genWeight                  );
   tree->Branch("ScaleWeights"               ,&ScaleWeights                 );      
   tree->Branch("PDFweights"                 ,&PDFweights                    );     
   
@@ -774,8 +776,8 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   
   //scouting, offline triggers
   tree->Branch("scouting_trig_prescaled"            	        ,&scouting_trig_prescaled 			,"scouting_trig_prescaled/i");
-  tree->Branch("scouting_trig"            	        ,&scouting_trig 			,"scounting_trig/i");
-  tree->Branch("scouting_trig_zero_bias"            	        ,&scouting_trig_zero_bias 			,"scounting_trig_zero_bias/i");
+  tree->Branch("scouting_trig"            	        ,&scouting_trig 			,"scouting_trig/i");
+  tree->Branch("scouting_trig_zero_bias"            	        ,&scouting_trig_zero_bias 			,"scouting_trig_zero_bias/i");
   tree->Branch("offline_trig"            	        ,&offline_trig 			,"offline_trig/i");
   tree->Branch("veto_trig"            	        ,&veto_trig 			,"veto_trig/i");
   tree->Branch("genModel"            	        ,&label 			);
@@ -2364,11 +2366,13 @@ if(runOffline){
   }else{// rho=0;
     rho2=0;}
 
-  if(doSignal or isMC){
-    PSweights.clear();
-    ScaleWeights.clear();
-    PDFweights.clear();
+  genWeight = 1.0;
+  PSweights.clear();
+  ScaleWeights.clear();
+  PDFweights.clear();
 
+  if(doSignal or isMC){
+    genWeight = genEvtInfo->weight();
     PSweights = genEvtInfo->weights();
     
     // Handle<double> pdfwgt;

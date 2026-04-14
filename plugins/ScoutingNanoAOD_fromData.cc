@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <cmath>
 #include <math.h>
 
 #include "boost/algorithm/string.hpp"
@@ -876,13 +877,30 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
 
 
     for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
-      
-      if (pfcands_iter.pt() < 0.5) continue;
-      if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
+      const float candPt = pfcands_iter.pt();
+      const float candEta = pfcands_iter.eta();
+      const float candPhi = pfcands_iter.phi();
+      const float candMass = pfcands_iter.m();
 
-      PFcand_pt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.pt())));
-      PFcand_eta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.eta())));
-      PFcand_phi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.phi())));
+      if (!std::isfinite(candPt) || !std::isfinite(candEta) || !std::isfinite(candPhi) || !std::isfinite(candMass)) {
+        edm::LogWarning("ScoutingNanoAOD_fromData")
+          << "Skipping scouting PF candidate with non-finite kinematics"
+          << " in run:lumi:event " << run << ":" << lumSec << ":" << event_
+          << " pt=" << candPt
+          << " eta=" << candEta
+          << " phi=" << candPhi
+          << " mass=" << candMass
+          << " pdgId=" << pfcands_iter.pdgId()
+          << " vertex=" << pfcands_iter.vertex();
+        continue;
+      }
+      
+      if (candPt < 0.5) continue;
+      if (abs(candEta) >= 2.4 ) continue;
+
+      PFcand_pt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(candPt)));
+      PFcand_eta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(candEta)));
+      PFcand_phi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(candPhi)));
       if(abs(pfcands_iter.pdgId()) == 13){
         n_pfMu ++;
       }
@@ -890,14 +908,28 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
         n_pfEl ++;
       }
     
-      PFcand_m.push_back(pfcands_iter.m());
+      PFcand_m.push_back(candMass);
       PFcand_pdgid.push_back(pfcands_iter.pdgId());
       PFcand_q.push_back(getCharge(pfcands_iter.pdgId()));
       PFcand_vertex.push_back(pfcands_iter.vertex());
 
       // For clustering fat jets
       PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
-      temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
+      temp_jet.reset_PtYPhiM(candPt, candEta, candPhi, candMass);
+      if (!std::isfinite(temp_jet.rap()) || !std::isfinite(temp_jet.phi_std())) {
+        edm::LogWarning("ScoutingNanoAOD_fromData")
+          << "Skipping scouting PF candidate after PseudoJet conversion"
+          << " in run:lumi:event " << run << ":" << lumSec << ":" << event_
+          << " pt=" << candPt
+          << " eta=" << candEta
+          << " phi=" << candPhi
+          << " mass=" << candMass
+          << " rap=" << temp_jet.rap()
+          << " phi_std=" << temp_jet.phi_std()
+          << " pdgId=" << pfcands_iter.pdgId()
+          << " vertex=" << pfcands_iter.vertex();
+        continue;
+      }
       temp_jet.set_user_index(n_pfcand);
       temp_jet.set_user_info(new PdgIdInfo(pfcands_iter.pdgId()));
       fj_part.push_back(temp_jet);

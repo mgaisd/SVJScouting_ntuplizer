@@ -855,6 +855,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   FatJetPFCands_pFCandsIdx.clear();
 
   vector<PseudoJet> fj_part;
+  bool skipEventForInvalidPFCand = false;
   n_pfcand = 0;
   n_pfMu =0;
   n_pfEl =0;
@@ -884,7 +885,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
 
       if (!std::isfinite(candPt) || !std::isfinite(candEta) || !std::isfinite(candPhi) || !std::isfinite(candMass)) {
         edm::LogWarning("ScoutingNanoAOD_fromData")
-          << "Skipping scouting PF candidate with non-finite kinematics"
+          << "Skipping event due to scouting PF candidate with non-finite kinematics"
           << " in run:lumi:event " << run << ":" << lumSec << ":" << event_
           << " pt=" << candPt
           << " eta=" << candEta
@@ -892,7 +893,8 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
           << " mass=" << candMass
           << " pdgId=" << pfcands_iter.pdgId()
           << " vertex=" << pfcands_iter.vertex();
-        continue;
+        skipEventForInvalidPFCand = true;
+        break;
       }
       
       if (candPt < 0.5) continue;
@@ -918,7 +920,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
       temp_jet.reset_PtYPhiM(candPt, candEta, candPhi, candMass);
       if (!std::isfinite(temp_jet.rap()) || !std::isfinite(temp_jet.phi_std())) {
         edm::LogWarning("ScoutingNanoAOD_fromData")
-          << "Skipping scouting PF candidate after PseudoJet conversion"
+          << "Skipping event due to scouting PF candidate with invalid PseudoJet coordinates"
           << " in run:lumi:event " << run << ":" << lumSec << ":" << event_
           << " pt=" << candPt
           << " eta=" << candEta
@@ -928,13 +930,18 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
           << " phi_std=" << temp_jet.phi_std()
           << " pdgId=" << pfcands_iter.pdgId()
           << " vertex=" << pfcands_iter.vertex();
-        continue;
+        skipEventForInvalidPFCand = true;
+        break;
       }
       temp_jet.set_user_index(n_pfcand);
       temp_jet.set_user_info(new PdgIdInfo(pfcands_iter.pdgId()));
       fj_part.push_back(temp_jet);
       
       n_pfcand++;
+    }
+
+    if (skipEventForInvalidPFCand) {
+      return;
     }
 
   }

@@ -28,6 +28,7 @@
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenLumiInfoHeader.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 
 //Added for offline jets
 #include "DataFormats/JetReco/interface/PFJet.h"
@@ -221,6 +222,7 @@ private:
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken;
   const edm::EDGetTokenT<std::vector<PileupSummaryInfo> >       pileupInfoToken2;
   const edm::EDGetTokenT<GenEventInfoProduct>                  genEvtInfoToken;
+  edm::EDGetTokenT<LHEEventProduct>                            lheInfoToken;
   const edm::EDGetTokenT<GenLumiInfoHeader>  	genLumiInfoHeadTag_;
   const edm::EDGetTokenT<std::vector<reco::GenMET> >            genMetToken;
 
@@ -265,6 +267,7 @@ private:
   std::vector<std::string>     hltResultName_;
   vector<double>               PSweights;
   Float16_t                    genWeight;
+  Float_t                      lheHT;
 
   UInt_t scouting_trig; 
   UInt_t scouting_trig_prescaled;
@@ -753,6 +756,12 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
  // now do whatever initialization is needed
   usesResource("TFileService");
 
+  // LHE product is optional (absent for data); use config tag if provided, else standard label
+  edm::InputTag lheTag = iConfig.existsAs<edm::InputTag>("lheinfo")
+      ? iConfig.getParameter<edm::InputTag>("lheinfo")
+      : edm::InputTag("externalLHEProducer");
+  lheInfoToken = mayConsume<LHEEventProduct>(lheTag);
+
 
  // Access the TFileService
   edm::Service<TFileService> fs;
@@ -766,6 +775,7 @@ ScoutingNanoAOD_fromAOD::ScoutingNanoAOD_fromAOD(const edm::ParameterSet& iConfi
   tree->Branch("event"		                    ,&event_                  ,"event/i");
   tree->Branch("PSweights"            	    ,&PSweights 	                 );
   tree->Branch("genWeight"            	    ,&genWeight 	                 );
+  tree->Branch("lheHT"                      ,&lheHT                          );
   tree->Branch("prefire"		                ,&prefire                      );
   tree->Branch("prefireup"		              ,&prefireup                    );
   tree->Branch("prefiredown"		            ,&prefiredown                  );
@@ -2640,7 +2650,24 @@ if(runOffline){
     rho2=0;}
 
   genWeight = 1.0;
+  lheHT = 0.0;
   PSweights.clear();
+
+  if(doSignal or isMC){
+    Handle<LHEEventProduct> lheInfo;
+    if(iEvent.getByToken(lheInfoToken, lheInfo)){
+      const lhef::HEPEUP& hepeup = lheInfo->hepeup();
+      for(int i = 0; i < hepeup.NUP; ++i){
+        if(hepeup.ISTUP[i] == 1){
+          int pid = std::abs(hepeup.IDUP[i]);
+          if((pid == 21) || (pid > 0 && pid < 7)){  // gluons and quarks; matches NanoAOD LHETablesProducer
+            double px = hepeup.PUP[i][0], py = hepeup.PUP[i][1];
+            lheHT += std::sqrt(px*px + py*py);
+          }
+        }
+      }
+    }
+  }
 
   if(doSignal or isMC){
     genWeight = genEvtInfo->weight();

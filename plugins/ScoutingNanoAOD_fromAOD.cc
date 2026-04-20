@@ -2059,36 +2059,35 @@ if(runOffline){
 
       Jet_area.push_back( pfjet->jetArea());
 
-      // Not needed for Type-1 MET
-      // Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
-      // Jet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
-      // Jet_photonEnergy       .push_back( pfjet->photonEnergy()       );
-      // Jet_electronEnergy     .push_back( pfjet->electronEnergy()     );
-      // Jet_muonEnergy         .push_back( pfjet->muonEnergy()     );
-      // Jet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
-      // Jet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
-      // Jet_HOEnergy           .push_back( pfjet->HOEnergy()       );
-      // 
-      // Jet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
-      // Jet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
-      // Jet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
-      // Jet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
-      // Jet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
-      // Jet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
-      // Jet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
-      //
-      // Jet_chargedHadronEnergyFraction.push_back( pfjet->chargedHadronEnergy()/j.E());
-      // Jet_neutralHadronEnergyFraction.push_back( pfjet->neutralHadronEnergy()/j.E());
-      // Jet_electronEnergyFraction.push_back( pfjet->electronEnergy()/j.E());
-      // Jet_photonEnergyFraction.push_back( pfjet->photonEnergy()/j.E());
-      // Jet_muonEnergyFraction.push_back( pfjet->muonEnergy()/j.E());
-      // Jet_chargedMultiplicity.push_back( pfjet->muonMultiplicity() + pfjet->electronMultiplicity() + pfjet->chargedHadronMultiplicity());
-      // Jet_neutralMultiplicity.push_back( pfjet->photonMultiplicity() + pfjet->neutralHadronMultiplicity());
-      //
-      // Jet_csv             .push_back( pfjet->csv() );
-      // Jet_mvaDiscriminator.push_back( pfjet->mvaDiscriminator()    );
+      Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
+      Jet_neutralHadronEnergy.push_back( pfjet->neutralHadronEnergy());
+      Jet_photonEnergy       .push_back( pfjet->photonEnergy()       );
+      Jet_electronEnergy     .push_back( pfjet->electronEnergy()     );
+      Jet_muonEnergy         .push_back( pfjet->muonEnergy()     );
+      Jet_HFHadronEnergy     .push_back( pfjet->HFHadronEnergy() );
+      Jet_HFEMEnergy         .push_back( pfjet->HFEMEnergy()     );
+      Jet_HOEnergy           .push_back( pfjet->HOEnergy()       );
+      
+      Jet_chargedHadronMultiplicity.push_back( pfjet->chargedHadronMultiplicity());
+      Jet_neutralHadronMultiplicity.push_back( pfjet->neutralHadronMultiplicity());
+      Jet_photonMultiplicity       .push_back( pfjet->photonMultiplicity()       );
+      Jet_electronMultiplicity     .push_back( pfjet->electronMultiplicity()     );
+      Jet_muonMultiplicity         .push_back( pfjet->muonMultiplicity()         );
+      Jet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
+      Jet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
+      
+      Jet_chargedHadronEnergyFraction.push_back( pfjet->chargedHadronEnergy()/j.E());
+      Jet_neutralHadronEnergyFraction.push_back( pfjet->neutralHadronEnergy()/j.E());
+      Jet_electronEnergyFraction.push_back( pfjet->electronEnergy()/j.E());
+      Jet_photonEnergyFraction.push_back( pfjet->photonEnergy()/j.E());
+      Jet_muonEnergyFraction.push_back( pfjet->muonEnergy()/j.E());
+      Jet_chargedMultiplicity.push_back( pfjet->muonMultiplicity() + pfjet->electronMultiplicity() + pfjet->chargedHadronMultiplicity());
+      Jet_neutralMultiplicity.push_back( pfjet->photonMultiplicity() + pfjet->neutralHadronMultiplicity());
+      
+      Jet_csv             .push_back( pfjet->csv() );
+      Jet_mvaDiscriminator.push_back( pfjet->mvaDiscriminator()    );
       Jet_nConstituents   .push_back( pfjet->constituents().size() );
-      // Jet_passId.push_back( passJetId );
+      Jet_passId.push_back( passJetId );
       
       n_jet++; 
 

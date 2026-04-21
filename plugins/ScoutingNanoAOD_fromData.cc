@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <cmath>
 #include <math.h>
 
 #include "boost/algorithm/string.hpp"
@@ -21,37 +22,37 @@
 
 // CMSSW data formats
 #include "DataFormats/Math/interface/deltaR.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+//#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Scouting/interface/ScoutingMuon.h"
 #include "DataFormats/Scouting/interface/ScoutingParticle.h"
 #include "DataFormats/Scouting/interface/ScoutingVertex.h"
-#include "DataFormats/JetReco/interface/PFJet.h"
-#include "JetMETCorrections/JetCorrector/interface/JetCorrector.h"
-#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
-#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
-#include "SimDataFormats/GeneratorProducts/interface/GenLumiInfoHeader.h"
+//#include "DataFormats/JetReco/interface/PFJet.h"
+//#include "JetMETCorrections/JetCorrector/interface/JetCorrector.h"
+//#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
+//#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+//#include "SimDataFormats/GeneratorProducts/interface/GenLumiInfoHeader.h"
 
 //Added for MET
-#include "DataFormats/METReco/interface/PFMET.h"
-#include "DataFormats/METReco/interface/PFMETCollection.h"
-#include "DataFormats/PatCandidates/interface/Jet.h"
-#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
-#include "DataFormats/PatCandidates/interface/MET.h"
+//#include "DataFormats/METReco/interface/PFMET.h"
+//#include "DataFormats/METReco/interface/PFMETCollection.h"
+//#include "DataFormats/PatCandidates/interface/Jet.h"
+//#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#//include "DataFormats/PatCandidates/interface/MET.h"
 
 //Added for offline electrons and muons
-#include "DataFormats/PatCandidates/interface/Electron.h"
-#include "DataFormats/PatCandidates/interface/Muon.h"
-#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+//#include "DataFormats/PatCandidates/interface/Electron.h"
+//#include "DataFormats/PatCandidates/interface/Muon.h"
+//#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 
 // Adding Gen jets
-#include "DataFormats/JetReco/interface/GenJet.h"
+//#include "DataFormats/JetReco/interface/GenJet.h"
 
 //Accessing Gen particles
-#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+//#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
 //Adding Reco vertices
-#include "DataFormats/VertexReco/interface/Vertex.h"
-#include "DataFormats/VertexReco/interface/VertexFwd.h"
+//#include "DataFormats/VertexReco/interface/Vertex.h"
+//#include "DataFormats/VertexReco/interface/VertexFwd.h"
 
 // Other relevant CMSSW includes
 #include "CommonTools/UtilAlgos/interface/TFileService.h" 
@@ -126,6 +127,10 @@
 #include "PhysicsTools/CandUtils/interface/EventShapeVariables.h"
 #include "PhysicsTools/CandUtils/interface/Thrust.h"
 
+// for mini isolation
+#include "ScoutingMiniIsolation.h"
+
+
 using namespace std;
 using namespace fastjet;
 using namespace fastjet::contrib;
@@ -175,7 +180,6 @@ private:
   virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
   int getCharge(int pdgId);
   bool jetID(const ScoutingPFJet &pfjet);
-  bool jetIDoff(const pat::Jet &pfjet);
 
   //Scouting tokens
   const edm::InputTag triggerResultsTag;
@@ -189,6 +193,9 @@ private:
 
   const edm::EDGetTokenT<double> metPtToken;
   const edm::EDGetTokenT<double> metPhiToken;
+
+  double jetAK4ScoutPtMin = 0.;
+  double jetAK8ScoutPtMin = 0.;
 
   std::vector<std::string> triggerPathsVector;
   std::map<std::string, int> triggerPathsMap;
@@ -216,10 +223,10 @@ private:
   std::vector<int>             l1Prescale_;
   std::vector<bool>            hltResult_;
   std::vector<std::string>     hltResultName_;
-  vector<double>            PSweights;
 
   UInt_t scouting_trig; 
 
+  
   //Photon
   UInt_t n_pho;
   vector<Float16_t> 	     Photon_pt;
@@ -251,6 +258,8 @@ private:
   vector<Float16_t>        Electron_trkiso;
   vector<Float16_t>        Electron_combinediso;
   vector<bool>             Electron_ID;
+  vector<Float16_t>        Electron_chargedMiniIso;
+  vector<Float16_t>        Electron_combinedMiniIso;
 
 
   //Muon
@@ -272,6 +281,7 @@ private:
   vector<Float16_t>            Muon_nvalidmuon_hits;
   vector<Float16_t>            Muon_nvalidpixelhits;
   vector<Float16_t>            Muon_nmatchedstations;
+  vector<Float16_t>            Muon_nTrackerLayersWithMeasurement;
   vector<Float16_t>            Muon_type;
   vector<Float16_t>            Muon_nvalidstriphits;
   vector<Float16_t>            Muon_trkqoverp;
@@ -281,28 +291,26 @@ private:
   vector<Float16_t>            Muon_trketa;
   vector<Float16_t>            Muon_trkqoverperror;
   vector<Float16_t>            Muon_trklambdaerror;
-  vector<Float16_t>            Muon_trkpterror;
+  vector<Float16_t>            Muon_dxyerror;
   vector<Float16_t>            Muon_trkphierror;
-  vector<Float16_t>            Muon_trketaerror;
+  vector<Float16_t>            Muon_dzerror;
   vector<Float16_t>            Muon_trkdszerror;
   vector<Float16_t>            Muon_trkdsz;
+  vector<Float16_t>            Muon_chargedMiniIso;
+  vector<Float16_t>            Muon_combinedMiniIso;
 
 
   //PFJets
   UInt_t                       n_jet;
   UInt_t                       n_jetId;
-  UInt_t                       n_jetoff;
-  UInt_t                       n_jetIdoff;
   float                        ht;
-  float                        htoff;
   bool                         passJetId;
-  vector<Float16_t> 	         Jet_rawFactor;
   vector<Float16_t> 	         Jet_pt;
   vector<Float16_t>            Jet_eta;
   vector<Float16_t>            Jet_phi;
-  vector<Float16_t>	           Jet_m;
-  vector<Float16_t>	           Jet_area;
-  vector<Float16_t>	           Jet_chargedHadronEnergy;
+  vector<Float16_t>            Jet_m;
+  vector<Float16_t>            Jet_area;
+  vector<Float16_t>            Jet_chargedHadronEnergy;
   vector<Float16_t>            Jet_neutralHadronEnergy;
   vector<Float16_t>	           Jet_photonEnergy;
   vector<Float16_t>	           Jet_electronEnergy;
@@ -320,7 +328,22 @@ private:
   vector<Float16_t> 	         Jet_csv;
   vector<Float16_t> 	         Jet_mvaDiscriminator;
   vector<Float16_t>  	         Jet_nConstituents;
+  // for jet id
+  vector<Float16_t>        Jet_neutralHadronEnergyFraction;
+  vector<Float16_t>	       Jet_photonEnergyFraction;
+  vector<Float16_t>	       Jet_chargedHadronEnergyFraction;
+  vector<Float16_t>	       Jet_muonEnergyFraction;
+  vector<Float16_t>	       Jet_electronEnergyFraction;
+  vector<Float16_t>	       Jet_neutralMultiplicity;
+  vector<Float16_t>	       Jet_chargedMultiplicity;
+
   vector<bool>                 Jet_passId;
+
+  // CorrT1METJet: original jet after EM fraction cut + muon overlap removal (for Type-1 MET)
+  vector<Float16_t>            CorrT1METJet_pt;
+  vector<Float16_t>            CorrT1METJet_eta;
+  vector<Float16_t>            CorrT1METJet_phi;
+  vector<Float16_t>            CorrT1METJet_mass;
 
   // Scouting PFCand
   UInt_t                       n_pfcand;
@@ -338,7 +361,6 @@ private:
 
   // Fatjets 
   UInt_t                       n_fatjet;
-  vector<Float16_t>            FatJet_rawFactor;
   vector<Float16_t>            FatJet_area;
   vector<Float16_t>            FatJet_eta;
   //vector<Float16_t>            FatJet_n2b1;
@@ -354,7 +376,17 @@ private:
   vector<Float16_t>            FatJet_mass;
   //vector<Float16_t>            FatJet_msoftdrop;
   //vector<Float16_t>            FatJet_mtrim;
-  vector<Float16_t>            FatJet_nconst;
+  vector<Float16_t>            FatJet_nConstituents;
+  vector<bool>                 FatJet_passId;
+
+    // for jet id
+  vector<Float16_t>        FatJet_neutralHadronEnergyFraction;
+  vector<Float16_t>	       FatJet_photonEnergyFraction;
+  vector<Float16_t>	       FatJet_chargedHadronEnergyFraction;
+  vector<Float16_t>	       FatJet_muonEnergyFraction;
+  vector<Float16_t>	       FatJet_electronEnergyFraction;
+  vector<Float16_t>	       FatJet_neutralMultiplicity;
+  vector<Float16_t>	       FatJet_chargedMultiplicity;
 
 
   // Primary vertices
@@ -366,6 +398,7 @@ private:
   vector<Float16_t>            Vertex_chi2;
   vector<Float16_t>            Vertex_ndof;
   vector<Float16_t>            Vertex_isValidVtx;
+  vector<bool>                 Vertex_isGood;
 
 
   //Scouting MET
@@ -393,10 +426,11 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   pfcandsToken             (consumes<std::vector<ScoutingParticle> >         (iConfig.getParameter<edm::InputTag>("pfcands"))), 
   pfjetsToken              (consumes<std::vector<ScoutingPFJet> >            (iConfig.getParameter<edm::InputTag>("pfjets"))), 
   verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
-   
-  
-  metPtToken               (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPt"))),
-  metPhiToken              (consumes<double>                                    (iConfig.getParameter<edm::InputTag>("metPhi"))),
+  metPtToken               (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPt"))),
+  metPhiToken              (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPhi"))),
+
+  jetAK4ScoutPtMin         (iConfig.getParameter<double>("jetAK4ScoutPtMin")),
+  jetAK8ScoutPtMin         (iConfig.getParameter<double>("jetAK8ScoutPtMin")),
 
 
   hltPSProv_(iConfig,consumesCollector(),*this), //it needs a referernce to the calling module for some reason, hence the *this   
@@ -423,7 +457,7 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("event"		                    ,&event_                  ,"event/i");
   
   //scouting, offline triggers
-  tree->Branch("scouting_trig"            	        ,&scouting_trig 			,"scounting_trig/i");
+  tree->Branch("scouting_trig"            	        ,&scouting_trig 			,"scouting_trig/i");
 
   //Scouting Electrons
   tree->Branch("nElectron"               	         ,&n_ele                        ,"nElectron/i");
@@ -445,6 +479,8 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("Electron_ID"               ,&Electron_ID   );
   tree->Branch("Electron_d0"               ,&Electron_d0              );
   tree->Branch("Electron_dz"               ,&Electron_dz              );
+  tree->Branch("Electron_chargedMiniIso"               ,&Electron_chargedMiniIso              );
+  tree->Branch("Electron_combinedMiniIso"               ,&Electron_combinedMiniIso              );
 
 
   //Scouting Photons
@@ -477,6 +513,7 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("Muon_nvalidmuon_hits"           ,&Muon_nvalidmuon_hits          );
   tree->Branch("Muon_validpixelhits"            ,&Muon_nvalidpixelhits          );
   tree->Branch("Muon_nmatchedstations"          ,&Muon_nmatchedstations         );
+  tree->Branch("Muon_nTrackerLayersWithMeasurement"         ,&Muon_nTrackerLayersWithMeasurement        );
   tree->Branch("Muon_type"                      ,&Muon_type                     );
   tree->Branch("Muon_nvalidstriphits"           ,&Muon_nvalidstriphits          );
   tree->Branch("Muon_tkqoverp"                 ,&Muon_trkqoverp                );
@@ -486,11 +523,13 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("Muon_tketa"                    ,&Muon_trketa                   );
   tree->Branch("Muon_tkqoverperror"            ,&Muon_trkqoverperror           );
   tree->Branch("Muon_tklambdaerror"            ,&Muon_trklambdaerror           );
-  tree->Branch("Muon_tkpterror"                ,&Muon_trkpterror               );
+  tree->Branch("Muon_dxyerror"                ,&Muon_dxyerror                 );
   tree->Branch("Muon_tkphierror"               ,&Muon_trkphierror              );
-  tree->Branch("Muon_tketaerror"               ,&Muon_trketaerror              );
+  tree->Branch("Muon_dzerror"                  ,&Muon_dzerror                  );
   tree->Branch("Muon_tkdszerror"               ,&Muon_trkdszerror              );
   tree->Branch("Muon_tkdsz"                    ,&Muon_trkdsz                   );
+  tree->Branch("Muon_chargedMiniIso"           ,&Muon_chargedMiniIso           );
+  tree->Branch("Muon_combinedMiniIso"          ,&Muon_combinedMiniIso          );
 
 
   //Scouting AK4 PFJets
@@ -520,10 +559,23 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("Jet_mvaDiscriminator"           ,&Jet_mvaDiscriminator          );
   tree->Branch("Jet_nConstituents"              ,&Jet_nConstituents             );
   tree->Branch("Jet_passId"                     ,&Jet_passId                    );
+  
+  //for jet id
+  tree->Branch("Jet_chargedHadronEnergyFraction"        ,&Jet_chargedHadronEnergyFraction       );
+  tree->Branch("Jet_neutralHadronEnergyFraction"        ,&Jet_neutralHadronEnergyFraction       );
+  tree->Branch("Jet_electronEnergyFraction"        ,&Jet_electronEnergyFraction       );
+  tree->Branch("Jet_muonEnergyFraction"        ,&Jet_muonEnergyFraction       );
+  tree->Branch("Jet_photonEnergyFraction"        ,&Jet_photonEnergyFraction       );
+  tree->Branch("Jet_neutralMultiplicity"        ,&Jet_neutralMultiplicity       );
+  tree->Branch("Jet_chargedMultiplicity"        ,&Jet_chargedMultiplicity       );
+  tree->Branch("CorrT1METJet_pt"               ,&CorrT1METJet_pt               );
+  tree->Branch("CorrT1METJet_eta"              ,&CorrT1METJet_eta              );
+  tree->Branch("CorrT1METJet_phi"              ,&CorrT1METJet_phi              );
+  tree->Branch("CorrT1METJet_mass"             ,&CorrT1METJet_mass             );
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                        ,&n_fatjet                      ,"nFatJet/i");
-  //tree->Branch("FatJet_area"                    ,&FatJet_area                   );
+  tree->Branch("FatJet_area"                    ,&FatJet_area                   );
   tree->Branch("FatJet_eta"                     ,&FatJet_eta                    );
   //tree->Branch("FatJet_n2b1"                    ,&FatJet_n2b1                   );
   //tree->Branch("FatJet_n3b1"                    ,&FatJet_n3b1                   );
@@ -538,7 +590,19 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("FatJet_mass"                    ,&FatJet_mass                   );
   //tree->Branch("FatJet_msoftdrop"               ,&FatJet_msoftdrop              );
   //tree->Branch("FatJet_mtrim"                   ,&FatJet_mtrim                  );
-  tree->Branch("FatJet_nconst"                  ,&FatJet_nconst                 );
+  tree->Branch("FatJet_nConstituents"                  ,&FatJet_nConstituents                 );
+  tree->Branch("FatJet_passId"                  ,&FatJet_passId                 );
+
+    //for jet id
+  tree->Branch("FatJet_chargedHadronEnergyFraction"        ,&FatJet_chargedHadronEnergyFraction       );
+  tree->Branch("FatJet_neutralHadronEnergyFraction"        ,&FatJet_neutralHadronEnergyFraction       );
+  tree->Branch("FatJet_electronEnergyFraction"        ,&FatJet_electronEnergyFraction       );
+  tree->Branch("FatJet_muonEnergyFraction"        ,&FatJet_muonEnergyFraction       );
+  tree->Branch("FatJet_photonEnergyFraction"        ,&FatJet_photonEnergyFraction       );
+  tree->Branch("FatJet_neutralMultiplicity"        ,&FatJet_neutralMultiplicity       );
+  tree->Branch("FatJet_chargedMultiplicity"        ,&FatJet_chargedMultiplicity       );
+
+  // for jet id
 
   //Scouting PF Candidates
   tree->Branch("nPFCands"            	        ,&n_pfcand 		        ,"nPFCands/i");	
@@ -565,13 +629,14 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("PV_chi2"                    ,&Vertex_chi2	                );
   tree->Branch("PV_ndof"                    ,&Vertex_ndof	                );
   tree->Branch("PV_isValidVtx"              ,&Vertex_isValidVtx 	        );
+  tree->Branch("PV_isGood"                  ,&Vertex_isGood                 );
 
   //Other variables
   tree->Branch("ht"                             ,&ht                            );
 
   //CZZ: added MET collections
-  tree->Branch("MET_pt",&met_pt);
-  tree->Branch("MET_phi",&met_phi);
+  tree->Branch("ScoutMET_pt",&met_pt);
+  tree->Branch("ScoutMET_phi",&met_phi);
 
 }
 
@@ -588,12 +653,19 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   Handle<vector<ScoutingMuon> > muonsH;
   Handle<vector<ScoutingPhoton> > photonsH;
   Handle<vector<ScoutingPFJet> > pfjetsH;
-
   Handle<vector<ScoutingParticle> > pfcandsH;
   Handle<vector<ScoutingVertex> > verticesH;
   
   Handle<double> metPt;
   Handle<double> metPhi;
+
+
+  //define particles
+  vector<double> neutralHadrons_ids = {111,130,310,2112};
+  vector<double> chargedHadrons_ids = {211,321,999211,2212};
+  vector<double> photons_ids = {22};
+  vector<double> electrons_ids = {11};
+  vector<double> muons_ids = {13};
 
 
   if(auto handle = iEvent.getHandle(pfcandsToken)){
@@ -609,7 +681,6 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
     iEvent.getByToken(verticesToken, verticesH);
     iEvent.getByToken(metPtToken, metPt);
     iEvent.getByToken(metPhiToken, metPhi);
-
   }
   
 
@@ -664,6 +735,8 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   Electron_trkiso.clear();
   Electron_combinediso.clear();
   Electron_ID.clear();
+  Electron_chargedMiniIso.clear();
+  Electron_combinedMiniIso.clear();
   n_ele = 0;
 
   vector<ScoutingParticle> PFcands;
@@ -766,6 +839,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   Vertex_chi2.clear();
   Vertex_ndof.clear();
   Vertex_isValidVtx.clear();
+  Vertex_isGood.clear();
   if(runScouting){
   for (auto vertices_iter = verticesH->begin(); vertices_iter != verticesH->end(); ++vertices_iter) {
         Vertex_x.push_back( vertices_iter->x() );
@@ -775,6 +849,11 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
         Vertex_chi2.push_back( vertices_iter->chi2() );
         Vertex_ndof.push_back( vertices_iter->ndof() );
         Vertex_isValidVtx.push_back( vertices_iter->isValidVtx() );
+        bool isGood = vertices_iter->isValidVtx()
+                      && vertices_iter->ndof() > 4
+                      && std::abs(vertices_iter->z()) <= 24
+                      && std::sqrt(vertices_iter->x()*vertices_iter->x() + vertices_iter->y()*vertices_iter->y()) < 2;
+        Vertex_isGood.push_back( isGood );
         n_pvs++;
     }
   }
@@ -796,6 +875,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   FatJetPFCands_pFCandsIdx.clear();
 
   vector<PseudoJet> fj_part;
+  bool skipEventForInvalidPFCand = false;
   n_pfcand = 0;
   n_pfMu =0;
   n_pfEl =0;
@@ -804,8 +884,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   if(runScouting){
 
     for (auto pfcands_iter = pfcandsH->begin(); pfcands_iter != pfcandsH->end(); ++pfcands_iter) {
-      ScoutingParticle tmp(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())),pfcands_iter->m(),pfcands_iter->pdgId(),pfcands_iter->vertex());
-    
+      ScoutingParticle tmp(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())),pfcands_iter->m(),pfcands_iter->pdgId(),pfcands_iter->vertex());    
       PFcands.push_back(tmp);
     }
     
@@ -819,13 +898,31 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
 
 
     for(auto & pfcands_iter : PFcands ){ //fills PFcand track info
-      
-      if (pfcands_iter.pt() < 0.5) continue;
-      if (abs(pfcands_iter.eta()) >= 2.4 ) continue;
+      const float candPt = pfcands_iter.pt();
+      const float candEta = pfcands_iter.eta();
+      const float candPhi = pfcands_iter.phi();
+      const float candMass = pfcands_iter.m();
 
-      PFcand_pt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.pt())));
-      PFcand_eta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.eta())));
-      PFcand_phi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter.phi())));
+      if (!std::isfinite(candPt) || !std::isfinite(candEta) || !std::isfinite(candPhi) || !std::isfinite(candMass)) {
+        edm::LogWarning("ScoutingNanoAOD_fromData")
+          << "Skipping event due to scouting PF candidate with non-finite kinematics"
+          << " in run:lumi:event " << run << ":" << lumSec << ":" << event_
+          << " pt=" << candPt
+          << " eta=" << candEta
+          << " phi=" << candPhi
+          << " mass=" << candMass
+          << " pdgId=" << pfcands_iter.pdgId()
+          << " vertex=" << pfcands_iter.vertex();
+        skipEventForInvalidPFCand = true;
+        break;
+      }
+      
+      if (candPt < 0.5) continue;
+      if (abs(candEta) >= 2.4 ) continue;
+
+      PFcand_pt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(candPt)));
+      PFcand_eta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(candEta)));
+      PFcand_phi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(candPhi)));
       if(abs(pfcands_iter.pdgId()) == 13){
         n_pfMu ++;
       }
@@ -833,19 +930,38 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
         n_pfEl ++;
       }
     
-      PFcand_m.push_back(pfcands_iter.m());
+      PFcand_m.push_back(candMass);
       PFcand_pdgid.push_back(pfcands_iter.pdgId());
       PFcand_q.push_back(getCharge(pfcands_iter.pdgId()));
       PFcand_vertex.push_back(pfcands_iter.vertex());
 
       // For clustering fat jets
       PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
-      temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
+      temp_jet.reset_PtYPhiM(candPt, candEta, candPhi, candMass);
+      if (!std::isfinite(temp_jet.rap()) || !std::isfinite(temp_jet.phi_std())) {
+        edm::LogWarning("ScoutingNanoAOD_fromData")
+          << "Skipping event due to scouting PF candidate with invalid PseudoJet coordinates"
+          << " in run:lumi:event " << run << ":" << lumSec << ":" << event_
+          << " pt=" << candPt
+          << " eta=" << candEta
+          << " phi=" << candPhi
+          << " mass=" << candMass
+          << " rap=" << temp_jet.rap()
+          << " phi_std=" << temp_jet.phi_std()
+          << " pdgId=" << pfcands_iter.pdgId()
+          << " vertex=" << pfcands_iter.vertex();
+        skipEventForInvalidPFCand = true;
+        break;
+      }
       temp_jet.set_user_index(n_pfcand);
       temp_jet.set_user_info(new PdgIdInfo(pfcands_iter.pdgId()));
       fj_part.push_back(temp_jet);
       
       n_pfcand++;
+    }
+
+    if (skipEventForInvalidPFCand) {
+      return;
     }
 
   }
@@ -872,6 +988,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   Muon_nvalidmuon_hits.clear();
   Muon_nvalidpixelhits.clear();
   Muon_nmatchedstations.clear();
+  Muon_nTrackerLayersWithMeasurement.clear();
   Muon_type.clear();
   Muon_nvalidstriphits.clear();
   Muon_trkqoverp.clear();
@@ -881,11 +998,13 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   Muon_trketa.clear();
   Muon_trkqoverperror.clear();
   Muon_trklambdaerror.clear();
-  Muon_trkpterror.clear();
+  Muon_dxyerror.clear();
   Muon_trkphierror.clear();
-  Muon_trketaerror.clear();
+  Muon_dzerror.clear();
   Muon_trkdszerror.clear();
   Muon_trkdsz.clear();
+  Muon_chargedMiniIso.clear();
+  Muon_combinedMiniIso.clear();
   n_mu=0;  
   
   if(runScouting){
@@ -905,6 +1024,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
    	Muon_nvalidmuon_hits.push_back(muons_iter->nValidMuonHits());
    	Muon_nvalidpixelhits.push_back(muons_iter->nValidPixelHits());
    	Muon_nmatchedstations.push_back(muons_iter->nMatchedStations());
+    Muon_nTrackerLayersWithMeasurement.push_back(muons_iter->nTrackerLayersWithMeasurement());
     Muon_type.push_back(muons_iter->type());
     Muon_nvalidstriphits.push_back(muons_iter->nValidStripHits());
     Muon_trkqoverp.push_back(muons_iter->trk_qoverp());
@@ -912,18 +1032,53 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
     Muon_trkpt.push_back(muons_iter->trk_pt());
     Muon_trkphi.push_back(muons_iter->trk_phi());
     Muon_trketa.push_back(muons_iter->trk_eta());
-    Muon_trkqoverperror.push_back(muons_iter->dxyError());
-    Muon_trklambdaerror.push_back(muons_iter->dzError());
-    Muon_trkpterror.push_back(muons_iter->trk_qoverpError());
-    Muon_trkphierror.push_back(muons_iter->trk_lambdaError());
-    Muon_trketaerror.push_back(muons_iter->trk_phiError());
-    Muon_trkdszerror.push_back(muons_iter->trk_dsz());
-    Muon_trkdsz.push_back(muons_iter->trk_dszError());
+    Muon_trkqoverperror.push_back(muons_iter->trk_qoverpError());
+    Muon_trklambdaerror.push_back(muons_iter->trk_lambdaError());
+    Muon_dxyerror.push_back(muons_iter->dxyError());
+    Muon_trkphierror.push_back(muons_iter->trk_phiError());
+    Muon_dzerror.push_back(muons_iter->dzError());
+    Muon_trkdszerror.push_back(muons_iter->trk_dszError());
+    Muon_trkdsz.push_back(muons_iter->trk_dsz());
     Muon_isGlobalMuon.push_back(muons_iter->isGlobalMuon());
     Muon_isTrackerMuon.push_back(muons_iter->isTrackerMuon());
     n_mu++;
   }
 }
+  //* loop over electrons to compute to compute the mini-isolation
+  if(runScouting){
+    for (auto electrons_iter = electronsH->begin(); electrons_iter != electronsH->end(); ++electrons_iter) 
+      {
+        TLorentzVector electron_p4 = TLorentzVector();
+        electron_p4.SetPtEtaPhiM(electrons_iter->pt(), electrons_iter->eta(), electrons_iter->phi(), electrons_iter->m());
+        reco::Candidate::PolarLorentzVector electron_p4_reco(electron_p4.Pt(), electron_p4.Eta(), electron_p4.Phi(), electron_p4.M());
+        pat::PFIsolation ele_miniiso =  getMiniPFIsolationScout(PFcands, electron_p4_reco);
+        auto chg = ele_miniiso.chargedHadronIso();
+        auto neu = ele_miniiso.neutralHadronIso();
+        auto pho = ele_miniiso.photonIso();
+        float scale = 1.0 / electrons_iter->pt();
+        Electron_chargedMiniIso.push_back(scale * chg);
+        Electron_combinedMiniIso.push_back(scale * (chg + std::max(0.0, static_cast<double>(neu + pho) )));
+        
+    }
+  }
+
+  // * Loop over Muons and compute mini-isolaton
+  if(runScouting){
+    for (auto muons_iter = muonsH->begin(); muons_iter != muonsH->end(); ++muons_iter) 
+      {
+        TLorentzVector muon_p4 = TLorentzVector();
+        muon_p4.SetPtEtaPhiM(muons_iter->pt(), muons_iter->eta(), muons_iter->phi(), muons_iter->m());
+        reco::Candidate::PolarLorentzVector muon_p4_reco(muon_p4.Pt(), muon_p4.Eta(), muon_p4.Phi(), muon_p4.M());
+        pat::PFIsolation mu_miniiso =  getMiniPFIsolationScout(PFcands, muon_p4_reco);
+        auto chg = mu_miniiso.chargedHadronIso();
+        auto neu = mu_miniiso.neutralHadronIso();
+        auto pho = mu_miniiso.photonIso();
+        float scale = 1.0 / muons_iter->pt();
+        Muon_chargedMiniIso.push_back(scale * chg);
+        Muon_combinedMiniIso.push_back(scale * (chg + std::max(0.0, static_cast<double>(neu + pho) )));
+        
+    }
+  }
 
 
   // * 
@@ -942,6 +1097,16 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   Jet_HFHadronEnergy.clear();
   Jet_HFEMEnergy.clear();
   Jet_HOEnergy.clear();
+  
+  // for jet id
+  Jet_chargedHadronEnergyFraction.clear();
+  Jet_neutralHadronEnergyFraction.clear();
+  Jet_electronEnergyFraction.clear();
+  Jet_photonEnergyFraction.clear();
+  Jet_muonEnergyFraction.clear();
+  Jet_chargedMultiplicity.clear();
+  Jet_neutralMultiplicity.clear();
+  
   Jet_chargedHadronMultiplicity.clear();
   Jet_neutralHadronMultiplicity.clear();
   Jet_photonMultiplicity.clear();
@@ -953,21 +1118,36 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   Jet_mvaDiscriminator.clear();
   Jet_nConstituents.clear();
   Jet_passId.clear();
+  CorrT1METJet_pt.clear();
+  CorrT1METJet_eta.clear();
+  CorrT1METJet_phi.clear();
+  CorrT1METJet_mass.clear();
   n_jet = 0;
   n_jetId = 0;
   ht = 0;
-  htoff = 0;
   passJetId = false;
 
   if(runScouting){
+      for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
 
-       for (auto pfjet = pfjetsH->begin(); pfjet != pfjetsH->end(); ++pfjet) {
+        // Calculate HT at start of loop
+        passJetId = jetID(*pfjet);
+        if ( passJetId == true && pfjet->pt() >= 30) {
+          ht += pfjet->pt();
+          n_jetId++;
+        }
 
+        // Create LorentzVector for energy calculations
+        math::PtEtaPhiMLorentzVector j(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
 
-        Jet_pt .push_back( pfjet->pt() );
-        Jet_eta.push_back( pfjet->eta());
-        Jet_phi.push_back( pfjet->phi());
-        Jet_m  .push_back( pfjet->m()  );
+        // Apply pt cut on original (uncorrected) jet
+        if (j.pt() < jetAK4ScoutPtMin) continue;
+
+        // Save original jet 4-vector
+        Jet_pt .push_back( j.pt() );
+        Jet_eta.push_back( j.eta());
+        Jet_phi.push_back( j.phi());
+        Jet_m  .push_back( j.mass());
         Jet_area.push_back( pfjet->jetArea());
 
         Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
@@ -987,20 +1167,40 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
         Jet_HFHadronMultiplicity     .push_back( pfjet->HFHadronMultiplicity()     );
         Jet_HFEMMultiplicity         .push_back( pfjet->HFEMMultiplicity()         );
 
+        Jet_chargedHadronEnergyFraction.push_back( pfjet->chargedHadronEnergy()/j.E());
+        Jet_neutralHadronEnergyFraction.push_back( pfjet->neutralHadronEnergy()/j.E());
+        Jet_electronEnergyFraction.push_back( pfjet->electronEnergy()/j.E());
+        Jet_photonEnergyFraction.push_back( pfjet->photonEnergy()/j.E());
+        Jet_muonEnergyFraction.push_back( pfjet->muonEnergy()/j.E());
+        Jet_chargedMultiplicity.push_back( pfjet->muonMultiplicity() + pfjet->electronMultiplicity() + pfjet->chargedHadronMultiplicity());
+        Jet_neutralMultiplicity.push_back( pfjet->photonMultiplicity() + pfjet->neutralHadronMultiplicity());
+
         Jet_csv             .push_back( pfjet->csv() );
         Jet_mvaDiscriminator.push_back( pfjet->mvaDiscriminator()    );
         Jet_nConstituents   .push_back( pfjet->constituents().size() );
-        
-        n_jet++;
-
-        passJetId = jetID(*pfjet);
         Jet_passId.push_back( passJetId );
 
-        // apply jet ID 
-        if ( passJetId == false ) continue; 
-        if (pfjet->pt() < 30){continue;}//raise pt threshold for HT calculation 
-        ht += pfjet->pt() ; 
-        n_jetId++ ; 
+        n_jet++;
+
+        // CorrT1METJet: EM fraction cut + muon overlap removal (for Type-1 MET correction)
+        double emEnergyFraction = (pfjet->electronEnergy() + pfjet->photonEnergy()) / j.E();
+        if (emEnergyFraction < 0.9) {
+          math::PtEtaPhiMLorentzVector correctedJetP4 = j;
+          const std::vector<int> & constituentIndices = pfjet->constituents();
+          for (const auto & idx : constituentIndices) {
+            if (idx >= 0 && idx < (int)pfcandsH->size()) {
+              const auto & cand = (*pfcandsH)[idx];
+              if (abs(cand.pdgId()) == 13) { // muon
+                math::PtEtaPhiMLorentzVector muonP4(cand.pt(), cand.eta(), cand.phi(), cand.m());
+                correctedJetP4 -= muonP4;
+              }
+            }
+          }
+          CorrT1METJet_pt  .push_back(correctedJetP4.pt()  );
+          CorrT1METJet_eta .push_back(correctedJetP4.eta() );
+          CorrT1METJet_phi .push_back(correctedJetP4.phi() );
+          CorrT1METJet_mass.push_back(correctedJetP4.mass());
+        }
 
       }
   
@@ -1021,31 +1221,128 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   FatJet_phi .clear();
   FatJet_pt  .clear();
   FatJet_mass.clear();
-  FatJet_nconst.clear();
+  FatJet_area.clear();
+  FatJet_nConstituents.clear();
+  
+  // for jet id
+  FatJet_chargedHadronEnergyFraction.clear();
+  FatJet_neutralHadronEnergyFraction.clear();
+  FatJet_electronEnergyFraction.clear();
+  FatJet_photonEnergyFraction.clear();
+  FatJet_muonEnergyFraction.clear();
+  FatJet_chargedMultiplicity.clear();
+  FatJet_neutralMultiplicity.clear();
+  FatJet_passId.clear();
+  
   n_fatjet = 0;
 
 
   if(runScouting){
 
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
-    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(100)); //pt min cut at 100 GeV
+    vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jetAK8ScoutPtMin)); //pt min cut in config file
 
     for (auto &j: ak8_jets) {
       FatJet_eta.push_back(j.eta());
       FatJet_phi.push_back(j.phi_std());
       FatJet_pt .push_back(j.pt());
       FatJet_mass.push_back(j.m());
-      FatJet_nconst.push_back(j.constituents().size());
+      FatJet_area.push_back(j.area());
+      FatJet_nConstituents.push_back(j.constituents().size());
+      
+      // needs to be done manually, not included in scouting 
+      // charged and neutral EM fractions are approximated with just electrons/photons (not available in scouting)
+      // loop over constituents of the jet and compute the fractions of photons, electrons, muons, charged hadrons, neutral hadrons 
+      double sum_photon = 0;
+      double sum_electron = 0;
+      double sum_charged_hadron = 0;
+      double sum_neutral_hadron = 0;
+      double sum_muon = 0;
+      int sum_charged_hadron_multiplicity = 0;
+      int sum_neutral_hadron_multiplicity = 0;
+      int sum_photon_multiplicity = 0;
+      int sum_electron_multiplicity = 0;
+      int sum_muon_multiplicity = 0;
+
+
+      for (auto &k: j.constituents()) {
+        //check if the particle is a photon using the pdgid in the user info and comparing it with photons_ids
+        auto found_photon = std::find(photons_ids.begin(), photons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+        if (found_photon!= photons_ids.end()) {
+            sum_photon += k.E();
+            sum_photon_multiplicity++;
+        }
+
+        //check if the particle is an electron using the pdgid in the user info and comparing it with electrons_ids
+        auto found_electron = std::find(electrons_ids.begin(), electrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+        if (found_electron!= electrons_ids.end()) {
+            sum_electron += k.E();
+            sum_electron_multiplicity++;
+        }
+        
+        
+        //check if the particle is a muon using the pdgid in the user info and comparing it with muons_ids
+        auto found_muon = std::find(muons_ids.begin(), muons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+        if (found_muon!= muons_ids.end()) {
+            sum_muon += k.E();
+            sum_muon_multiplicity++;
+        }
+
+
+        //check if the particle is a charged hadron using the pdgid in the user info and comparing it with charged_hadrons_ids
+        auto found_charged_hadron = std::find(chargedHadrons_ids.begin(), chargedHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+        if (found_charged_hadron!= chargedHadrons_ids.end()) {
+            sum_charged_hadron += k.E();
+            sum_charged_hadron_multiplicity++;
+        }
+
+
+        //check if the particle is a neutral hadron using the pdgid in the user info and comparing it with neutral_hadrons_ids
+        auto found_neutral_hadron = std::find(neutralHadrons_ids.begin(), neutralHadrons_ids.end(), abs(k.user_info<PdgIdInfo>().pdg_id()));
+        if (found_neutral_hadron!= neutralHadrons_ids.end()) {
+            sum_neutral_hadron += k.E();
+            sum_neutral_hadron_multiplicity++;
+        }
+      
+      }
+
+      //define variables for jetID
+      //define the fraction of electrons
+      double jet_charged_em_fraction = (sum_electron) / j.E();
+      //define the fraction of photons
+      double jet_neutral_em_fraction = (sum_photon) / j.E();
+      //define the fraction of muons
+      double jet_muon_fraction = sum_muon / j.E();
+      //define the fraction of charged hadrons
+      double jet_charged_hadron_fraction = sum_charged_hadron / j.E();
+      //define the fraction of neutral hadrons
+      double jet_neutral_hadron_fraction = sum_neutral_hadron / j.E();
+      //define multiplicity of charged hadrons, neutral hadrons, photons, electrons, muons
+      double NumConst = sum_charged_hadron_multiplicity + sum_neutral_hadron_multiplicity + sum_photon_multiplicity + sum_electron_multiplicity + sum_muon_multiplicity;
+      double CHM =  sum_muon_multiplicity + sum_electron_multiplicity + sum_charged_hadron_multiplicity;
+
+      bool passID = (abs(j.eta())<=2.6 && jet_charged_em_fraction < 0.8 && jet_neutral_em_fraction < 0.9 && jet_muon_fraction < 0.8 && jet_neutral_hadron_fraction < 0.9 && jet_charged_hadron_fraction > 0 && NumConst > 1 && CHM > 0);
+
+      FatJet_chargedHadronEnergyFraction.push_back(jet_charged_hadron_fraction);
+      FatJet_neutralHadronEnergyFraction.push_back(jet_neutral_hadron_fraction);
+      FatJet_electronEnergyFraction.push_back(jet_charged_em_fraction);
+      FatJet_photonEnergyFraction.push_back(jet_neutral_em_fraction);
+      FatJet_muonEnergyFraction.push_back(jet_muon_fraction);
+      FatJet_chargedMultiplicity.push_back(sum_muon_multiplicity + sum_electron_multiplicity + sum_charged_hadron_multiplicity);
+      FatJet_neutralMultiplicity.push_back(sum_photon_multiplicity + sum_neutral_hadron_multiplicity);
+
+      FatJet_passId.push_back(passID) ;
       n_fatjet++;
     }
 
       unsigned int n_pfcand_tot = 0;
       for (auto & pfcands_iter : PFcands ) {
-        if (pfcands_iter.pt() < 1.) continue;
+        if (pfcands_iter.pt() < 0.5) continue;
         if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
         int tmpidx = -1;
         int ak8count = 0;
         for (auto &j: ak8_jets) {
+          if (abs(j.eta()) > 2.4) continue; //eta cut, should be the same as for the fatjets
           for (auto &k: j.constituents()){
             if ((UInt_t)k.user_index() == n_pfcand_tot){
               tmpidx = ak8count;
@@ -1062,22 +1359,20 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
           }
         }
         n_pfcand_tot++;
-      }
-    
+      }    
   }
 
 
  //Adding met info
- met_pt = -1;
- met_phi = -1;
+  met_pt = -1;
+  met_phi = -1;
 
- if (runScouting){
-  met_pt = *metPt;
-  met_phi = *metPhi;
- }
- 
+  if (runScouting){
+    met_pt = *metPt;
+    met_phi = *metPhi;
+  }
 
-tree->Fill();	
+  tree->Fill();	
 
 }
 
@@ -1122,24 +1417,7 @@ int ScoutingNanoAOD_fromData::getCharge(int pdgId) {
   // 1 = HF hadron, where HF means forward calo
   // 2 = HF em particle, where HF means forward calo
 }
-//bool ScoutingNanoAOD::jetIDoff(const reco::PFJet &pfjet){
-bool ScoutingNanoAOD_fromData::jetIDoff(const pat::Jet &pfjet){
-// https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2018
-    //moved HT cut
-    TLorentzVector jet; 
-    jet.SetPtEtaPhiM(pfjet.pt(), pfjet.eta(), pfjet.phi(), pfjet.mass() );
-    
-    float NHF  = pfjet.neutralHadronEnergy()/jet.E();
-    float NEMF = pfjet.photonEnergy()/jet.E();
-    float CHF  = pfjet.chargedHadronEnergy()/jet.E();
-    float MUF  = pfjet.muonEnergy()/jet.E();
-    float CEMF = pfjet.electronEnergy()/jet.E();
-    float NumConst = pfjet.chargedHadronMultiplicity()+pfjet.neutralHadronMultiplicity()+pfjet.photonMultiplicity() + pfjet.electronMultiplicity() + pfjet.muonMultiplicity() + pfjet.HFHadronMultiplicity() + pfjet.HFEMMultiplicity();
-    float CHM      = pfjet.chargedHadronMultiplicity() +pfjet.electronMultiplicity() + pfjet.muonMultiplicity(); 
-    bool passID = (abs(pfjet.eta())<=2.6 && CEMF<0.8 && CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9 );
 
-    return passID;
-}
 bool ScoutingNanoAOD_fromData::jetID(const ScoutingPFJet &pfjet){
 // https://twiki.cern.ch/twiki/bin/view/CMS/JetID13TeVRun2018
     //moved HT cut
@@ -1153,6 +1431,7 @@ bool ScoutingNanoAOD_fromData::jetID(const ScoutingPFJet &pfjet){
     float CEMF = pfjet.electronEnergy()/jet.E();
     float NumConst = pfjet.chargedHadronMultiplicity()+pfjet.neutralHadronMultiplicity()+pfjet.photonMultiplicity() + pfjet.electronMultiplicity() + pfjet.muonMultiplicity() + pfjet.HFHadronMultiplicity() + pfjet.HFEMMultiplicity();
     float CHM      = pfjet.chargedHadronMultiplicity() +pfjet.electronMultiplicity() + pfjet.muonMultiplicity(); 
+
     bool passID = (abs(pfjet.eta())<=2.6 && CEMF<0.8 && CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9 );
 
     return passID;

@@ -20,4 +20,5 @@
 <use name="fastjet-contrib"/>
 <use name="root"/>
 <use name="PhysicsTools/CandUtils"/>
+<use name="pythia8"/>
 <flags EDM_PLUGIN="1"/>

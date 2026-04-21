@@ -19,6 +19,9 @@ git cms-addpkg PhysicsTools/PatAlgos
 git cms-addpkg JetMETCorrections
 git cms-addpkg CommonTools/RecoAlgos
 git cms-addpkg Configuration/ProcessModifiers
+
+# for importing theory weights for backgrounds (not really necessary and not tested)
+git cms-merge-topic -u https TreeMaker:GenWeightRefactor_106X_squash
 ```
 
 # To setup and compile
@@ -32,14 +35,15 @@ scram b
 To run from MiniAODs:
 
 ```
-cmsRun SVJScouting/test/ScoutingNanoAOD_fromMiniAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year> signal=True
+cmsRun SVJScouting/test/ScoutingNanoAOD_fromMiniAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=True era=<year> signal=True MatrixElementInfo=True
 ```
 
 To run from AODs:
 
 ```
-cmsRun SVJScouting/test/ScoutingNanoAOD_fromAOD_cfg.py inputFiles=file:miniaod_file.root outputFile=flatscouting_signal.root maxEvents=-1 isMC=true era=<year> signal=True
+cmsRun SVJScouting/test/ScoutingNanoAOD_fromAOD_cfg.py inputFiles=file:aod_file.root outputFile=flatscouting_background.root maxEvents=-1 isMC=True era=<year> 
 ```
+
 
 To run from Scouting data:
 
@@ -47,3 +51,12 @@ To run from Scouting data:
 cmsRun SVJScouting/test/ScoutingNanoAOD_fromData_cfg.py inputFiles=file:data_file.root outputFile=flatscouting_data.root maxEvents=-1 era=<year>
 ```
 
+To produce a reduced ScoutingAOD format containing only scouting collections:
+```
+cmsRun SVJScouting/test/ScoutingAOD_cfg.py inputFiles=file:aod_file.root outputFile=scouting_aod_file.root maxEvents=-1
+```
+
+To run the ntuplizer on the ScoutingAOD format:
+```
+cmsRun SVJScouting/test/ScoutingNanoAOD_fromAOD_cfg.py inputFiles=file:scouting_aod_file.root outputFile=flatscouting_background.root maxEvents=-1 isMC=True era=<year> onlyScouting=True
+```

@@ -358,6 +358,7 @@ private:
   vector<Float16_t>            Muon_nvalidmuon_hits;
   vector<Float16_t>            Muon_nvalidpixelhits;
   vector<Float16_t>            Muon_nmatchedstations;
+  vector<Float16_t>            Muon_nTrackerLayersWithMeasurement;
   vector<Float16_t>            Muon_type;
   vector<Float16_t>            Muon_nvalidstriphits;
   vector<Float16_t>            Muon_trkqoverp;
@@ -367,9 +368,9 @@ private:
   vector<Float16_t>            Muon_trketa;
   vector<Float16_t>            Muon_trkqoverperror;
   vector<Float16_t>            Muon_trklambdaerror;
-  vector<Float16_t>            Muon_trkpterror;
+  vector<Float16_t>            Muon_dxyerror;
   vector<Float16_t>            Muon_trkphierror;
-  vector<Float16_t>            Muon_trketaerror;
+  vector<Float16_t>            Muon_dzerror;
   vector<Float16_t>            Muon_trkdszerror;
   vector<Float16_t>            Muon_trkdsz;
   vector<Float16_t>            Muon_chargedMiniIso;
@@ -639,6 +640,7 @@ private:
   vector<Float16_t>            Vertex_chi2;
   vector<Float16_t>            Vertex_ndof;
   vector<Float16_t>            Vertex_isValidVtx;
+  vector<bool>                 Vertex_isGood;
 
   //add GenParticle info
   vector<Float16_t> MatrixElementGenParticle_pt;  
@@ -848,6 +850,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("Muon_nvalidmuon_hits"           ,&Muon_nvalidmuon_hits          );
   tree->Branch("Muon_validpixelhits"            ,&Muon_nvalidpixelhits          );
   tree->Branch("Muon_nmatchedstations"          ,&Muon_nmatchedstations         );
+  tree->Branch("Muon_nTrackerLayersWithMeasurement"         ,&Muon_nTrackerLayersWithMeasurement        );
   tree->Branch("Muon_type"                      ,&Muon_type                     );
   tree->Branch("Muon_nvalidstriphits"           ,&Muon_nvalidstriphits          );
   tree->Branch("Muon_tkqoverp"                 ,&Muon_trkqoverp                );
@@ -857,9 +860,9 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("Muon_tketa"                    ,&Muon_trketa                   );
   tree->Branch("Muon_tkqoverperror"            ,&Muon_trkqoverperror           );
   tree->Branch("Muon_tklambdaerror"            ,&Muon_trklambdaerror           );
-  tree->Branch("Muon_tkpterror"                ,&Muon_trkpterror               );
+  tree->Branch("Muon_dxyerror"                ,&Muon_dxyerror                 );
   tree->Branch("Muon_tkphierror"               ,&Muon_trkphierror              );
-  tree->Branch("Muon_tketaerror"               ,&Muon_trketaerror              );
+  tree->Branch("Muon_dzerror"                  ,&Muon_dzerror                  );
   tree->Branch("Muon_tkdszerror"               ,&Muon_trkdszerror              );
   tree->Branch("Muon_tkdsz"                    ,&Muon_trkdsz                   );
   tree->Branch("Muon_chargedMiniIso"           ,&Muon_chargedMiniIso           );
@@ -965,6 +968,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("PV_chi2"                    ,&Vertex_chi2	                );
   tree->Branch("PV_ndof"                    ,&Vertex_ndof	                );
   tree->Branch("PV_isValidVtx"              ,&Vertex_isValidVtx 	        );
+  tree->Branch("PV_isGood"                  ,&Vertex_isGood                 );
 
 
   //Other variables
@@ -1604,6 +1608,7 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
   Vertex_chi2.clear();
   Vertex_ndof.clear();
   Vertex_isValidVtx.clear();
+  Vertex_isGood.clear();
   if(runScouting){
   for (auto vertices_iter = verticesH->begin(); vertices_iter != verticesH->end(); ++vertices_iter) {
         Vertex_x.push_back( vertices_iter->x() );
@@ -1613,6 +1618,11 @@ void ScoutingNanoAOD_fromMiniAOD::analyze(const edm::Event& iEvent, const edm::E
         Vertex_chi2.push_back( vertices_iter->chi2() );
         Vertex_ndof.push_back( vertices_iter->ndof() );
         Vertex_isValidVtx.push_back( vertices_iter->isValidVtx() );
+        bool isGood = vertices_iter->isValidVtx()
+                      && vertices_iter->ndof() > 4
+                      && std::abs(vertices_iter->z()) <= 24
+                      && std::sqrt(vertices_iter->x()*vertices_iter->x() + vertices_iter->y()*vertices_iter->y()) < 2;
+        Vertex_isGood.push_back( isGood );
         n_pvs++;
     }
   }
@@ -1765,6 +1775,7 @@ if(runOffline){
   Muon_nvalidmuon_hits.clear();
   Muon_nvalidpixelhits.clear();
   Muon_nmatchedstations.clear();
+  Muon_nTrackerLayersWithMeasurement.clear();
   Muon_type.clear();
   Muon_nvalidstriphits.clear();
   Muon_trkqoverp.clear();
@@ -1774,9 +1785,9 @@ if(runOffline){
   Muon_trketa.clear();
   Muon_trkqoverperror.clear();
   Muon_trklambdaerror.clear();
-  Muon_trkpterror.clear();
+  Muon_dxyerror.clear();
   Muon_trkphierror.clear();
-  Muon_trketaerror.clear();
+  Muon_dzerror.clear();
   Muon_trkdszerror.clear();
   Muon_trkdsz.clear();
   Muon_chargedMiniIso.clear();
@@ -1800,6 +1811,7 @@ if(runOffline){
    	Muon_nvalidmuon_hits.push_back(muons_iter->nValidMuonHits());
    	Muon_nvalidpixelhits.push_back(muons_iter->nValidPixelHits());
    	Muon_nmatchedstations.push_back(muons_iter->nMatchedStations());
+    Muon_nTrackerLayersWithMeasurement.push_back(muons_iter->nTrackerLayersWithMeasurement());
     Muon_type.push_back(muons_iter->type());
     Muon_nvalidstriphits.push_back(muons_iter->nValidStripHits());
     Muon_trkqoverp.push_back(muons_iter->trk_qoverp());
@@ -1807,13 +1819,13 @@ if(runOffline){
     Muon_trkpt.push_back(muons_iter->trk_pt());
     Muon_trkphi.push_back(muons_iter->trk_phi());
     Muon_trketa.push_back(muons_iter->trk_eta());
-    Muon_trkqoverperror.push_back(muons_iter->dxyError());
-    Muon_trklambdaerror.push_back(muons_iter->dzError());
-    Muon_trkpterror.push_back(muons_iter->trk_qoverpError());
-    Muon_trkphierror.push_back(muons_iter->trk_lambdaError());
-    Muon_trketaerror.push_back(muons_iter->trk_phiError());
-    Muon_trkdszerror.push_back(muons_iter->trk_dsz());
-    Muon_trkdsz.push_back(muons_iter->trk_dszError());
+    Muon_trkqoverperror.push_back(muons_iter->trk_qoverpError());
+    Muon_trklambdaerror.push_back(muons_iter->trk_lambdaError());
+    Muon_dxyerror.push_back(muons_iter->dxyError());
+    Muon_trkphierror.push_back(muons_iter->trk_phiError());
+    Muon_dzerror.push_back(muons_iter->dzError());
+    Muon_trkdszerror.push_back(muons_iter->trk_dszError());
+    Muon_trkdsz.push_back(muons_iter->trk_dsz());
     Muon_isGlobalMuon.push_back(muons_iter->isGlobalMuon());
     Muon_isTrackerMuon.push_back(muons_iter->isTrackerMuon());
     n_mu++;

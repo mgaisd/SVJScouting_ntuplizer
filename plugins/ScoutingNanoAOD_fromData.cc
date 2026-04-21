@@ -338,6 +338,12 @@ private:
 
   vector<bool>                 Jet_passId;
 
+  // CorrT1METJet: original jet after EM fraction cut + muon overlap removal (for Type-1 MET)
+  vector<Float16_t>            CorrT1METJet_pt;
+  vector<Float16_t>            CorrT1METJet_eta;
+  vector<Float16_t>            CorrT1METJet_phi;
+  vector<Float16_t>            CorrT1METJet_mass;
+
   // Scouting PFCand
   UInt_t                       n_pfcand;
   UInt_t                       n_pfMu;
@@ -559,6 +565,10 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("Jet_photonEnergyFraction"        ,&Jet_photonEnergyFraction       );
   tree->Branch("Jet_neutralMultiplicity"        ,&Jet_neutralMultiplicity       );
   tree->Branch("Jet_chargedMultiplicity"        ,&Jet_chargedMultiplicity       );
+  tree->Branch("CorrT1METJet_pt"               ,&CorrT1METJet_pt               );
+  tree->Branch("CorrT1METJet_eta"              ,&CorrT1METJet_eta              );
+  tree->Branch("CorrT1METJet_phi"              ,&CorrT1METJet_phi              );
+  tree->Branch("CorrT1METJet_mass"             ,&CorrT1METJet_mass             );
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                        ,&n_fatjet                      ,"nFatJet/i");
@@ -1096,6 +1106,10 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   Jet_mvaDiscriminator.clear();
   Jet_nConstituents.clear();
   Jet_passId.clear();
+  CorrT1METJet_pt.clear();
+  CorrT1METJet_eta.clear();
+  CorrT1METJet_phi.clear();
+  CorrT1METJet_mass.clear();
   n_jet = 0;
   n_jetId = 0;
   ht = 0;
@@ -1112,34 +1126,16 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
         }
 
         // Create LorentzVector for energy calculations
-        // charged and neutral EM fractions are approximated with just electrons/photons (not available in scouting)
         math::PtEtaPhiMLorentzVector j(pfjet->pt(), pfjet->eta(), pfjet->phi(), pfjet->m());
 
-        // Check EM energy fraction < 0.9 (approximated with electronEnergy + photonEnergy since chargedEmEnergy and neutralEmEnergy are not available in scouting)
-        double emEnergyFraction = (pfjet->electronEnergy() + pfjet->photonEnergy()) / j.E();
-        if (emEnergyFraction >= 0.9) continue;
+        // Apply pt cut on original (uncorrected) jet
+        if (j.pt() < jetAK4ScoutPtMin) continue;
 
-        // Remove muon overlap (avoids double counting muon energy in MET calculation for Type-1 MET)
-        math::PtEtaPhiMLorentzVector correctedJetP4 = j;
-        const std::vector<int> & constituentIndices = pfjet->constituents();
-        for (const auto & idx : constituentIndices) {
-          if (idx >= 0 && idx < (int)pfcandsH->size()) {
-            const auto & cand = (*pfcandsH)[idx];
-            if (abs(cand.pdgId()) == 13) { // muon
-              math::PtEtaPhiMLorentzVector muonP4(cand.pt(), cand.eta(), cand.phi(), cand.m());
-              correctedJetP4 -= muonP4;
-            }
-          }
-        }
-
-        // Apply pt cut on corrected jet pt
-        if (correctedJetP4.pt() < jetAK4ScoutPtMin) continue;
-
-        // Save jet variables with corrected momentum
-        Jet_pt .push_back( correctedJetP4.pt() );
-        Jet_eta.push_back( correctedJetP4.eta());
-        Jet_phi.push_back( correctedJetP4.phi());
-        Jet_m  .push_back( correctedJetP4.mass()  );
+        // Save original jet 4-vector
+        Jet_pt .push_back( j.pt() );
+        Jet_eta.push_back( j.eta());
+        Jet_phi.push_back( j.phi());
+        Jet_m  .push_back( j.mass());
         Jet_area.push_back( pfjet->jetArea());
 
         Jet_chargedHadronEnergy.push_back( pfjet->chargedHadronEnergy());
@@ -1173,6 +1169,26 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
         Jet_passId.push_back( passJetId );
 
         n_jet++;
+
+        // CorrT1METJet: EM fraction cut + muon overlap removal (for Type-1 MET correction)
+        double emEnergyFraction = (pfjet->electronEnergy() + pfjet->photonEnergy()) / j.E();
+        if (emEnergyFraction < 0.9) {
+          math::PtEtaPhiMLorentzVector correctedJetP4 = j;
+          const std::vector<int> & constituentIndices = pfjet->constituents();
+          for (const auto & idx : constituentIndices) {
+            if (idx >= 0 && idx < (int)pfcandsH->size()) {
+              const auto & cand = (*pfcandsH)[idx];
+              if (abs(cand.pdgId()) == 13) { // muon
+                math::PtEtaPhiMLorentzVector muonP4(cand.pt(), cand.eta(), cand.phi(), cand.m());
+                correctedJetP4 -= muonP4;
+              }
+            }
+          }
+          CorrT1METJet_pt  .push_back(correctedJetP4.pt()  );
+          CorrT1METJet_eta .push_back(correctedJetP4.eta() );
+          CorrT1METJet_phi .push_back(correctedJetP4.phi() );
+          CorrT1METJet_mass.push_back(correctedJetP4.mass());
+        }
 
       }
   

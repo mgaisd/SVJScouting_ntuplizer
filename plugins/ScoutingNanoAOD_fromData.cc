@@ -344,6 +344,7 @@ private:
   vector<Float16_t>            CorrT1METJet_eta;
   vector<Float16_t>            CorrT1METJet_phi;
   vector<Float16_t>            CorrT1METJet_mass;
+  vector<Float16_t>            CorrT1METJet_area;
 
   // Scouting PFCand
   UInt_t                       n_pfcand;
@@ -572,6 +573,7 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   tree->Branch("CorrT1METJet_eta"              ,&CorrT1METJet_eta              );
   tree->Branch("CorrT1METJet_phi"              ,&CorrT1METJet_phi              );
   tree->Branch("CorrT1METJet_mass"             ,&CorrT1METJet_mass             );
+  tree->Branch("CorrT1METJet_area"             ,&CorrT1METJet_area             );
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                        ,&n_fatjet                      ,"nFatJet/i");
@@ -1122,6 +1124,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
   CorrT1METJet_eta.clear();
   CorrT1METJet_phi.clear();
   CorrT1METJet_mass.clear();
+  CorrT1METJet_area.clear();
   n_jet = 0;
   n_jetId = 0;
   ht = 0;
@@ -1200,6 +1203,7 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
           CorrT1METJet_eta .push_back(correctedJetP4.eta() );
           CorrT1METJet_phi .push_back(correctedJetP4.phi() );
           CorrT1METJet_mass.push_back(correctedJetP4.mass());
+          CorrT1METJet_area.push_back(pfjet->jetArea()     );
         }
 
       }

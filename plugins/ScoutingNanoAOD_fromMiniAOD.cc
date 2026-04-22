@@ -440,6 +440,7 @@ private:
   vector<Float16_t>            CorrT1METJet_eta;
   vector<Float16_t>            CorrT1METJet_phi;
   vector<Float16_t>            CorrT1METJet_mass;
+  vector<Float16_t>            CorrT1METJet_area;
 
   vector<Float16_t> 	     OffJet_pt;
   vector<Float16_t>        OffJet_eta;
@@ -480,6 +481,7 @@ private:
   vector<Float16_t>        OffCorrT1METJet_eta;
   vector<Float16_t>        OffCorrT1METJet_phi;
   vector<Float16_t>        OffCorrT1METJet_mass;
+  vector<Float16_t>        OffCorrT1METJet_area;
   
 
   /*
@@ -909,6 +911,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("CorrT1METJet_eta"              ,&CorrT1METJet_eta              );
   tree->Branch("CorrT1METJet_phi"              ,&CorrT1METJet_phi              );
   tree->Branch("CorrT1METJet_mass"             ,&CorrT1METJet_mass             );
+  tree->Branch("CorrT1METJet_area"             ,&CorrT1METJet_area             );
 
   //Scouting AK8 PFJets
   tree->Branch("nFatJet"                        ,&n_fatjet                      ,"nFatJet/i");
@@ -1052,6 +1055,7 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OffCorrT1METJet_eta"                  ,&OffCorrT1METJet_eta              );
   tree->Branch("OffCorrT1METJet_phi"                  ,&OffCorrT1METJet_phi              );
   tree->Branch("OffCorrT1METJet_mass"                 ,&OffCorrT1METJet_mass             );
+  tree->Branch("OffCorrT1METJet_area"                 ,&OffCorrT1METJet_area             );
 
   /*
   //CZZ: added Offline AK8 PFJets (built AK8 from Offline PFCands using FastJet)
@@ -1943,6 +1947,7 @@ if(runOffline){
   CorrT1METJet_eta.clear();
   CorrT1METJet_phi.clear();
   CorrT1METJet_mass.clear();
+  CorrT1METJet_area.clear();
   OffJet_pt.clear();
   OffJet_eta.clear();
   OffJet_phi.clear();
@@ -1981,6 +1986,7 @@ if(runOffline){
   OffCorrT1METJet_eta.clear();
   OffCorrT1METJet_phi.clear();
   OffCorrT1METJet_mass.clear();
+  OffCorrT1METJet_area.clear();
   n_jet = 0;
   n_jetId = 0;
   n_jetIdoff = 0;
@@ -2063,6 +2069,7 @@ if(runOffline){
         CorrT1METJet_eta .push_back(correctedJetP4.eta() );
         CorrT1METJet_phi .push_back(correctedJetP4.phi() );
         CorrT1METJet_mass.push_back(correctedJetP4.mass());
+        CorrT1METJet_area.push_back(pfjet->jetArea()     );
       }
 
       }  
@@ -2137,6 +2144,7 @@ if(runOffline){
         OffCorrT1METJet_eta .push_back(correctedJetP4.eta() );
         OffCorrT1METJet_phi .push_back(correctedJetP4.phi() );
         OffCorrT1METJet_mass.push_back(correctedJetP4.mass());
+        OffCorrT1METJet_area.push_back(pfjet.jetArea()      );
       }
 
     }  

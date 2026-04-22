@@ -2144,7 +2144,7 @@ if(runOffline){
         OffCorrT1METJet_eta .push_back(correctedJetP4.eta() );
         OffCorrT1METJet_phi .push_back(correctedJetP4.phi() );
         OffCorrT1METJet_mass.push_back(correctedJetP4.mass());
-        OffCorrT1METJet_area.push_back(pfjet.jetArea()      );
+        OffCorrT1METJet_area.push_back(pfjet->jetArea()      );
       }
 
     }  

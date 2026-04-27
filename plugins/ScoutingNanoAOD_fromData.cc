@@ -193,6 +193,7 @@ private:
 
   const edm::EDGetTokenT<double> metPtToken;
   const edm::EDGetTokenT<double> metPhiToken;
+  const edm::EDGetTokenT<double>  	rhoToken2;
 
   double jetAK4ScoutPtMin = 0.;
   double jetAK8ScoutPtMin = 0.;
@@ -404,6 +405,7 @@ private:
 
   //Scouting MET
   double met_pt, met_phi;
+  float                        rho2;
   
   //reco vertices
   Int_t nPV_;        // number of reconsrtucted primary vertices
@@ -429,6 +431,7 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   verticesToken            (consumes<std::vector<ScoutingVertex> >           (iConfig.getParameter<edm::InputTag>("vertices"))),
   metPtToken               (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPt"))),
   metPhiToken              (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("metPhi"))),
+  rhoToken2                (consumes<double>                                 (iConfig.getParameter<edm::InputTag>("rho2"))),
 
   jetAK4ScoutPtMin         (iConfig.getParameter<double>("jetAK4ScoutPtMin")),
   jetAK8ScoutPtMin         (iConfig.getParameter<double>("jetAK8ScoutPtMin")),
@@ -639,6 +642,7 @@ ScoutingNanoAOD_fromData::ScoutingNanoAOD_fromData(const edm::ParameterSet& iCon
   //CZZ: added MET collections
   tree->Branch("ScoutMET_pt",&met_pt);
   tree->Branch("ScoutMET_phi",&met_phi);
+  tree->Branch("rho"                            ,&rho2                           );
 
 }
 
@@ -1375,6 +1379,14 @@ void ScoutingNanoAOD_fromData::analyze(const edm::Event& iEvent, const edm::Even
     met_pt = *metPt;
     met_phi = *metPhi;
   }
+
+//  Handle<double> rhoH;
+  Handle<double> rhoH2;
+  if(runScouting){
+    iEvent.getByToken(rhoToken2, rhoH2);
+    rho2 = *rhoH2;
+  }else{// rho=0;
+    rho2=0;}
 
   tree->Fill();	
 

@@ -1363,9 +1363,6 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
 
   //reco level branches for lund rewighting 
 
-  tree->Branch("FatJet_isHV",&fatjet_isHV_vec);
-  tree->Branch("FatJet_hvCategory",&fatjet_hvCategory);
-  tree->Branch("FatJet_darkPtFrac",&fatjet_darkPtFrac);
 
   tree->Branch("FatJet_nPFCandsUnmatched",&FatJet_nConstituents_unmatched);
   tree->Branch("FatJetPFCandsUnmatched_pdgId",&FatJet_nConstituents_unmatched_pdgid_flat);
@@ -1390,6 +1387,10 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("FatJetDarkHadronsubJetsPFCands_matchStage",&FatJetdarkHadronsubJetsPFCands_matchStage);
 
   //gen level branches for lund reweighting
+  tree->Branch("GenFatJet_isHV",&fatjet_isHV_vec);
+  tree->Branch("GenFatJet_hvCategory",&fatjet_hvCategory);
+  tree->Branch("GenFatJet_darkPtFrac",&fatjet_darkPtFrac);
+
   tree->Branch("GenFatJet_nConstituents", &GenFatJet_nConstituents);
   tree->Branch("GenFatJet_nConstituentsUnmatched", &GenFatJet_nConstituents_unmatched);
 

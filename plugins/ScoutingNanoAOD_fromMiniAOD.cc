@@ -91,6 +91,7 @@
 #include <DataFormats/TrackReco/interface/TrackBase.h>
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#include "DataFormats/Candidate/interface/Candidate.h"
 
 #include "DataFormats/Math/interface/libminifloat.h"
 
@@ -128,11 +129,55 @@
 
 // for mini isolation
 #include "ScoutingMiniIsolation.h"
+#include "matchAB.h"
 
 
 using namespace std;
 using namespace fastjet;
 using namespace fastjet::contrib;
+
+typedef math::XYZTLorentzVector LorentzVector;
+typedef math::PtEtaPhiELorentzVector CLorentzVector;
+
+typedef std::unordered_set<unsigned> PidSet;
+typedef const reco::Candidate* CandPtr;
+typedef std::unordered_set<CandPtr> CandSet;
+
+
+std::vector<int> DarkSMediatorIDs = {4900023}; //pdgId of the Z' mediator, used to find hard process particles and dark hadrons from its decay
+std::vector<int> DarkStableIDs = {51,53}; //pdgIds of stable dark hadrons, used to find last daughters of dark hadrons for jet categorization
+std::vector<int> DarkHadronIDs = {4900111,4900211,4900113,4900213}; //pdgIds of dark hadrons, used to find first copies of dark hadrons for jet categorization
+std::vector<int> DarkQuarkIDs = {4900001, 4900002, 4900003, 4900004, 4900005, 4900006}; //pdgIds of dark quarks, used to find first copies of dark quarks for jet categorization
+std::vector<int> DarkGluonIDs = {4900021}; //pdgId of dark gluon, used to find first copies of dark gluons for jet categorization
+std::vector<int> DarkFirstIDs = {4900001, 4900002, 4900003, 4900004, 4900005, 4900006,4900021}; 
+std::vector<int> SMQuarkIDs = {1, 2, 3, 4, 5, 6}; //pdgIds of SM quarks
+double coneSize_ = 0.8;
+const int egMatchStage = 0;
+const int hadronMatchStage = 1;
+const int leftoverMatchStage = 2;
+const int assignedFirstStage = 3;
+const int assignedSecondStage = 4;
+
+//define DarkSMediatorIDs_, DarkStableIDs_, DarkHadronIDs_ as PidSet
+PidSet DarkSMediatorIDs_(DarkSMediatorIDs.begin(), DarkSMediatorIDs.end());
+PidSet DarkStableIDs_(DarkStableIDs.begin(), DarkStableIDs.end());
+PidSet DarkHadronIDs_(DarkHadronIDs.begin(), DarkHadronIDs.end()); 
+PidSet DarkQuarkIDs_(DarkQuarkIDs.begin(), DarkQuarkIDs.end());
+PidSet DarkGluonIDs_(DarkGluonIDs.begin(), DarkGluonIDs.end());
+PidSet DarkFirstIDs_(DarkFirstIDs.begin(), DarkFirstIDs.end());
+PidSet SMQuarkIDs_(SMQuarkIDs.begin(), SMQuarkIDs.end());
+
+
+//some daughters (primarily GenParticles) may be dropped from miniAOD
+//trying to access these daughers directly with the daughter() accessor will cause an exception:
+//InvalidID get by product ID: invalid ProductID supplied
+//to work around this, we check the corresponding edm::Ptr to see if its ProductID is valid
+template <typename T>
+CandPtr daughter_noexcept(const T& mother, unsigned i) {
+  auto tmp = mother.daughterPtr(i);
+  return tmp.id().isValid() ? &*tmp : nullptr;
+}
+
 
 
 //------------------------------------------------------------------------
@@ -183,6 +228,25 @@ private:
   bool jetID(const ScoutingPFJet &pfjet);
   bool jetIDoff(const pat::Jet &pfjet);
 
+  // Lund Reweighting functions
+  bool isParticle(const PidSet& darkList, int pid) const;
+  bool isParticle(const PidSet& darkList, CandPtr part) const;
+  bool isParticle(int partPid, CandPtr part) const;
+  bool isParticle(const CandSet& darkList, CandPtr part) const;
+
+
+  void firstDark(CandPtr part, CandSet& firstMd, CandSet& firstQd, CandSet& firstGd, CandSet& firstQdM, CandSet& firstQsM, CandPtr& firstQdM1, CandPtr& firstQdM2, CandPtr& firstQsM1, CandPtr& firstQsM2, bool& secondDM, bool& secondSM) const;
+  int checkLast(const reco::GenJet& jet, const CandSet& stableDs, int value, double& frac) const;
+  int checkFirst(const reco::GenJet& jet, const CandSet& firstP, int value) const;
+  bool isAncestor(const PidSet& darkList, CandPtr part) const;
+  bool isAncestor(int ancestorPid, CandPtr part) const;
+  CandPtr getAncestor(const PidSet& darkList, CandPtr part) const;
+  void medDecay(CandPtr part, CandSet& firstQdM, CandSet& firstQsM, CandPtr& firstQdM1, CandPtr& firstQdM2, CandPtr& firstQsM1, CandPtr& firstQsM2, bool& secondDM, bool& secondSM) const;
+  std::vector<std::vector<int> > matchParticles(std::vector<std::vector<CLorentzVector> >& genSubjetConstituents, std::vector<std::vector<int> >& genSubjetPdgid, std::vector<CLorentzVector>& jetCands, std::vector<int>& jetCandsPdgid, std::vector<bool>& recoMatched, std::vector<int>& matchStageReco) const;
+  template <class P>
+  void addDaughters(const P* i_part, std::vector<CandPtr>& listOfDaughters) const;
+
+  
   //Scouting tokens
   const edm::InputTag triggerResultsTag;
   const edm::EDGetTokenT<edm::TriggerResults>             	triggerResultsToken;
@@ -633,6 +697,103 @@ private:
   vector<int>                  Jet_genJetIdx;        // index of matched gen jet for AK4
   vector<int>                  FatJet_genJetAK8Idx;  // index of matched gen jet for AK8
 
+  //Dark hadrons matching indices
+	std::vector<std::vector<CLorentzVector> > fatjets_cands;
+	std::vector<std::vector<int> > cands_pdgids;
+  std::vector<int> FatJet_nConstituents_unmatched;
+  std::vector<std::vector<int>> FatJet_nConstituents_unmatched_pdgid;
+  std::vector<std::vector<int>> FatJet_constituents_pdgid;
+
+
+  //std::vector<std::vector<CLorentzVector>> FatJet_darkHadrons;
+  std::vector<std::vector<CLorentzVector>> FatJet_darkHadronJets;
+  std::vector<std::vector<std::vector<CLorentzVector>>> FatJet_darkHadronJets_constituents;
+  std::vector<std::vector<std::vector<int>>> FatJet_darkHadronJets_constituentsPdgid;
+  std::vector<std::vector<std::vector<int>>> FatJet_darkHadronJets_constituentsAssignedFirst;
+  std::vector<std::vector<std::vector<int>>> FatJet_darkHadronJets_constituentsAssignedSecond;
+  std::vector<std::vector<std::vector<int>>> FatJet_darkHadronJets_constituentsMatchStage;
+  //std::vector<int> FatJet_nConstituents;
+
+  //decalre GenFatJet_darkHadrons
+  std::vector<std::vector<CLorentzVector>> GenFatJet_darkHadrons;  //ok
+  std::vector<std::vector<CLorentzVector>> GenFatJet_darkHadronJets; //ok
+  std::vector<std::vector<int>> GenFatJet_darkHadronJets_multiplicity; //ok
+  std::vector<std::vector<std::vector<int>>> GenFatJet_darkHadronJets_constituentsPdgid; //ok
+  std::vector<std::vector<std::vector<CLorentzVector>>> GenFatJet_darkHadronJets_constituents; //ok
+
+
+  std::vector<std::vector<int>> GenFatJet_constituents_pdgid; //ok
+  //std::vector<std::vector<CLorentzVector>> GenFatJet_constituents; //ok
+  std::vector<std::vector<std::vector<int>>> GenFatJet_darkHadronJets_constituentsMatchStage; //ok
+
+
+  //flat dark hadron information to be stored
+
+  std::vector<bool> fatjet_isHV_vec;
+  std::vector<int> fatjet_hvCategory;
+  std::vector<float> fatjet_darkPtFrac;
+  std::vector<int> GenFatJet_nConstituents; 
+  std::vector<int> GenFatJet_nConstituents_unmatched; 
+
+
+  //reco
+  std::vector<int> FatJet_nConstituents_unmatched_pdgid_flat;
+  std::vector<int> FatJet_nConstituents_unmatched_jetidx_flat;
+
+  std::vector<Float16_t> FatJetdarkHadronsubJets_pt;
+  std::vector<Float16_t> FatJetdarkHadronsubJets_eta;
+  std::vector<Float16_t> FatJetdarkHadronsubJets_phi;
+  std::vector<Float16_t> FatJetdarkHadronsubJets_E;
+  std::vector<int> FatJetdarkHadronsubJets_jetIdx;
+  std::vector<int> FatJetdarkHadronsubJets_subjetIdx;
+
+  std::vector<Float16_t> FatJetdarkHadronsubJetsPFCands_pt;
+  std::vector<Float16_t> FatJetdarkHadronsubJetsPFCands_eta;
+  std::vector<Float16_t> FatJetdarkHadronsubJetsPFCands_phi;
+  std::vector<Float16_t> FatJetdarkHadronsubJetsPFCands_E;
+  std::vector<Float16_t> FatJetdarkHadronsubJetsPFCands_pdgid;
+  std::vector<int> FatJetdarkHadronsubJetsPFCands_jetIdx;
+  std::vector<int> FatJetdarkHadronsubJetsPFCands_subjetIdx;
+  std::vector<int> FatJetdarkHadronsubJetsPFCands_assignedFirst;
+  std::vector<int> FatJetdarkHadronsubJetsPFCands_assignedSecond;
+  std::vector<int> FatJetdarkHadronsubJetsPFCands_matchStage;
+
+
+  //gen
+
+  //std::vector<int> GenFatJetPFCands_pt;
+  //std::vector<int> GenFatJetPFCands_eta;
+  //std::vector<int> GenFatJetPFCands_phi;
+  //std::vector<int> GenFatJetPFCands_E;
+  //std::vector<int> GenFatJetPFCands_pdgid;
+  //std::vector<int> GenFatJetPFCands_genjetIdx;
+  std::vector<int> GenFatJet_nConstituentsDarkHadrons;
+
+
+  std::vector<Float16_t> GenFatJetdarkHadrons_pt;
+  std::vector<Float16_t> GenFatJetdarkHadrons_eta;
+  std::vector<Float16_t> GenFatJetdarkHadrons_phi;
+  std::vector<Float16_t> GenFatJetdarkHadrons_E;
+  std::vector<int> GenFatJetdarkHadrons_genjetIdx;
+
+  std::vector<int>  GenFatJetdarkHadronsubJets_multiplicity;
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJets_pt;
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJets_eta;
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJets_phi;
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJets_E;
+  std::vector<int>       GenFatJetdarkHadronsubJets_genjetIdx;
+  std::vector<int>       GenFatJetdarkHadronsubJets_gensubjetIdx;
+
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJetsPFCands_pt;
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJetsPFCands_eta;
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJetsPFCands_phi;
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJetsPFCands_E;
+  std::vector<Float16_t>  GenFatJetdarkHadronsubJetsPFCands_pdgid;
+  std::vector<int>       GenFatJetdarkHadronsubJetsPFCands_genjetIdx;
+  std::vector<int>       GenFatJetdarkHadronsubJetsPFCands_gensubjetIdx;
+  std::vector<int>       GenFatJetdarkHadronsubJetsPFCands_matchStage;
+
+
   // Primary vertices
   UInt_t n_pvs;
   vector<Float16_t>            Vertex_x;
@@ -1031,17 +1192,18 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OfflineJet_HFHadronEnergy"             ,&OffJet_HFHadronEnergy            );
   tree->Branch("OfflineJet_HFEMEnergy"                 ,&OffJet_HFEMEnergy                );
   tree->Branch("OfflineJet_HOEnergy"                   ,&OffJet_HOEnergy                  );
-    //for jet id
-    tree->Branch("OfflineJet_chargedHadronEnergyFraction"        ,&OffJet_chargedHadronEnergyFraction       );
-    tree->Branch("OfflineJet_neutralHadronEnergyFraction"        ,&OffJet_neutralHadronEnergyFraction       );
-    tree->Branch("OfflineJet_chargedEmEnergyFraction"        ,&OffJet_chargedEmEnergyFraction       );
-    tree->Branch("OfflineJet_muonEnergyFraction"        ,&OffJet_muonEnergyFraction       );
-    tree->Branch("OfflineJet_neutralEmEnergyFraction"        ,&OffJet_neutralEmEnergyFraction       );
-    tree->Branch("OfflineJet_electronEnergyFraction"        ,&OffJet_electronEnergyFraction       );
-    tree->Branch("OfflineJet_photonEnergyFraction"        ,&OffJet_photonEnergyFraction       );
-    tree->Branch("OfflineJet_nConstituents"              ,&OffJet_nConstituents       );
-    tree->Branch("OfflineJet_neutralMultiplicity"        ,&OffJet_neutralMultiplicity       );
-    tree->Branch("OfflineJet_chargedMultiplicity"        ,&OffJet_chargedMultiplicity       );
+
+  //for jet id
+  tree->Branch("OfflineJet_chargedHadronEnergyFraction"        ,&OffJet_chargedHadronEnergyFraction       );
+  tree->Branch("OfflineJet_neutralHadronEnergyFraction"        ,&OffJet_neutralHadronEnergyFraction       );
+  tree->Branch("OfflineJet_chargedEmEnergyFraction"        ,&OffJet_chargedEmEnergyFraction       );
+  tree->Branch("OfflineJet_muonEnergyFraction"        ,&OffJet_muonEnergyFraction       );
+  tree->Branch("OfflineJet_neutralEmEnergyFraction"        ,&OffJet_neutralEmEnergyFraction       );
+  tree->Branch("OfflineJet_electronEnergyFraction"        ,&OffJet_electronEnergyFraction       );
+  tree->Branch("OfflineJet_photonEnergyFraction"        ,&OffJet_photonEnergyFraction       );
+  tree->Branch("OfflineJet_nConstituents"              ,&OffJet_nConstituents       );
+  tree->Branch("OfflineJet_neutralMultiplicity"        ,&OffJet_neutralMultiplicity       );
+  tree->Branch("OfflineJet_chargedMultiplicity"        ,&OffJet_chargedMultiplicity       );
 
   tree->Branch("OfflineJet_chargedHadronMultiplicity"  ,&OffJet_chargedHadronMultiplicity );
   tree->Branch("OfflineJet_neutralHadronMultiplicity"  ,&OffJet_neutralHadronMultiplicity );
@@ -1104,16 +1266,16 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   tree->Branch("OfflineFatJet_passId"                     ,&OffPuppiFatJet_passId                    );
 
   //for jet id
-    tree->Branch("OfflineFatJet_chargedHadronEnergyFraction"        ,&OffPuppiFatJet_chargedHadronEnergyFraction       );
-    tree->Branch("OfflineFatJet_neutralHadronEnergyFraction"        ,&OffPuppiFatJet_neutralHadronEnergyFraction       );
-    tree->Branch("OfflineFatJet_chargedEmEnergyFraction"        ,&OffPuppiFatJet_chargedEmEnergyFraction       );
-    tree->Branch("OfflineFatJet_muonEnergyFraction"        ,&OffPuppiFatJet_muonEnergyFraction       );
-    tree->Branch("OfflineFatJet_neutralEmEnergyFraction"        ,&OffPuppiFatJet_neutralEmEnergyFraction       );
-    tree->Branch("OfflineFatJet_muonEnergyFraction"        ,&OffPuppiFatJet_muonEnergyFraction       );
-    tree->Branch("OfflineFatJet_photonEnergyFraction"        ,&OffPuppiFatJet_photonEnergyFraction       );
-    tree->Branch("OfflineFatJet_nConstituents"              ,&OffPuppiFatJet_nConstituents      );
-    tree->Branch("OfflineFatJet_neutralMultiplicity"        ,&OffPuppiFatJet_neutralMultiplicity       );
-    tree->Branch("OfflineFatJet_chargedMultiplicity"        ,&OffPuppiFatJet_chargedMultiplicity       );
+  tree->Branch("OfflineFatJet_chargedHadronEnergyFraction"        ,&OffPuppiFatJet_chargedHadronEnergyFraction       );
+  tree->Branch("OfflineFatJet_neutralHadronEnergyFraction"        ,&OffPuppiFatJet_neutralHadronEnergyFraction       );
+  tree->Branch("OfflineFatJet_chargedEmEnergyFraction"        ,&OffPuppiFatJet_chargedEmEnergyFraction       );
+  tree->Branch("OfflineFatJet_muonEnergyFraction"        ,&OffPuppiFatJet_muonEnergyFraction       );
+  tree->Branch("OfflineFatJet_neutralEmEnergyFraction"        ,&OffPuppiFatJet_neutralEmEnergyFraction       );
+  tree->Branch("OfflineFatJet_muonEnergyFraction"        ,&OffPuppiFatJet_muonEnergyFraction       );
+  tree->Branch("OfflineFatJet_photonEnergyFraction"        ,&OffPuppiFatJet_photonEnergyFraction       );
+  tree->Branch("OfflineFatJet_nConstituents"              ,&OffPuppiFatJet_nConstituents      );
+  tree->Branch("OfflineFatJet_neutralMultiplicity"        ,&OffPuppiFatJet_neutralMultiplicity       );
+  tree->Branch("OfflineFatJet_chargedMultiplicity"        ,&OffPuppiFatJet_chargedMultiplicity       );
 
    //add gen info
   tree->Branch("n_genjet"                             ,&n_genjet                         ,"nGenJets/i");
@@ -1199,6 +1361,66 @@ ScoutingNanoAOD_fromMiniAOD::ScoutingNanoAOD_fromMiniAOD(const edm::ParameterSet
   //Gen MET branches
   tree->Branch("genMET_pt",&genMET_pt);
   tree->Branch("genMET_phi",&genMET_phi);
+
+
+  //Gen Dark hadrons matching variables
+
+  //reco level branches for lund rewighting 
+
+
+  tree->Branch("FatJet_nPFCandsUnmatched",&FatJet_nConstituents_unmatched);
+  tree->Branch("FatJetPFCandsUnmatched_pdgId",&FatJet_nConstituents_unmatched_pdgid_flat);
+  tree->Branch("FatJetPFCandsUnmatched_JetIdx",&FatJet_nConstituents_unmatched_jetidx_flat);
+
+  tree->Branch("FatJetDarkHadronsubJets_pt",&FatJetdarkHadronsubJets_pt);
+  tree->Branch("FatJetDarkHadronsubJets_eta",&FatJetdarkHadronsubJets_eta);
+  tree->Branch("FatJetDarkHadronsubJets_phi",&FatJetdarkHadronsubJets_phi);
+  tree->Branch("FatJetDarkHadronsubJets_E",&FatJetdarkHadronsubJets_E);
+  tree->Branch("FatJetDarkHadronsubJets_jetIdx",&FatJetdarkHadronsubJets_jetIdx);
+  tree->Branch("FatJetDarkHadronsubJets_subjetIdx",&FatJetdarkHadronsubJets_subjetIdx);
+
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_pt",&FatJetdarkHadronsubJetsPFCands_pt);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_eta",&FatJetdarkHadronsubJetsPFCands_eta);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_phi",&FatJetdarkHadronsubJetsPFCands_phi);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_E",&FatJetdarkHadronsubJetsPFCands_E);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_jetIdx",&FatJetdarkHadronsubJetsPFCands_jetIdx);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_subjetIdx",&FatJetdarkHadronsubJetsPFCands_subjetIdx);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_pdgid",&FatJetdarkHadronsubJetsPFCands_pdgid);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_assignedFirst",&FatJetdarkHadronsubJetsPFCands_assignedFirst);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_assignedSecond",&FatJetdarkHadronsubJetsPFCands_assignedSecond);
+  tree->Branch("FatJetDarkHadronsubJetsPFCands_matchStage",&FatJetdarkHadronsubJetsPFCands_matchStage);
+
+  //gen level branches for lund reweighting
+  tree->Branch("GenFatJet_isHV",&fatjet_isHV_vec);
+  tree->Branch("GenFatJet_hvCategory",&fatjet_hvCategory);
+  tree->Branch("GenFatJet_darkPtFrac",&fatjet_darkPtFrac);
+
+  tree->Branch("GenFatJet_nConstituents", &GenFatJet_nConstituents);
+  tree->Branch("GenFatJet_nConstituentsUnmatched", &GenFatJet_nConstituents_unmatched);
+
+  tree->Branch("GenFatJetDarkHadrons_pt", &GenFatJetdarkHadrons_pt);
+  tree->Branch("GenFatJetDarkHadrons_eta", &GenFatJetdarkHadrons_eta);
+  tree->Branch("GenFatJetDarkHadrons_phi", &GenFatJetdarkHadrons_phi);
+  tree->Branch("GenFatJetDarkHadrons_E", &GenFatJetdarkHadrons_E);
+  tree->Branch("GenFatJetDarkHadrons_genJetIdx", &GenFatJetdarkHadrons_genjetIdx);
+
+  tree->Branch("GenFatJetDarkHadronsubJets_multiplicity",&GenFatJetdarkHadronsubJets_multiplicity);
+  tree->Branch("GenFatJetDarkHadronsubJets_pt",&GenFatJetdarkHadronsubJets_pt);
+  tree->Branch("GenFatJetDarkHadronsubJets_eta",&GenFatJetdarkHadronsubJets_eta);
+  tree->Branch("GenFatJetDarkHadronsubJets_phi",&GenFatJetdarkHadronsubJets_phi);
+  tree->Branch("GenFatJetDarkHadronsubJets_E",&GenFatJetdarkHadronsubJets_E);
+  tree->Branch("GenFatJetDarkHadronsubJets_genJetIdx",&GenFatJetdarkHadronsubJets_genjetIdx);
+  tree->Branch("GenFatJetDarkHadronsubJets_genSubJetIdx",&GenFatJetdarkHadronsubJets_gensubjetIdx);
+
+  tree->Branch("GenFatJetDarkHadronsubJetsConsts_pt",&GenFatJetdarkHadronsubJetsPFCands_pt);
+  tree->Branch("GenFatJetDarkHadronsubJetsConsts_eta",&GenFatJetdarkHadronsubJetsPFCands_eta);
+  tree->Branch("GenFatJetDarkHadronsubJetsConsts_phi",&GenFatJetdarkHadronsubJetsPFCands_phi);
+  tree->Branch("GenFatJetDarkHadronsubJetsConsts_E",&GenFatJetdarkHadronsubJetsPFCands_E);
+  tree->Branch("GenFatJetDarkHadronsubJetsConsts_genJetIdx",&GenFatJetdarkHadronsubJetsPFCands_genjetIdx);
+  tree->Branch("GenFatJetDarkHadronsubJetsConsts_genSubJetIdx",&GenFatJetdarkHadronsubJetsPFCands_gensubjetIdx);
+  tree->Branch("GenFatJetDarkHadronsubJetsConsts_pdgid",&GenFatJetdarkHadronsubJetsPFCands_pdgid);
+  tree->Branch("GenFatJetDarkHadronsubJetsConsts_matchStage",&GenFatJetdarkHadronsubJetsPFCands_matchStage);
+  
 
 }
 
@@ -2213,6 +2435,10 @@ if(runOffline){
     ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
     vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(jetAK8ScoutPtMin)); //pt min
 
+    //resize jets_cands and cands_pdgids to same size as PFcands
+    fatjets_cands.resize(PFcands.size());
+    cands_pdgids.resize(PFcands.size());
+
     for (auto &j: ak8_jets) {
       FatJet_eta.push_back(j.eta());
       FatJet_phi.push_back(j.phi_std());
@@ -2308,6 +2534,8 @@ if(runOffline){
 
       unsigned int n_pfcand_tot = 0;
       for (auto & pfcands_iter : PFcands ) {
+        fatjets_cands[n_pfcand_tot].emplace_back(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
+        cands_pdgids[n_pfcand_tot].push_back(pfcands_iter.pdgId());
         if (pfcands_iter.pt() < 0.5) continue;
         if (abs(pfcands_iter.eta()) >= 2.4 ) continue;    
         int tmpidx = -1;
@@ -2797,6 +3025,420 @@ if (addMatrixElementInfo){
     }
 }
 
+// * UNDER DEVELOPMENT// *
+
+// * //Dark hadrons info //*
+
+if(runGen && doSignal && runScouting){
+
+  Handle<GenParticleCollection> genP_iter;
+  iEvent.getByToken(gensToken, genP_iter);
+
+  fatjet_isHV_vec.clear();
+  fatjet_hvCategory.clear();
+  fatjet_darkPtFrac.clear();
+  GenFatJet_nConstituents.clear();
+  GenFatJet_darkHadrons.clear();
+  GenFatJet_nConstituentsDarkHadrons.clear();
+  GenFatJet_nConstituents_unmatched.clear();
+  GenFatJet_nConstituents.clear();
+
+
+  //ISRJetProducer method, find jets with hard process particles at their 'core' and other jets are ISR
+  if(genP_iter.isValid()){
+    for(size_t i_jet = 0; i_jet < FatJet_pt.size(); ++i_jet){ // loop over reco AK8 jets
+        bool matched = false; // matched == true means that this jet has a hard process (descendant particle of the Z') at its 'core'
+        //for (const auto& i_part : *(genP_iter.product())){ // loop over GenParticles
+        //for(size_t i = 0; i < genP_iter->size(); ++ i) { // loop over GenParticles
+        for(const auto& i_part : *(genP_iter.product())){
+            //const GenParticle & i_part = (*genP_iter)[i];
+            if (matched) break; // only need to match one particle to the jet to tag it as FSR
+            if(i_part.status()!=23) continue; // only want particles outgoing from the hard process
+            //if(!isParticle(DarkSMediatorIDs_,i_part.mother())) continue; // only want direct descendants of Z' (kind of redundant)
+            //check against daughters in case of hard initial splitting, from ISRJetProducer...
+            std::vector<CandPtr> listOfDaughters;
+            addDaughters(&i_part,listOfDaughters);
+            for (const auto& daughter : listOfDaughters) {
+              float dR = reco::deltaR(FatJet_eta[i_jet], FatJet_phi[i_jet], daughter->eta(), daughter->phi());
+              if(dR<0.8){
+                matched = true;
+                break;
+              }
+            }
+          }
+          fatjet_isHV_vec.push_back(matched);
+    }
+  }
+
+  //jet categorization
+  //gen particle organization: last daughters of last copies of dark hadrons, first copies of dark quarks/gluons/mediators, first copies of quarks/gluons/SM quarks from mediator
+  //naming scheme: dark particles Pd, SM particles Ps; P = D (generic daughters), Q (quarks), G (gluons), M (mediators)
+  CandSet stableDs, firstMd, firstQd, firstGd, firstQdM, firstQsM;
+  CandPtr firstQdM1, firstQdM2, firstQsM1, firstQsM2;
+  bool secondDM = false, secondSM = false;
+
+  //loop over gen particles
+  //for(size_t i = 0; i < genP_iter->size(); ++ i) {
+    //const GenParticle & i_part = (*genP_iter)[i];
+    //define from i_part a CandPtr for easier handling in functions
+    //CandPtr i_part_ptr(&i_part);
+  for(const auto& i_part : *(genP_iter.product())){
+    firstDark(&i_part, firstMd, firstQd, firstGd, firstQdM, firstQsM, firstQdM1, firstQdM2, firstQsM1, firstQsM2,secondDM,secondSM);
+    if(static_cast<const reco::GenParticle*>(&i_part)->isLastCopy() and isParticle(DarkStableIDs_,&i_part)) stableDs.insert(&i_part);
+  }
+
+  //loop over gen jets
+  for (auto genjet = genak8jetsH->begin(); genjet != genak8jetsH->end(); ++genjet) {
+    int category = 0;
+    double frac = 0;
+    category += checkLast(*genjet, stableDs, 1, frac);
+    category += checkFirst(*genjet, firstQd, 2);
+    category += checkFirst(*genjet, firstGd, 4);
+    category += checkFirst(*genjet, firstQdM, 8);
+    category += checkFirst(*genjet, firstQsM, 16);
+    fatjet_hvCategory.push_back(category);
+    fatjet_darkPtFrac.push_back(frac);
+  }
+
+
+  //reassemble each dark hadron within GenJet from final state SM particles
+  //sort dark hadrons descending in pt
+  auto comp = [](CandPtr a, CandPtr b){ return a->pt() > b->pt(); };
+  //loop over genjets
+  for (auto genjet = genak8jetsH->begin(); genjet != genak8jetsH->end(); ++genjet) {
+    GenFatJet_nConstituents.push_back(genjet->numberOfDaughters());
+    int nDaus = 0;
+    std::map<CandPtr,std::vector<CandPtr>,decltype(comp)> darkHadronMap(comp);
+    for(unsigned i = 0; i < genjet->numberOfDaughters(); ++i){
+    	CandPtr dau = daughter_noexcept(*genjet,i);
+    	CandPtr darkHadron = getAncestor(DarkHadronIDs_,dau);
+    	if (darkHadron!=nullptr){
+    		darkHadronMap[darkHadron].push_back(dau);
+    		nDaus++;
+    	}
+  }
+
+	GenFatJet_nConstituentsDarkHadrons.push_back(nDaus);
+	std::vector<CLorentzVector> tmp_darkHadrons;
+	std::vector<CLorentzVector> tmp_darkHadronJets;
+	std::vector<std::vector<CLorentzVector> > tmp_darkHadronJets_constituents;
+	std::vector<std::vector<int> > tmp_darkHadronJets_ConstituentPdgid;
+	std::vector<std::vector<int> > tmpMatchStage;
+	std::vector<int> tmp_darkHadronJets_multiplicity;
+
+	for(const auto& entry : darkHadronMap){
+		tmp_darkHadrons.emplace_back(entry.first->pt(),entry.first->eta(),entry.first->phi(),entry.first->energy());
+		LorentzVector tmpjet;
+		std::vector<CLorentzVector> tmpjetconstituents;
+		std::vector<int> tmpjetconstituentspdgid;
+		for(const auto& dau : entry.second){
+			tmpjet += dau->p4();
+			tmpjetconstituents.emplace_back(dau->pt(),dau->eta(),dau->phi(),dau->energy());
+			tmpjetconstituentspdgid.emplace_back(dau->pdgId());
+		}
+		tmp_darkHadronJets.emplace_back(tmpjet.pt(),tmpjet.eta(),tmpjet.phi(),tmpjet.energy());
+		tmp_darkHadronJets_constituents.push_back(tmpjetconstituents);
+		tmp_darkHadronJets_ConstituentPdgid.push_back(tmpjetconstituentspdgid);
+		tmp_darkHadronJets_multiplicity.push_back(entry.second.size());
+		std::vector<int> tmpMatch(tmpjetconstituentspdgid.size(), -1);
+		tmpMatchStage.push_back(tmpMatch);
+	}
+	GenFatJet_darkHadrons.push_back(tmp_darkHadrons);
+	GenFatJet_darkHadronJets.push_back(tmp_darkHadronJets);
+	GenFatJet_darkHadronJets_constituents.push_back(tmp_darkHadronJets_constituents);
+	GenFatJet_darkHadronJets_constituentsPdgid.push_back(tmp_darkHadronJets_ConstituentPdgid);
+	GenFatJet_darkHadronJets_multiplicity.push_back(tmp_darkHadronJets_multiplicity);
+	GenFatJet_nConstituents_unmatched.emplace_back(-1);
+	GenFatJet_constituents_pdgid.push_back({-1});
+	GenFatJet_darkHadronJets_constituentsMatchStage.push_back(tmpMatchStage);
+  }
+  
+  }
+
+
+
+  // * //Lund Reweighting Matching //*
+  FatJet_nConstituents_unmatched.clear();
+  FatJet_nConstituents_unmatched_pdgid.clear();
+  FatJet_constituents_pdgid.clear();
+  FatJet_darkHadronJets.clear();
+  FatJet_darkHadronJets_constituents.clear();
+  FatJet_darkHadronJets_constituentsPdgid.clear();
+  FatJet_darkHadronJets_constituentsAssignedFirst.clear();
+  FatJet_darkHadronJets_constituentsAssignedSecond.clear();
+  FatJet_darkHadronJets_constituentsMatchStage.clear();
+
+      
+  for(size_t i_jet = 0; i_jet < FatJet_pt.size(); ++i_jet) {
+  		  
+        //get genfatjet index matched to reco fatjet
+        int FatJet_genIndex = FatJet_genJetAK8Idx[i_jet];
+  
+  		  if (FatJet_genIndex == -1) {
+  			  std::vector<int> tmp = {-1};
+  			  std::vector<CLorentzVector> tmpJet;
+  			  tmpJet.emplace_back(-9999, -9999, -9999, -9999);
+  			  std::vector< std::vector< CLorentzVector> > tmpJetV = {{tmpJet}};
+  			  // If you don't do this coffea gets mad
+  			  FatJet_nConstituents_unmatched.push_back(-1);
+  			  FatJet_nConstituents_unmatched_pdgid.push_back(tmp);
+  			  FatJet_constituents_pdgid.push_back(tmp);
+  			  FatJet_darkHadronJets.push_back(tmpJet);
+  			  FatJet_darkHadronJets_constituents.push_back(tmpJetV);
+  			  FatJet_darkHadronJets_constituentsPdgid.push_back({tmp});
+  			  FatJet_darkHadronJets_constituentsAssignedFirst.push_back({tmp});
+  			  FatJet_darkHadronJets_constituentsAssignedSecond.push_back({tmp});
+  			  FatJet_darkHadronJets_constituentsMatchStage.push_back({tmp});
+  			  continue;
+  		  }
+  
+  
+        std::vector<CLorentzVector> fatjet_i_cands;
+        std::vector<int> fatjet_i_cands_pdgid;
+
+        for (size_t i_cand = 0; i_cand < fatjets_cands.size(); ++i_cand) {
+      
+            if (FatJetPFCands_jetIdx[i_cand] != i_jet)
+                continue;
+      
+            fatjet_i_cands.insert(
+                fatjet_i_cands.end(),
+                fatjets_cands[i_cand].begin(),
+                fatjets_cands[i_cand].end()
+            );
+      
+            fatjet_i_cands_pdgid.insert(
+                fatjet_i_cands_pdgid.end(),
+                cands_pdgids[i_cand].begin(),
+                cands_pdgids[i_cand].end()
+            );
+        }
+
+
+        // Match gen to reco particles using pdgid and deltaR matching
+  		  //OLD VERSION
+        //std::vector<bool> recoMatched(FatJet_nConstituents[i_jet], false);
+  		  //std::vector<int> matchStageReco(FatJet_nConstituents[i_jet], -1);
+        //NEW VERSION
+        std::vector<bool> recoMatched(fatjet_i_cands.size(), false);
+        std::vector<int> matchStageReco(fatjet_i_cands.size(), -1);
+
+  		  const std::vector<std::vector<int>>& matchedRecoIndex = matchParticles(GenFatJet_darkHadronJets_constituents[FatJet_genIndex], GenFatJet_darkHadronJets_constituentsPdgid[FatJet_genIndex], fatjet_i_cands, fatjet_i_cands_pdgid, recoMatched, matchStageReco);
+  
+  		  // make list of "dark hadron subjets" in reco particles using the match to gen
+  		  int unmatchedGen = 0;
+  		  std::vector<std::vector<CLorentzVector> > recoSubjets;
+  		  std::vector<CLorentzVector> recoDarkHadronJets;
+  		  std::vector<std::vector<int>> matchStage;
+  		  std::vector<std::vector<int>> matchStageGen;
+  		  std::vector<std::vector<int>> recoPdgid;
+  		  std::vector<std::vector<int>> assigned;
+  
+  		  for(unsigned i = 0; i < matchedRecoIndex.size(); i++){
+  			  std::vector<CLorentzVector> recoSubjetConstituents;
+  			  CLorentzVector tmpJet;
+  			  std::vector<int> tmpMatchStage;
+  			  std::vector<int> tmpMatchStageGen;
+  			  std::vector<int> tmpRecoPdgid;
+  			  std::vector<int> tmpAssigned;
+  			  for(unsigned j = 0; j < matchedRecoIndex[i].size(); j++){
+  				  if (matchedRecoIndex[i][j] != -1) {
+  					    tmpAssigned.push_back(0);
+  					    tmpMatchStage.push_back(matchStageReco[matchedRecoIndex[i][j]]);
+  					    tmpMatchStageGen.push_back(matchStageReco[matchedRecoIndex[i][j]]);
+  					    tmpRecoPdgid.push_back(fatjet_i_cands_pdgid[matchedRecoIndex[i][j]]); //[i_jet]
+  					    tmpJet += fatjet_i_cands[matchedRecoIndex[i][j]]; //[i_jet]
+  					    recoSubjetConstituents.emplace_back(fatjet_i_cands[matchedRecoIndex[i][j]]); //[i_jet]
+  				  }
+  				  else {
+  					  unmatchedGen++;
+  					  tmpMatchStageGen.push_back(-1);
+  				  }
+  			  }
+  			  assigned.emplace_back(tmpAssigned);
+  			  matchStage.emplace_back(tmpMatchStage);
+  			  matchStageGen.emplace_back(tmpMatchStageGen);
+  			  recoPdgid.emplace_back(tmpRecoPdgid);
+  			  recoDarkHadronJets.emplace_back(tmpJet);
+  			  recoSubjets.emplace_back(recoSubjetConstituents);
+  		  }
+
+
+  		  GenFatJet_nConstituents_unmatched.at(FatJet_genIndex) = unmatchedGen;
+  		  //GenFatJet_darkHadronJets_constituentsMatchStage.at(FatJet_genIndex).emplace_back(matchStageGen);
+        GenFatJet_darkHadronJets_constituentsMatchStage.at(FatJet_genIndex)= matchStageGen;
+  		  FatJet_darkHadronJets_constituentsAssignedFirst.push_back(assigned);
+  		  FatJet_darkHadronJets_constituentsAssignedSecond.push_back(assigned);
+  		  FatJet_darkHadronJets_constituentsPdgid.push_back(recoPdgid);
+  		  FatJet_darkHadronJets_constituentsMatchStage.push_back(matchStage);
+  		  FatJet_darkHadronJets.push_back(recoDarkHadronJets);
+  		  FatJet_darkHadronJets_constituents.push_back(recoSubjets);
+  
+  		  //For unmatched reco particles, assign them to the closest dark hadron, and the second closest to demonstrate an uncertainty in this procedure
+  		  std::vector<int> recoUnmatchedPdgid = {};
+  		  int nRecoUnmatched = 0;
+  		  for(unsigned i = 0; i < recoMatched.size(); i++){
+  			  if (recoMatched[i] == false ) {
+  				  recoUnmatchedPdgid.push_back(cands_pdgids[i_jet][i]);
+  				  nRecoUnmatched++;
+  
+  				  CLorentzVector recoPart = fatjet_i_cands[i]; //[i_jet]
+  				  const std::vector<CLorentzVector>& darkHadronJets = GenFatJet_darkHadronJets.at(FatJet_genIndex);
+  				  std::vector<double> dhjDeltaR;
+  
+  				  for (const auto& dhj : darkHadronJets){
+  					  dhjDeltaR.push_back(deltaR(dhj, recoPart));
+  				  }
+  				  if (dhjDeltaR.size() > 0) {
+  					  std::vector<int> idx(dhjDeltaR.size());
+  					  std::iota(idx.begin(), idx.end(), 0);
+  					  // sort indexes based on comparing deltaR values using std::stable_sort, now idx vector is a list of indices sorted by deltaR
+  					  std::stable_sort(idx.begin(), idx.end(), [&dhjDeltaR](int i1, int i2) {return dhjDeltaR[i1] < dhjDeltaR[i2];});
+  					  FatJet_darkHadronJets_constituents.at(i_jet)[idx[0]].push_back(fatjets_cands[i_jet][i]);
+  					  FatJet_darkHadronJets_constituentsAssignedFirst.at(i_jet)[idx[0]].push_back(1);
+  					  FatJet_darkHadronJets_constituentsAssignedSecond.at(i_jet)[idx[0]].push_back(0);
+  					  FatJet_darkHadronJets_constituentsPdgid.at(i_jet)[idx[0]].push_back(cands_pdgids[i_jet][i]);
+  					  FatJet_darkHadronJets_constituentsMatchStage.at(i_jet)[idx[0]].push_back(assignedFirstStage);
+  
+  					  if (dhjDeltaR.size() > 1) {
+  						  FatJet_darkHadronJets_constituents.at(i_jet)[idx[1]].push_back(fatjets_cands[i_jet][i]);
+  						  FatJet_darkHadronJets_constituentsAssignedFirst.at(i_jet)[idx[1]].push_back(0);
+  						  FatJet_darkHadronJets_constituentsAssignedSecond.at(i_jet)[idx[1]].push_back(1);
+  						  FatJet_darkHadronJets_constituentsPdgid.at(i_jet)[idx[1]].push_back(cands_pdgids[i_jet][i]);
+  						  FatJet_darkHadronJets_constituentsMatchStage.at(i_jet)[idx[1]].push_back(assignedSecondStage);
+  					  }
+  				  }
+  			  }
+  		  }
+
+  		  FatJet_nConstituents_unmatched.push_back(nRecoUnmatched);
+  		  FatJet_nConstituents_unmatched_pdgid.push_back(recoUnmatchedPdgid);
+
+}
+
+
+// Reorganizse information in dark hadron jets vectors to be stored in the tree
+//reco
+
+FatJet_nConstituents_unmatched_pdgid_flat.clear();
+FatJet_nConstituents_unmatched_jetidx_flat.clear();
+//
+FatJetdarkHadronsubJets_pt.clear();
+FatJetdarkHadronsubJets_eta.clear();
+FatJetdarkHadronsubJets_phi.clear();
+FatJetdarkHadronsubJets_E.clear();
+FatJetdarkHadronsubJets_jetIdx.clear();
+FatJetdarkHadronsubJets_subjetIdx.clear();
+//
+FatJetdarkHadronsubJetsPFCands_pt.clear();
+FatJetdarkHadronsubJetsPFCands_eta.clear();
+FatJetdarkHadronsubJetsPFCands_phi.clear();
+FatJetdarkHadronsubJetsPFCands_E.clear();
+FatJetdarkHadronsubJetsPFCands_jetIdx.clear();
+FatJetdarkHadronsubJetsPFCands_subjetIdx.clear();
+FatJetdarkHadronsubJetsPFCands_pdgid.clear();
+FatJetdarkHadronsubJetsPFCands_assignedFirst.clear();
+FatJetdarkHadronsubJetsPFCands_assignedSecond.clear();
+FatJetdarkHadronsubJetsPFCands_matchStage.clear();
+
+//
+for(size_t i_jet = 0; i_jet < FatJet_pt.size(); ++i_jet) {
+
+  
+  for(size_t i = 0; i < FatJet_nConstituents_unmatched_pdgid[i_jet].size(); ++i) {
+    FatJet_nConstituents_unmatched_pdgid_flat.push_back(FatJet_nConstituents_unmatched_pdgid[i_jet][i]);
+    FatJet_nConstituents_unmatched_jetidx_flat.push_back(i_jet);
+  }
+
+  for(size_t j = 0; j < FatJet_darkHadronJets.at(i_jet).size(); ++j) {
+    FatJetdarkHadronsubJets_pt.push_back(FatJet_darkHadronJets.at(i_jet)[j].pt());
+    FatJetdarkHadronsubJets_eta.push_back(FatJet_darkHadronJets.at(i_jet)[j].eta());
+    FatJetdarkHadronsubJets_phi.push_back(FatJet_darkHadronJets.at(i_jet)[j].phi());
+    FatJetdarkHadronsubJets_E.push_back(FatJet_darkHadronJets.at(i_jet)[j].energy());
+    FatJetdarkHadronsubJets_jetIdx.push_back(i_jet);
+    FatJetdarkHadronsubJets_subjetIdx.push_back(j);
+
+    for(size_t k = 0; k < FatJet_darkHadronJets_constituents.at(i_jet)[j].size(); ++k) {
+      FatJetdarkHadronsubJetsPFCands_pt.push_back(FatJet_darkHadronJets_constituents.at(i_jet)[j][k].pt());
+      FatJetdarkHadronsubJetsPFCands_eta.push_back(FatJet_darkHadronJets_constituents.at(i_jet)[j][k].eta());
+      FatJetdarkHadronsubJetsPFCands_phi.push_back(FatJet_darkHadronJets_constituents.at(i_jet)[j][k].phi());
+      FatJetdarkHadronsubJetsPFCands_E.push_back(FatJet_darkHadronJets_constituents.at(i_jet)[j][k].energy());
+      FatJetdarkHadronsubJetsPFCands_jetIdx.push_back(i_jet);
+      FatJetdarkHadronsubJetsPFCands_subjetIdx.push_back(j);
+      FatJetdarkHadronsubJetsPFCands_pdgid.push_back(FatJet_darkHadronJets_constituentsPdgid.at(i_jet)[j][k]);
+      FatJetdarkHadronsubJetsPFCands_assignedFirst.push_back(FatJet_darkHadronJets_constituentsAssignedFirst.at(i_jet)[j][k]);
+      FatJetdarkHadronsubJetsPFCands_assignedSecond.push_back(FatJet_darkHadronJets_constituentsAssignedSecond.at(i_jet)[j][k]);
+      FatJetdarkHadronsubJetsPFCands_matchStage.push_back(FatJet_darkHadronJets_constituentsMatchStage.at(i_jet)[j][k]);
+    }
+
+  }
+
+}
+//
+//   
+////gen
+
+GenFatJetdarkHadrons_pt.clear();
+GenFatJetdarkHadrons_eta.clear();
+GenFatJetdarkHadrons_phi.clear();
+GenFatJetdarkHadrons_E.clear();
+GenFatJetdarkHadrons_genjetIdx.clear();
+////
+GenFatJetdarkHadronsubJets_multiplicity.clear();
+GenFatJetdarkHadronsubJets_pt.clear();
+GenFatJetdarkHadronsubJets_eta.clear();
+GenFatJetdarkHadronsubJets_phi.clear();
+GenFatJetdarkHadronsubJets_E.clear();
+GenFatJetdarkHadronsubJets_genjetIdx.clear();
+GenFatJetdarkHadronsubJets_gensubjetIdx.clear();
+////
+GenFatJetdarkHadronsubJetsPFCands_pt.clear();
+GenFatJetdarkHadronsubJetsPFCands_eta.clear();
+GenFatJetdarkHadronsubJetsPFCands_phi.clear();
+GenFatJetdarkHadronsubJetsPFCands_E.clear();
+GenFatJetdarkHadronsubJetsPFCands_pdgid.clear();
+GenFatJetdarkHadronsubJetsPFCands_genjetIdx.clear();
+GenFatJetdarkHadronsubJetsPFCands_gensubjetIdx.clear();
+GenFatJetdarkHadronsubJetsPFCands_matchStage.clear();
+//
+////loop using genak8jetsH
+for (size_t i_jet = 0; i_jet < genak8jetsH->size(); ++i_jet) {
+  
+
+  for(size_t j = 0; j < GenFatJet_darkHadrons.at(i_jet).size(); ++j) {
+      GenFatJetdarkHadrons_pt.push_back(GenFatJet_darkHadrons.at(i_jet)[j].pt());
+      GenFatJetdarkHadrons_eta.push_back(GenFatJet_darkHadrons.at(i_jet)[j].eta());
+      GenFatJetdarkHadrons_phi.push_back(GenFatJet_darkHadrons.at(i_jet)[j].phi());
+      GenFatJetdarkHadrons_E.push_back(GenFatJet_darkHadrons.at(i_jet)[j].energy());
+      GenFatJetdarkHadrons_genjetIdx.push_back(i_jet);
+  }
+//
+//
+  for(size_t j = 0; j < GenFatJet_darkHadronJets.at(i_jet).size(); ++j) {
+      GenFatJetdarkHadronsubJets_multiplicity.push_back(GenFatJet_darkHadronJets_multiplicity.at(i_jet)[j]);
+      GenFatJetdarkHadronsubJets_pt.push_back(GenFatJet_darkHadronJets.at(i_jet)[j].pt());
+      GenFatJetdarkHadronsubJets_eta.push_back(GenFatJet_darkHadronJets.at(i_jet)[j].eta());
+      GenFatJetdarkHadronsubJets_phi.push_back(GenFatJet_darkHadronJets.at(i_jet)[j].phi());
+      GenFatJetdarkHadronsubJets_E.push_back(GenFatJet_darkHadronJets.at(i_jet)[j].energy());
+      GenFatJetdarkHadronsubJets_genjetIdx.push_back(i_jet);
+      GenFatJetdarkHadronsubJets_gensubjetIdx.push_back(j);
+
+      for(size_t k = 0; k < GenFatJet_darkHadronJets_constituents.at(i_jet)[j].size(); ++k) {
+        GenFatJetdarkHadronsubJetsPFCands_pt.push_back(GenFatJet_darkHadronJets_constituents.at(i_jet)[j][k].pt());
+        GenFatJetdarkHadronsubJetsPFCands_eta.push_back(GenFatJet_darkHadronJets_constituents.at(i_jet)[j][k].eta());
+        GenFatJetdarkHadronsubJetsPFCands_phi.push_back(GenFatJet_darkHadronJets_constituents.at(i_jet)[j][k].phi());
+        GenFatJetdarkHadronsubJetsPFCands_E.push_back(GenFatJet_darkHadronJets_constituents.at(i_jet)[j][k].energy());
+        GenFatJetdarkHadronsubJetsPFCands_genjetIdx.push_back(i_jet);
+        GenFatJetdarkHadronsubJetsPFCands_gensubjetIdx.push_back(j);
+        GenFatJetdarkHadronsubJetsPFCands_pdgid.push_back(GenFatJet_darkHadronJets_constituentsPdgid.at(i_jet)[j][k]);
+        GenFatJetdarkHadronsubJetsPFCands_matchStage.push_back(GenFatJet_darkHadronJets_constituentsMatchStage.at(i_jet)[j][k]);
+      }
+  }
+}
+
+
+
+// * END OF UNDER DEVELOPMENT// *
 
  // * 
  // L1 info
@@ -2866,8 +3508,9 @@ if (addMatrixElementInfo){
   
 
 
-
+std::cout <<"Finished event loop, now filling tree ..."<<std::endl;
 tree->Fill();	
+std::cout <<"Finished filling tree ..."<<std::endl;
 
 }
 
@@ -2962,6 +3605,401 @@ bool ScoutingNanoAOD_fromMiniAOD::jetID(const ScoutingPFJet &pfjet){
 
     return passID;
 }
+
+//* Add functions for dark hadrons matching // *
+
+bool ScoutingNanoAOD_fromMiniAOD::isParticle(const PidSet& darkList, int pid) const {
+  return darkList.find(std::abs(pid)) != darkList.end();
+}
+
+bool ScoutingNanoAOD_fromMiniAOD::isParticle(const PidSet& darkList, CandPtr part) const {
+  return isParticle(darkList, part->pdgId());
+}
+
+bool ScoutingNanoAOD_fromMiniAOD::isParticle(int partPid, CandPtr part) const {
+  return (partPid == part->pdgId());
+}
+
+bool ScoutingNanoAOD_fromMiniAOD::isParticle(const CandSet& darkList, CandPtr part) const {
+  return darkList.find(part) != darkList.end();
+}
+
+void ScoutingNanoAOD_fromMiniAOD::firstDark(CandPtr part, CandSet& firstMd, CandSet& firstQd, CandSet& firstGd, CandSet& firstQdM, CandSet& firstQsM, CandPtr& firstQdM1, CandPtr& firstQdM2, CandPtr& firstQsM1, CandPtr& firstQsM2, bool& secondDM, bool& secondSM) const {
+  if(isParticle(DarkFirstIDs_,part)){
+    CandPtr parent = part->mother(0);
+    if(isParticle(DarkFirstIDs_,parent)) firstDark(parent, firstMd, firstQd, firstGd, firstQdM, firstQsM, firstQdM1, firstQdM2, firstQsM1, firstQsM2, secondDM, secondSM);
+    else{
+      // SM parent of first dark particles
+      // looping through the daughters of this SM parent
+      for(unsigned i = 0; i < part->numberOfDaughters(); i++){
+        CandPtr dau = part->daughter(i);
+        //if (isParticle(DarkTMediatorIDs_,dau)){
+        //  if(firstMd.find(dau)==firstMd.end()){
+        //    firstMd.insert(dau);
+        //    // once a mediator daughter is found, we look for the descendants of the mediator
+        //    medDecay(dau,firstQdM,firstQsM,firstQdM1,firstQdM2,firstQsM1,firstQsM2,secondDM,secondSM);
+        //  }
+        //}
+        if (isParticle(DarkQuarkIDs_,dau)) firstQd.insert(dau);
+        else if (isParticle(DarkGluonIDs_,dau)) firstGd.insert(dau);
+      }
+    }
+  }
+}
+
+
+int ScoutingNanoAOD_fromMiniAOD::checkLast(const reco::GenJet& jet, const CandSet& stableDs, int value, double& frac) const {
+  //compare jet constituents to set of last particles
+  //also compute dark pt fraction in same loop
+  bool match = false;
+  LorentzVector p4;
+  LorentzVector totPt = jet.p4();
+  for(unsigned i = 0; i < jet.numberOfDaughters(); ++i){
+    CandPtr dau = daughter_noexcept(jet,i);
+    if(!dau) continue;
+    if(isAncestor(DarkHadronIDs_,dau)){
+        match = true;
+        p4 += dau->p4();
+    }
+  }
+  for(const auto& part : stableDs){
+     if(reco::deltaR(jet, *part) < coneSize_)
+     {
+       p4 += part->p4();
+       totPt += part->p4();
+     }
+  }
+  frac = p4.pt()/totPt.pt();
+  return match ? value : 0;
+}
+
+int ScoutingNanoAOD_fromMiniAOD::checkFirst(const reco::GenJet& jet, const CandSet& firstP, int value) const {
+  //compare first particles using jet cone (can't compare constituents' parents because all dark hadrons descend from all first dark particles, strong force problems)
+  for(const auto& part : firstP){
+    if(reco::deltaR(jet, *part) < coneSize_) return value;
+  }
+  return 0;
+}
+
+bool ScoutingNanoAOD_fromMiniAOD::isAncestor(const PidSet& darkList, CandPtr part) const {
+  if(isParticle(darkList, part)) return true;
+  for(size_t i=0;i< part->numberOfMothers();i++)
+  {
+    if(isAncestor(darkList,part->mother(i))) return true;
+  }
+  return false;
+}
+
+bool ScoutingNanoAOD_fromMiniAOD::isAncestor(int ancestorPid, CandPtr part) const {
+  if(isParticle(ancestorPid, part)) return true;
+  for(size_t i=0;i< part->numberOfMothers();i++)
+  {
+    if(isAncestor(ancestorPid,part->mother(i))) return true;
+  }
+  return false;
+}
+
+CandPtr ScoutingNanoAOD_fromMiniAOD::getAncestor(const PidSet& darkList, CandPtr part) const {
+  if(part==nullptr or isParticle(darkList, part)) return part;
+  for(size_t i=0;i< part->numberOfMothers();i++)
+  {
+    auto tmp = getAncestor(darkList,part->mother(i));
+    if (tmp!=nullptr) return tmp;
+  }
+  return nullptr;
+}
+
+// this function intends to collect immediate non-mediator daughters of the mediators. These mediator daughters can then be used to reconstruct the mass of the mediator.
+void ScoutingNanoAOD_fromMiniAOD::medDecay(CandPtr part, CandSet& firstQdM, CandSet& firstQsM, CandPtr& firstQdM1, CandPtr& firstQdM2, CandPtr& firstQsM1, CandPtr& firstQsM2, bool& secondDM, bool& secondSM) const {
+  for(unsigned i = 0; i < part->numberOfDaughters(); i++){
+    CandPtr dau = part->daughter(i);
+    // if the first dark mediator's daughter is still a dark mediator, then check the daughters of this daughter dark mediator until we get daughters that are not dark mediator
+    //if(isParticle(DarkTMediatorIDs_,dau)) medDecay(dau,firstQdM,firstQsM,firstQdM1,firstQdM2,firstQsM1,firstQsM2,secondDM,secondSM);
+    
+    // a mediator decays into a dark and an SM quark. Here we are collecting the dark quarks from the mediators while labeling them firstQdM1 and firstQdM2 depending on which mediator the quarks came from.
+    if(isParticle(DarkQuarkIDs_,dau)){
+      firstQdM.insert(dau);
+      // this condition makes sure that the firstQdM1 (firstQdM2) and firstQsM1 (firstQsM2) came from the same mediator.
+      // The labels 1 and 2 have no significance other than making sure that we get the correct pairings of dark and SM quarks from the mediators.
+      if(secondDM == false){
+        firstQdM1 = dau;
+        secondDM = true;
+      }
+      else firstQdM2 = dau;
+    }
+    // Here we are collecting the SM quarks from the mediators which assigning them to firstQsM1 and firstQsM2 depending on which mediator the quarks came from.
+    else if(isParticle(SMQuarkIDs_,dau)){
+      firstQsM.insert(dau);
+      if(secondSM == false){
+        firstQsM1 = dau;
+        secondSM = true;
+      }
+      else firstQsM2 = dau;
+    }
+  }
+}
+
+
+std::vector<std::vector<int> > ScoutingNanoAOD_fromMiniAOD::matchParticles(std::vector<std::vector<CLorentzVector> >& genSubjetConstituents, std::vector<std::vector<int> >& genSubjetPdgid, std::vector<CLorentzVector>& jetCands, std::vector<int>& jetCandsPdgid, std::vector<bool>& recoMatched, std::vector<int>& matchStageReco) const {
+
+	std::vector<std::vector<int>> indices = genSubjetPdgid;
+	for(unsigned i = 0; i < indices.size(); i++){
+		for(unsigned j = 0; j < indices[i].size(); j++) indices[i][j] = -1;
+	}
+
+	struct matchInfo{
+		std::vector<int> genIndexTop;
+		std::vector<int> genIndex;
+		std::vector<CLorentzVector> genParts;
+		std::vector<int> recoIndex;
+		std::vector<CLorentzVector> recoParts;
+		std::vector<int> matchedIndex;
+	};
+
+	matchInfo tmpMatch, leftovers;
+
+	// Separate particles into separate lists by pdgid and use matchAB for deltaR matching within pdgids
+	// preserve original list ordering somewhere
+	std::vector<int> pdgids = {13, -13, 11, -11, 22};
+	//one struct for each pdgid
+	std::vector<matchInfo> toMatch(pdgids.size(), tmpMatch);
+	// one for hadrons
+	toMatch.push_back(tmpMatch);
+
+	// get list of gen particles for each pdgid
+	for(unsigned i = 0; i < genSubjetConstituents.size(); i++){
+		for(unsigned j = 0; j < genSubjetConstituents[i].size(); j++){
+			auto it = std::find(pdgids.begin(), pdgids.end(), genSubjetPdgid[i][j]);
+			int index = -1;
+			if ( it != pdgids.end()) {
+				index = it - pdgids.begin();
+			}
+			else {
+				index = pdgids.size();
+			}
+			toMatch[index].genParts.push_back(genSubjetConstituents[i][j]);
+			toMatch[index].genIndexTop.push_back(i);
+			toMatch[index].genIndex.push_back(j);
+		}
+	}
+
+	// get list of reco particles for each pdgid/hadrons
+	for(unsigned r = 0; r < jetCands.size(); r++){
+		auto it = std::find(pdgids.begin(), pdgids.end(), jetCandsPdgid[r]);
+		int index = -1;
+		if ( it != pdgids.end()) {
+			index = it - pdgids.begin();
+		}
+		else {
+			index = pdgids.size();
+		}
+		toMatch[index].recoParts.push_back(jetCands[r]);
+		toMatch[index].recoIndex.push_back(r);
+
+	}
+
+	for( unsigned j = 0; j < toMatch.size(); j++ ) {
+		matchInfo m = toMatch[j];
+		int stage = j < pdgids.size() ? egMatchStage : hadronMatchStage;
+		m.matchedIndex = utils::matchAB(m.genParts, m.recoParts);
+		//Save matched indices to final array
+		//ORIGNAL VERSION
+    for(unsigned i = 0; i < m.matchedIndex.size(); i++){
+			if (m.matchedIndex[i] != -1) {
+				indices[m.genIndexTop[i]][m.genIndex[i]] = m.recoIndex[m.matchedIndex[i]];
+				recoMatched[m.recoIndex[m.matchedIndex[i]]] = true;
+				matchStageReco[m.recoIndex[m.matchedIndex[i]]] = stage;
+			}
+		}
+  }
+
+    //DEBUG VERSION
+//    for(unsigned i = 0; i < m.matchedIndex.size(); i++){
+//
+//    int recoMatch = m.matchedIndex[i];
+//
+//    if(recoMatch < 0) continue;
+//
+//    if(recoMatch >= (int)m.recoIndex.size()) {
+//        std::cout << "ERROR: recoMatch out of bounds\n";
+//        std::cout << "recoMatch = " << recoMatch
+//                  << " recoIndex.size() = "
+//                  << m.recoIndex.size() << std::endl;
+//        continue;
+//    }
+//
+//    if(i >= m.genIndexTop.size() ||
+//       i >= m.genIndex.size()) {
+//
+//        std::cout << "ERROR: gen index mismatch\n";
+//        continue;
+//    }
+//
+//    int recoIdx = m.recoIndex[recoMatch];
+//
+//    if(recoIdx < 0 ||
+//       recoIdx >= (int)recoMatched.size() ||
+//       recoIdx >= (int)matchStageReco.size()) {
+//
+//        std::cout << "ERROR: recoIdx invalid\n";
+//        continue;
+//    }
+//
+//    if(m.genIndexTop[i] >= (int)indices.size()) {
+//        std::cout << "ERROR: genIndexTop invalid\n";
+//        continue;
+//    }
+//
+//    if(m.genIndex[i] >=
+//       (int)indices[m.genIndexTop[i]].size()) {
+//
+//        std::cout << "ERROR: genIndex invalid\n";
+//        continue;
+//    }
+//
+//    indices[m.genIndexTop[i]][m.genIndex[i]] = recoIdx;
+//
+//    recoMatched[recoIdx] = true;
+//    matchStageReco[recoIdx] = stage;
+//  }
+
+
+
+//	}
+
+	// Need pdgid based matching to be already done, and then
+	// do this again for anything that's left... (aka the leftovers)
+	for(unsigned i = 0; i < genSubjetConstituents.size(); i++){
+		for(unsigned j = 0; j < genSubjetConstituents[i].size(); j++){
+			if ( indices[i][j] == -1 ){
+				leftovers.genParts.push_back(genSubjetConstituents[i][j]);
+				leftovers.genIndexTop.push_back(i);
+				leftovers.genIndex.push_back(j);
+			}
+		}
+	}
+
+	for(unsigned r = 0; r < jetCands.size(); r++){
+		if( recoMatched[r] == false ) {
+			leftovers.recoParts.push_back(jetCands[r]);
+			leftovers.recoIndex.push_back(r);
+		}
+	}
+
+	leftovers.matchedIndex = utils::matchAB(leftovers.genParts, leftovers.recoParts);
+
+	//Save matched indices to final array
+  //ORIGINAL VERSION
+	for(unsigned m = 0; m < leftovers.matchedIndex.size(); m++){
+		if (leftovers.matchedIndex[m] != -1) {
+			indices[leftovers.genIndexTop[m]][leftovers.genIndex[m]] = leftovers.recoIndex[leftovers.matchedIndex[m]];
+			recoMatched[leftovers.recoIndex[leftovers.matchedIndex[m]]] = true;
+			matchStageReco[leftovers.recoIndex[leftovers.matchedIndex[m]]] = leftoverMatchStage;
+		}
+	}
+  
+  //DEBUG VERSION
+  // Save matched indices to final array
+//  for(unsigned m = 0; m < leftovers.matchedIndex.size(); m++) {
+//  
+//      int recoMatch = leftovers.matchedIndex[m];
+//  
+//      // unmatched
+//      if(recoMatch < 0) continue;
+//  
+//      // protect recoMatch -> leftovers.recoIndex access
+//      if(recoMatch >= (int)leftovers.recoIndex.size()) {
+//          std::cout << "ERROR: leftovers recoMatch out of bounds\n";
+//          std::cout << "recoMatch = " << recoMatch
+//                    << " leftovers.recoIndex.size() = "
+//                    << leftovers.recoIndex.size()
+//                    << std::endl;
+//          continue;
+//      }
+//  
+//      // protect gen index vectors
+//      if(m >= leftovers.genIndexTop.size() ||
+//         m >= leftovers.genIndex.size()) {
+//  
+//          std::cout << "ERROR: leftovers gen index mismatch\n";
+//          continue;
+//      }
+//  
+//      int recoIdx = leftovers.recoIndex[recoMatch];
+//  
+//      // protect recoMatched/matchStageReco
+//      if(recoIdx < 0 ||
+//         recoIdx >= (int)recoMatched.size() ||
+//         recoIdx >= (int)matchStageReco.size()) {
+//  
+//          std::cout << "ERROR: leftovers recoIdx invalid\n";
+//          std::cout << "recoIdx = " << recoIdx
+//                    << " recoMatched.size() = "
+//                    << recoMatched.size()
+//                    << " matchStageReco.size() = "
+//                    << matchStageReco.size()
+//                    << std::endl;
+//  
+//          continue;
+//      }
+//  
+//      // protect indices access
+//      if(leftovers.genIndexTop[m] >= (int)indices.size()) {
+//  
+//          std::cout << "ERROR: leftovers genIndexTop invalid\n";
+//          std::cout << "genIndexTop = "
+//                    << leftovers.genIndexTop[m]
+//                    << " indices.size() = "
+//                    << indices.size()
+//                    << std::endl;
+//  
+//          continue;
+//      }
+//  
+//      if(leftovers.genIndex[m] >=
+//         (int)indices[leftovers.genIndexTop[m]].size()) {
+//  
+//          std::cout << "ERROR: leftovers genIndex invalid\n";
+//  
+//          std::cout << "genIndex = "
+//                    << leftovers.genIndex[m]
+//                    << " indices[sub].size() = "
+//                    << indices[leftovers.genIndexTop[m]].size()
+//                    << std::endl;
+//  
+//          continue;
+//      }
+//  
+//      // final safe assignments
+//      indices[leftovers.genIndexTop[m]][leftovers.genIndex[m]] = recoIdx;
+//  
+//      recoMatched[recoIdx] = true;
+//  
+//      matchStageReco[recoIdx] = leftoverMatchStage;
+//  }
+
+  //print output indices
+  //std::cout << "matched indices: " << std::endl;
+  //for(unsigned i = 0; i < indices.size(); i++){
+  //  for(unsigned j = 0; j < indices[i].size(); j++){
+  //    std::cout << indices[i][j] << " ";
+  //  }
+  //  std::cout << std::endl;
+  //}
+
+	return indices;
+}
+
+template <class P>
+void ScoutingNanoAOD_fromMiniAOD::addDaughters(const P* i_part, std::vector<CandPtr>& listOfDaughters) const {
+  for (unsigned idau=0; idau < i_part->numberOfDaughters(); ++idau) { // add all daughters of HVquark to list
+    CandPtr dau = i_part->daughter(idau);
+    if(isParticle(DarkQuarkIDs_,dau)) addDaughters(dau,listOfDaughters); // recurse down to HV-quark copy's daughters
+    else listOfDaughters.push_back(dau);
+  }
+}
+
+
 
 void ScoutingNanoAOD_fromMiniAOD::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
